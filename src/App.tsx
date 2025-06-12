@@ -14,6 +14,7 @@ import {
   Text,
   useColorScheme,
   View,
+  NativeModules,
 } from 'react-native';
 
 import {
@@ -56,6 +57,7 @@ function Section({children, title}: SectionProps): React.JSX.Element {
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+  __DEV__ && NativeModules.DevSettings.setIsDebuggingRemotely(true);
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
