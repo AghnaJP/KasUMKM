@@ -1,0 +1,11 @@
+{
+  "java.project.sourcePaths": [],
+  "java.project.excludePaths": [
+    "**/node_modules/**",
+    "**/android/**/node_modules/**",
+    "**/android/build/**"
+  ],
+  "java.configuration.runtimes": [],
+  "java.project.importOnFirstTimeStartup": "disabled",
+  "java.project.importHint.enabled": false
+}
