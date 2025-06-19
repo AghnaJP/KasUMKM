@@ -20,7 +20,7 @@ interface Props extends TextProps {
 
 const CustomText: React.FC<Props> = ({
   variant = 'body',
-  color = COLORS.black,
+  color = COLORS.darkBlue,
   align = 'left',
   style,
   onPress,

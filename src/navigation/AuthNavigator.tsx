@@ -22,7 +22,7 @@ const AuthNavigator = () => (
       name="Register"
       component={RegisterScreen}
       options={{
-        title: 'Sign Up',
+        title: 'Buat Akun',
         headerTitleAlign: 'center',
         headerLeft: renderBackButton,
       }}
@@ -31,7 +31,7 @@ const AuthNavigator = () => (
       name="Login"
       component={LoginScreen}
       options={{
-        title: 'Login',
+        title: 'Masuk',
         headerTitleAlign: 'center',
         headerLeft: renderBackButton,
       }}
