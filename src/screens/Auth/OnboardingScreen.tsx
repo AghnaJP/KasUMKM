@@ -1,17 +1,20 @@
 import React from 'react';
-import {View, Image, StyleSheet} from 'react-native';
+import {Image, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AuthStackParamList} from '../../types/navigation';
 import CustomText from '../../components/Text/CustomText';
 import Button from '../../components/Button/Button';
+import {ScrollView} from 'react-native-gesture-handler';
 
 const OnboardingScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled">
       <Image
         source={require('../../assets/images/onboarding-money.png')}
         style={styles.image}
@@ -45,7 +48,7 @@ const OnboardingScreen = () => {
         variant="secondary"
         onPress={() => navigation.navigate('Login')}
       />
-    </View>
+    </ScrollView>
   );
 };
 
