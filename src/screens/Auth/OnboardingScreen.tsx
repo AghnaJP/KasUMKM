@@ -26,7 +26,7 @@ const OnboardingScreen = () => {
         color="#1f1f1f"
         align="center"
         style={styles.titleSpacing}>
-        Know where your money goes
+        Kelola keuangan usahamu dengan mudah
       </CustomText>
 
       <CustomText
@@ -34,17 +34,18 @@ const OnboardingScreen = () => {
         color="#9ca3af"
         align="center"
         style={styles.subtitleSpacing}>
-        Track your transaction easily, with categories and financial report
+        Catat pemasukan dan pengeluaran secara praktis, lengkap dengan kategori
+        dan laporan usaha
       </CustomText>
 
       <Button
-        title="Sign Up"
+        title="Daftar"
         variant="primary"
         onPress={() => navigation.navigate('Register')}
       />
 
       <Button
-        title="Login"
+        title="Masuk"
         variant="secondary"
         onPress={() => navigation.navigate('Login')}
       />
