@@ -1,0 +1,47 @@
+import db from '../db';
+import {Transaction, ResultSet} from 'react-native-sqlite-storage';
+import {User} from '../../types/user';
+
+export const insertUser = async (
+  name: string,
+  phone: string,
+  password: string,
+) => {
+  const database = await db;
+
+  return new Promise((resolve, reject) => {
+    database.transaction((tx: Transaction) => {
+      tx.executeSql(
+        'INSERT INTO users (name, phone, password) VALUES (?, ?, ?)',
+        [name, phone, password],
+        (_, result) => resolve(result),
+        (_, error) => reject(error),
+      );
+    });
+  });
+};
+
+export const getUserByPhone = async (phone: string): Promise<User | null> => {
+  const database = await db;
+
+  return new Promise((resolve, reject) => {
+    database.transaction((tx: Transaction) => {
+      tx.executeSql(
+        'SELECT * FROM users WHERE phone = ?',
+        [phone],
+        (_: Transaction, result: ResultSet) => {
+          if (result.rows.length > 0) {
+            const user = result.rows.item(0) as User;
+            resolve(user);
+          } else {
+            resolve(null);
+          }
+        },
+        (_: Transaction, error: any) => {
+          reject(error);
+          return false;
+        },
+      );
+    });
+  });
+};

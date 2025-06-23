@@ -7,15 +7,23 @@ import {
   ScrollView,
   View,
 } from 'react-native';
+// Navigation
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AuthStackParamList} from '../../types/navigation';
+// UI Components
 import CustomText from '../../components/Text/CustomText';
 import Button from '../../components/Button/Button';
 import FormField from '../../components/Form/FormField';
-import {COLORS} from '../../constants';
 import PhoneInputField from '../../components/Form/PhoneInputField';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+// Modal & Colors
+import SuccessModal from '../../components/Modal/SuccessModal';
+import {COLORS, STRINGS} from '../../constants';
+// DB & Utils
+import {insertUser, getUserByPhone} from '../../database/users/userQueries';
+import {validateRegisterInput} from '../../utils/form';
+import {hashText} from '../../utils/crypto';
 
 const RegisterScreen = () => {
   const navigation =
@@ -24,8 +32,54 @@ const RegisterScreen = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [formError, setFormError] = useState('');
   const [isPasswordVisible, setPasswordVisible] = useState(false);
-  const [pin, setPin] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRegister = async () => {
+    setIsLoading(true);
+    setFormError('');
+
+    const trimmedName = name.trim();
+    const trimmedPhone = '08' + phone.trim();
+    const trimmedPassword = password.trim();
+
+    const errors = validateRegisterInput(
+      trimmedName,
+      trimmedPhone,
+      trimmedPassword,
+    );
+
+    setNameError(errors.nameError);
+    setPhoneError(errors.phoneError);
+    setPasswordError(errors.passwordError);
+
+    if (errors.nameError || errors.phoneError || errors.passwordError) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const existingUser = await getUserByPhone(trimmedPhone);
+
+      if (existingUser) {
+        setPhoneError('Nomor handphone sudah terdaftar');
+        setIsLoading(false);
+        return;
+      }
+
+      const hashedPassword = await hashText(trimmedPassword);
+      await insertUser(trimmedName, trimmedPhone, hashedPassword);
+
+      setShowModal(true);
+    } catch (error) {
+      console.error('Registration failed:', error);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -36,29 +90,26 @@ const RegisterScreen = () => {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled">
         <CustomText variant="title" style={styles.screenTitle}>
-          Ayo Daftar
+          {STRINGS.register.title}
         </CustomText>
-
         <CustomText variant="body" style={styles.screenSubtitle}>
-          Buat akun dan mulai kelola keuanganmu
+          {STRINGS.register.description}
         </CustomText>
-
         <FormField
           label="Nama Pengguna"
           placeholder="Masukkan nama kamu"
           value={name}
           onChangeText={setName}
+          error={nameError}
         />
-
         <PhoneInputField
           label="Nomor Handphone"
           value={phone}
           onChangeText={setPhone}
           placeholder="xxxxxxxxxxxx"
+          error={phoneError}
         />
-
         <FormField
-          key={isPasswordVisible ? 'visible' : 'hidden'} // 🔧 Tambahan ini
           label="Buat Kata Sandi"
           placeholder="tulis kata sandi anda"
           value={password}
@@ -74,37 +125,43 @@ const RegisterScreen = () => {
               />
             </TouchableOpacity>
           }
+          error={passwordError}
         />
-
-        <FormField
-          label="PIN"
-          placeholder="PIN (6 angka)"
-          keyboardType="numeric"
-          maxLength={6}
-          value={pin}
-          onChangeText={setPin}
-        />
-        <CustomText variant="caption" style={styles.pinNote}>
-          PIN digunakan untuk mereset password jika kamu lupa.
-        </CustomText>
-
+        {formError ? (
+          <CustomText variant="caption" style={styles.formError}>
+            {formError}
+          </CustomText>
+        ) : null}
         <Button
-          title="Daftar Sekarang"
+          title={isLoading ? 'Mendaftarkan...' : 'Daftar Sekarang'}
           variant="primary"
-          onPress={() => {
-            console.log({name, phone, password});
-          }}
+          onPress={handleRegister}
+          disabled={isLoading}
         />
-
         <View style={styles.loginRow}>
           <CustomText variant="caption">Sudah punya akun?</CustomText>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
             <CustomText variant="caption" style={styles.loginLink}>
-              Masuk
+              {STRINGS.register.loginLink}
             </CustomText>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <SuccessModal
+        visible={showModal}
+        title={STRINGS.register.successTitle}
+        description="Silakan login untuk mulai menggunakan aplikasi"
+        buttonLabel="Login"
+        onClose={() => {
+          setShowModal(false);
+          setName('');
+          setPhone('');
+          setPassword('');
+          setFormError('');
+          navigation.navigate('Login');
+        }}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -123,11 +180,6 @@ const styles = StyleSheet.create({
   screenSubtitle: {
     marginBottom: 24,
   },
-  pinNote: {
-    marginLeft: 4,
-    marginBottom: 16,
-    fontSize: 12,
-  },
   loginRow: {
     marginTop: 16,
     flexDirection: 'row',
@@ -138,6 +190,11 @@ const styles = StyleSheet.create({
     color: COLORS.lightBlue,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  formError: {
+    color: 'red',
+    textAlign: 'center',
+    marginBottom: 12,
   },
 });
 

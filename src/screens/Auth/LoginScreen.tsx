@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   StyleSheet,
   TouchableWithoutFeedback,
@@ -6,43 +6,137 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import CustomText from '../../components/Text/CustomText';
-import FormField from '../../components/Form/FormField';
-import Button from '../../components/Button/Button';
 import {ScrollView} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {AuthStackParamList} from '../../types/navigation';
-import {COLORS} from '../../constants';
+import {RootStackParamList} from '../../types/navigation';
+
+import CustomText from '../../components/Text/CustomText';
+import FormField from '../../components/Form/FormField';
+import Button from '../../components/Button/Button';
+import {COLORS, STRINGS} from '../../constants';
+
+import {getUserByPhone} from '../../database/users/userQueries';
+import {hashText} from '../../utils/crypto';
+
+import {User} from '../../types/user';
+import {useContext} from 'react';
+import {AuthContext} from '../../context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const navigation =
-    useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const {login} = useContext(AuthContext);
+
+  const handleLogin = async () => {
+    setFormError('');
+    setPhoneError('');
+    setPasswordError('');
+    setIsLoading(true);
+
+    const trimmedPhone = phone.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedPhone) {
+      setPhoneError('Nomor handphone wajib diisi');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!trimmedPassword) {
+      setPasswordError('Password tidak boleh kosong');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const user: User | null = await getUserByPhone(trimmedPhone);
+
+      if (!user) {
+        setPhoneError(STRINGS.login.errorPhoneNotFound);
+        setIsLoading(false);
+        return;
+      }
+
+      const hashedInputPassword = await hashText(trimmedPassword);
+
+      if (user.password !== hashedInputPassword) {
+        setPasswordError(STRINGS.login.errorPasswordWrong);
+        setIsLoading(false);
+        return;
+      }
+
+      await AsyncStorage.multiSet([
+        ['isLoggedIn', 'true'],
+        ['userPhone', user.phone],
+        ['userName', user.name],
+      ]);
+      login();
+    } catch (error) {
+      console.error('Login failed:', error);
+      setFormError('Terjadi kesalahan. Coba lagi nanti.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <CustomText variant="title" style={styles.screenTitle}>
-          Selamat Datang
+          {STRINGS.login.title}
         </CustomText>
+
         <CustomText variant="body" style={styles.screenSubtitle}>
-          Masuk ke akun kamu dengan nomor HP
+          {STRINGS.login.description}
         </CustomText>
 
         <FormField
           label="Nomor Telepon"
           placeholder="Nomor HP"
           keyboardType="phone-pad"
+          value={phone}
+          onChangeText={setPhone}
+          error={phoneError}
         />
-        <FormField label="Password" placeholder="Password" secureTextEntry />
 
-        <Button title="Masuk" variant="primary" onPress={() => {}} />
+        <FormField
+          label="Password"
+          placeholder="Password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          error={passwordError}
+        />
+
+        {formError ? (
+          <CustomText variant="caption" style={styles.formError}>
+            {formError}
+          </CustomText>
+        ) : null}
+
+        <Button
+          title={isLoading ? 'Memproses...' : 'Masuk'}
+          variant="primary"
+          onPress={handleLogin}
+          disabled={isLoading}
+        />
 
         <View style={styles.loginRow}>
           <CustomText variant="caption">Belum punya akun?</CustomText>
-          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Auth', {screen: 'Register'})}>
             <CustomText variant="caption" style={styles.loginLink}>
-              Daftar Sekarang
+              {STRINGS.login.registerLink}
             </CustomText>
           </TouchableOpacity>
         </View>
@@ -71,6 +165,11 @@ const styles = StyleSheet.create({
     color: COLORS.lightBlue,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  formError: {
+    color: 'red',
+    textAlign: 'center',
+    marginBottom: 12,
   },
 });
 
