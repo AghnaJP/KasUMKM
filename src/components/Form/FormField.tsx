@@ -2,6 +2,7 @@ import React from 'react';
 import {View, StyleSheet, ViewStyle} from 'react-native';
 import CustomText from '../Text/CustomText';
 import CustomTextInput from '../Text/CustomTextInput';
+import {COLORS} from '../../constants';
 
 interface Props {
   label: string;
@@ -13,6 +14,7 @@ interface Props {
   maxLength?: number;
   containerStyle?: ViewStyle;
   rightIcon?: React.ReactNode;
+  error?: string;
 }
 
 const FormField: React.FC<Props> = ({
@@ -25,6 +27,7 @@ const FormField: React.FC<Props> = ({
   maxLength,
   containerStyle,
   rightIcon,
+  error,
 }) => {
   return (
     <View style={[styles.wrapper, containerStyle]}>
@@ -39,18 +42,29 @@ const FormField: React.FC<Props> = ({
         secureTextEntry={secureTextEntry}
         maxLength={maxLength}
         rightIcon={rightIcon}
+        error={error}
       />
+      {error ? (
+        <CustomText variant="caption" style={styles.errorText}>
+          {error}
+        </CustomText>
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 4,
+    marginBottom: 16,
   },
   label: {
     marginLeft: 4,
     marginBottom: 8,
+  },
+  errorText: {
+    color: COLORS.red,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });
 

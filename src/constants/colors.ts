@@ -1,9 +1,12 @@
 export const COLORS = {
   darkBlue: '#142A5B',
   white: '#FFFFFF',
+  lightGray: '#E5E7EB',
   gray: '#AAAAAA',
   black: '#000',
   lightBlue: '#163CAA',
+  red: '#EF4444',
+  green: '#22c55e',
 };
 
 export const BUTTON_COLORS = {
@@ -11,4 +14,5 @@ export const BUTTON_COLORS = {
   secondary: {bg: '#E0E7FF', text: '#163CAA'}, // Soft blue background, dark blue text
   danger: {bg: '#EF4444', text: '#ffffff'}, // Red (Alert)
   outline: {bg: '#ffffff', text: '#163CAA'},
+  success: {bg: '#22c55e', text: '#fff'}, // Green, White Text
 };

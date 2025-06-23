@@ -1,0 +1,66 @@
+import React from 'react';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import HomeScreen from '../screens/Home/HomeScreen';
+import ProfileScreen from '../screens/Profile/ProfileScreen';
+import WalletScreen from '../screens/Wallet/WalletScreen';
+import DocumentsScreen from '../screens/Documents/DocumentsScreen';
+import AddScreen from '../screens/Add/AddScreen';
+import MainLayout from '../components/MainLayout';
+import BottomNav from '../components/BottomNav';
+import {AppTabParamList} from '../types/navigation';
+import {BottomTabBarProps} from '@react-navigation/bottom-tabs';
+
+const Tab = createBottomTabNavigator<AppTabParamList>();
+
+function renderTabBar(props: BottomTabBarProps) {
+  return <BottomNav {...props} />;
+}
+
+const AppNavigator = () => {
+  return (
+    <Tab.Navigator screenOptions={{headerShown: false}} tabBar={renderTabBar}>
+      <Tab.Screen
+        name="Home"
+        children={() => (
+          <MainLayout>
+            <HomeScreen />
+          </MainLayout>
+        )}
+      />
+      <Tab.Screen
+        name="Wallet"
+        children={() => (
+          <MainLayout>
+            <WalletScreen />
+          </MainLayout>
+        )}
+      />
+      <Tab.Screen
+        name="Add"
+        children={() => (
+          <MainLayout>
+            <AddScreen />
+          </MainLayout>
+        )}
+      />
+      <Tab.Screen
+        name="Documents"
+        children={() => (
+          <MainLayout>
+            <DocumentsScreen />
+          </MainLayout>
+        )}
+      />
+      <Tab.Screen
+        name="Profile"
+        children={() => (
+          <MainLayout>
+            <ProfileScreen />
+          </MainLayout>
+        )}
+      />
+    </Tab.Navigator>
+  );
+};
+
+export default AppNavigator;
