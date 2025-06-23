@@ -12,21 +12,28 @@ import {COLORS} from '../../constants';
 interface Props extends TextInputProps {
   rightIcon?: React.ReactNode;
   containerStyle?: StyleProp<ViewStyle>;
+  error?: string;
 }
 
 const CustomTextInput: React.FC<Props> = ({
   rightIcon,
   containerStyle,
   style,
+  error,
   ...rest
 }) => {
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View
+      style={[
+        styles.container,
+        error ? styles.errorBorder : styles.normalBorder,
+        containerStyle,
+      ]}>
       <TextInput
         style={[styles.input, style]}
         placeholderTextColor={COLORS.gray}
         {...rest}
-      />{' '}
+      />
       {rightIcon && <View style={styles.icon}>{rightIcon}</View>}
     </View>
   );
@@ -37,11 +44,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.lightGray,
     borderRadius: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
-    marginBottom: 16,
+    backgroundColor: COLORS.white,
   },
   input: {
     flex: 1,
@@ -50,6 +56,12 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginLeft: 8,
+  },
+  normalBorder: {
+    borderColor: COLORS.lightGray,
+  },
+  errorBorder: {
+    borderColor: COLORS.red,
   },
 });
 

@@ -1,55 +1,38 @@
-import React, {useState} from 'react';
+// BottomNav.tsx
+import React from 'react';
 import {View, TouchableOpacity, StyleSheet} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {COLORS} from '../constants';
 
-const BottomNav = () => {
-  const [activeTab, setActiveTab] = useState('home');
+const BottomNav: React.FC<BottomTabBarProps> = ({state, navigation}) => {
+  const currentTabIndex = state.index;
 
-  const getColors = (tabName: string) => {
-    return activeTab === tabName ? COLORS.darkBlue : COLORS.gray;
+  const handlePress = (index: number) => {
+    if (index !== currentTabIndex) {
+      navigation.navigate(state.routes[index].name);
+    }
   };
+
+  const getColor = (index: number) =>
+    index === currentTabIndex ? COLORS.darkBlue : COLORS.gray;
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.iconBtn}
-        onPress={() => {
-          setActiveTab('home');
-        }}>
-        <Icon name="home" size={28} color={getColors('home')} />
+      <TouchableOpacity style={styles.iconBtn} onPress={() => handlePress(0)}>
+        <Icon name="home" size={28} color={getColor(0)} />
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.iconBtn}
-        onPress={() => {
-          setActiveTab('wallet');
-        }}>
-        <Icon name="wallet" size={28} color={getColors('wallet')} />
+      <TouchableOpacity style={styles.iconBtn} onPress={() => handlePress(1)}>
+        <Icon name="wallet" size={28} color={getColor(1)} />
       </TouchableOpacity>
-
-      <TouchableOpacity style={styles.addBtn}>
+      <TouchableOpacity style={styles.addBtn} onPress={() => handlePress(2)}>
         <Icon name="add" size={35} color={COLORS.white} />
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.iconBtn}
-        onPress={() => {
-          setActiveTab('document-text');
-        }}>
-        <Icon
-          name="document-text"
-          size={28}
-          color={getColors('document-text')}
-        />
+      <TouchableOpacity style={styles.iconBtn} onPress={() => handlePress(3)}>
+        <Icon name="document-text" size={28} color={getColor(3)} />
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.iconBtn}
-        onPress={() => {
-          setActiveTab('person');
-        }}>
-        <Icon name="person" size={28} color={getColors('person')} />
+      <TouchableOpacity style={styles.iconBtn} onPress={() => handlePress(4)}>
+        <Icon name="person" size={28} color={getColor(4)} />
       </TouchableOpacity>
     </View>
   );
@@ -69,7 +52,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-
   iconBtn: {
     width: 56,
     height: 56,
@@ -77,10 +59,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
-    // borderColor: 'red',
-    // borderWidth: 1,
   },
-
   addBtn: {
     width: 64,
     height: 64,

@@ -1,21 +1,22 @@
 import React from 'react';
 import {
   TouchableOpacity,
-  Text,
   StyleProp,
   ViewStyle,
   TextStyle,
   StyleSheet,
 } from 'react-native';
 import {BUTTON_COLORS} from '../../constants';
+import CustomText from '../Text/CustomText';
 
 interface Props {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline';
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'success';
   fullWidth?: boolean;
   customStyle?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  textVariant?: 'title' | 'subtitle' | 'body' | 'caption';
   disabled?: boolean;
 }
 
@@ -26,6 +27,7 @@ const Button: React.FC<Props> = ({
   fullWidth = true,
   customStyle,
   textStyle,
+  textVariant = 'body',
   disabled = false,
 }) => {
   const {bg, text} = BUTTON_COLORS[variant] ?? BUTTON_COLORS.primary;
@@ -44,7 +46,13 @@ const Button: React.FC<Props> = ({
       style={buttonStyle}
       activeOpacity={disabled ? 1 : 0.8}
       disabled={disabled}>
-      <Text style={[styles.text, {color: text}, textStyle]}>{title}</Text>
+      <CustomText
+        variant={textVariant}
+        color={text}
+        align="center"
+        style={textStyle}>
+        {title}
+      </CustomText>
     </TouchableOpacity>
   );
 };
@@ -55,10 +63,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginVertical: 6,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   outlineBorder: {
     borderWidth: 1,
