@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   logoutBtn: {
-    backgroundColor: '#ef4444',
+    backgroundColor: COLORS.red,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
