@@ -18,17 +18,11 @@ buildscript {
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+apply plugin: "com.facebook.react.rootproject"
 
-    configurations.all {
-        resolutionStrategy {
-            force 'com.google.android.material:material:1.11.0'
-        }
+
+configurations.all {
+    resolutionStrategy {
+        force 'com.google.android.material:material:1.11.0'
     }
 }
-
-apply plugin: "com.facebook.react.rootproject"
