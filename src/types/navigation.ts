@@ -21,4 +21,5 @@ export type AppStackParamList = {
   AppTabs: undefined;
   AddMenu: undefined;
   MenuList: undefined;
+  AddTransaction: undefined;
 };

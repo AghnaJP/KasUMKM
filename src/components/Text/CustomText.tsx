@@ -50,7 +50,7 @@ const baseStyles = StyleSheet.create({
     fontFamily: FONTS.bold,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: FONTS.semiBold,
   },
   body: {
