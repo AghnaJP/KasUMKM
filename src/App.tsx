@@ -1,10 +1,10 @@
 import React, {useEffect, useState} from 'react';
 import {StatusBar} from 'react-native';
 import RootNavigator from './navigation/RootNavigator';
-import {initUserTable} from './database/users/initUserTable';
 import Toast from 'react-native-toast-message';
 import {AuthContext} from './context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {initAllTables} from './database/initDB';
 
 const App = (): React.JSX.Element => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -12,7 +12,7 @@ const App = (): React.JSX.Element => {
   useEffect(() => {
     const setupApp = async () => {
       try {
-        await initUserTable();
+        await initAllTables();
         console.log('User table initialized');
 
         const isLogged = await AsyncStorage.getItem('isLoggedIn');

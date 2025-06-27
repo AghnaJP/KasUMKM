@@ -6,3 +6,12 @@ export const CREATE_USERS_TABLE = `
     password TEXT NOT NULL
   );
 `;
+
+export const CREATE_MENUS_TABLE = `
+  CREATE TABLE IF NOT EXISTS menus (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    price INTEGER NOT NULL
+  );
+`;

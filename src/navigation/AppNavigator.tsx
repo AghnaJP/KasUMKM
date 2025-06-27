@@ -18,7 +18,7 @@ function renderTabBar(props: BottomTabBarProps) {
 
 const AppNavigator = () => {
   return (
-    <Tab.Navigator screenOptions={{headerShown: false}} tabBar={renderTabBar}>
+    <Tab.Navigator screenOptions={{headerShown: true}} tabBar={renderTabBar}>
       <Tab.Screen
         name="Home"
         children={() => (
@@ -45,6 +45,7 @@ const AppNavigator = () => {
       />
       <Tab.Screen
         name="Documents"
+        options={{title: 'Pengelolaan Menu'}}
         children={() => (
           <MainLayout>
             <DocumentsScreen />

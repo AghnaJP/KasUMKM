@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   outlineBorder: {
     borderWidth: 1,
-    borderColor: '#7C3AED',
+    borderColor: '#163CAA',
   },
   fullWidth: {
     alignSelf: 'stretch',

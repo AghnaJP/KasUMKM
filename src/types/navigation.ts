@@ -1,6 +1,6 @@
 export type RootStackParamList = {
   Auth: {screen: keyof AuthStackParamList; params?: object};
-  App: {screen?: keyof AppTabParamList; params?: object} | undefined;
+  App: undefined;
 };
 
 export type AuthStackParamList = {
@@ -15,4 +15,10 @@ export type AppTabParamList = {
   Add: undefined;
   Documents: undefined;
   Profile: undefined;
+};
+
+export type AppStackParamList = {
+  AppTabs: undefined;
+  AddMenu: undefined;
+  MenuList: undefined;
 };
