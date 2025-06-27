@@ -13,6 +13,7 @@ interface Props extends TextInputProps {
   rightIcon?: React.ReactNode;
   containerStyle?: StyleProp<ViewStyle>;
   error?: string;
+  children?: React.ReactNode;
 }
 
 const CustomTextInput: React.FC<Props> = ({
@@ -20,6 +21,7 @@ const CustomTextInput: React.FC<Props> = ({
   containerStyle,
   style,
   error,
+  children,
   ...rest
 }) => {
   return (
@@ -29,11 +31,15 @@ const CustomTextInput: React.FC<Props> = ({
         error ? styles.errorBorder : styles.normalBorder,
         containerStyle,
       ]}>
-      <TextInput
-        style={[styles.input, style]}
-        placeholderTextColor={COLORS.gray}
-        {...rest}
-      />
+      {children ? (
+        children
+      ) : (
+        <TextInput
+          style={[styles.input, style]}
+          placeholderTextColor={COLORS.gray}
+          {...rest}
+        />
+      )}
       {rightIcon && <View style={styles.icon}>{rightIcon}</View>}
     </View>
   );
