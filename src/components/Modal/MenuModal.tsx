@@ -84,7 +84,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
               navigation.navigate('App', { screen: 'AddMenu' });
             }}
           >
-            <View style={styles.menuInfo}>
+            <View style={styles.addMenu}>
               <CustomText variant="body">Tambah Menu</CustomText>
             </View>
             <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
@@ -107,7 +107,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
                   onClose();
                 }}
               >
-                <View style={styles.menuInfo}>
+                <View style={styles.addMenu}>
                   <CustomText variant="body">{menu.name}</CustomText>
                   <CustomText variant="caption">
                     Rp{menu.price.toLocaleString('id-ID')}
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderColor: '#ccc',
   },
-  menuInfo: {
+  addMenu: {
     flex: 1,
     marginRight: 8,
   },
