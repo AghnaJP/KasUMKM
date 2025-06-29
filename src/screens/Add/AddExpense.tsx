@@ -112,7 +112,7 @@ const AddExpense = () => {
         {/* List Data Pengeluaran */}
         {expenses.map((item, index) => (
             <SelectedMenuItem
-                key={index}
+                key={item.id}
                 item={item}
                 quantity={item.quantity}
                 onIncrease={() =>

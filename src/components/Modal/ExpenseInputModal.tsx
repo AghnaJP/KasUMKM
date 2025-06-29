@@ -44,9 +44,13 @@ const ExpenseInputModal: React.FC<Props> = ({
   useEffect(() => {
     if (!visible) {
       setErrors({});
+      setDescription('');
+      setAmount('');
+      setDisplayAmount('');
+    } else{
+      setDisplayAmount(amount ? `Rp ${formatRupiah(amount)}` : '');
     }
-    setDisplayAmount(amount ? `Rp ${formatRupiah(amount)}` : '');
-  }, [visible, amount]);
+  }, [visible, amount, setAmount, setDescription]);
 
   const validate = (): boolean => {
     const newErrors: FieldErrors = {

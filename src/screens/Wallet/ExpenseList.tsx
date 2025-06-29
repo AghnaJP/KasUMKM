@@ -3,9 +3,10 @@ import { View, FlatList, Text, StyleSheet } from 'react-native';
 import CustomText from '../../components/Text/CustomText';
 import { getAllExpenses } from '../../database/Expense/expenseQueries';
 import { useIsFocused } from '@react-navigation/native';
+import { ExpenseItem } from '../../types/menu';
 
 const ExpenseList = () => {
-  const [expenses, setExpenses] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const isFocused = useIsFocused();
 
   useEffect(() => {
@@ -38,7 +39,6 @@ const ExpenseList = () => {
             <Text>Deskripsi: {item.description}</Text>
             <Text>Jumlah: {item.quantity}</Text>
             <Text>Harga: {item.price}</Text>
-            <Text>Tanggal: {item.created_at}</Text>
           </View>
         )}
         ListEmptyComponent={<Text>Tidak ada pengeluaran</Text>}

@@ -5,6 +5,12 @@ export interface MenuItem {
     category: string;
 }
 
+export interface IncomeItem {
+  id: number;
+  menu_id: number;
+  quantity: number;
+}
+
 export interface ExpenseItem {
   id: number;
   description: string;
