@@ -42,6 +42,7 @@ const AddIncome = () => {
       for (const { item, quantity } of selectedMenus) {
         await insertIncome(item.id, quantity, now, now);
         Alert.alert('Berhasil', 'Menu berhasil disimpan');
+        setSelectedMenus([]);
       }
     } catch (e) {
       console.error('Insert income error:', e);

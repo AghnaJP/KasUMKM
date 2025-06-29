@@ -1,18 +1,18 @@
 import React from 'react';
-import { ScrollView, StyleSheet, SafeAreaView, View } from 'react-native';
+import { StyleSheet, SafeAreaView, View } from 'react-native';
 import IncomeList from '../../screens/Wallet/IncomeList';
 import ExpenseList from '../../screens/Wallet/ExpenseList';
 
 const WalletScreen = () => {
   return (
     <SafeAreaView style={styles.wrapper}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.container}>
         <View style={styles.fullWidth}>
           <IncomeList />
           <View style={styles.divider} />
           <ExpenseList />
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };

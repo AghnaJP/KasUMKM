@@ -26,7 +26,7 @@ export const getAllMenus = async (): Promise<
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
-        'SELECT * FROM menus',
+        'SELECT * FROM menus ORDER BY name ASC',
         [],
         (_, result: ResultSet) => {
           const menus = [];

@@ -33,6 +33,7 @@ const ExpenseList = () => {
       </CustomText>
       <FlatList
         data={expenses}
+        style={styles.list}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.itemContainer}>
@@ -55,6 +56,10 @@ const styles = StyleSheet.create({
   },
   title: {
     marginVertical: 12,
+  },
+  list: {
+    maxHeight: 200,
+    flexGrow: 1,
   },
 });
 

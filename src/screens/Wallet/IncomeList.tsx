@@ -28,33 +28,38 @@ const IncomeList = () => {
 
   return (
     <View>
-      <CustomText variant="title" style={styles.title}>
+        <CustomText variant="title" style={styles.title}>
         Daftar Pemasukan
-      </CustomText>
-      <FlatList
+        </CustomText>
+        <FlatList
         data={incomes}
+        style={styles.list}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.itemContainer}>
+            <View style={styles.itemContainer}>
             <Text>Menu ID: {item.menu_id}</Text>
             <Text>Jumlah: {item.quantity}</Text>
-          </View>
+            </View>
         )}
         ListEmptyComponent={<Text>Tidak ada pemasukan</Text>}
-      />
+        />
     </View>
-  );
-};
+    );
+  };
 
-const styles = StyleSheet.create({
-  itemContainer: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-  },
-  title: {
-    marginVertical: 12,
-  },
-});
+  const styles = StyleSheet.create({
+    itemContainer: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderColor: '#ccc',
+    },
+    title: {
+        marginVertical: 12,
+    },
+    list: {
+        maxHeight: 200,
+        flexGrow: 1,
+    },
+  });
 
 export default IncomeList;
