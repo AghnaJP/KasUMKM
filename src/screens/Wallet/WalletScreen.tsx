@@ -1,12 +1,17 @@
 import React from 'react';
-import {ScrollView, StyleSheet, SafeAreaView} from 'react-native';
-import CustomText from '../../components/Text/CustomText';
+import { ScrollView, StyleSheet, SafeAreaView, View } from 'react-native';
+import IncomeList from '../../screens/Wallet/IncomeList';
+import ExpenseList from '../../screens/Wallet/ExpenseList';
 
 const WalletScreen = () => {
   return (
     <SafeAreaView style={styles.wrapper}>
       <ScrollView contentContainerStyle={styles.container}>
-        <CustomText variant="title">Halo Ini Wallet Screen</CustomText>
+        <View style={styles.fullWidth}>
+          <IncomeList />
+          <View style={styles.divider} />
+          <ExpenseList />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -19,9 +24,16 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 24,
+    width: '100%',
+  },
+  fullWidth: {
+    width: '100%',
+  },
+  divider: {
+    height: 24,
   },
 });
 

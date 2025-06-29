@@ -1,4 +1,3 @@
-// src/screens/Add/AddIncome.tsx
 import React, { useState } from 'react';
 import {
   ScrollView,
@@ -7,15 +6,17 @@ import {
   TouchableOpacity,
   Platform,
   View,
+  Alert,
 } from 'react-native';
 import CustomText from '../../components/Text/CustomText';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MenuModal from '../../components/Modal/MenuModal';
-import { MenuItem } from '../../data/data';
+import { MenuItem } from '../../types/menu';
 import { COLORS } from '../../constants';
 import Button from '../../components/Button/Button';
 import SelectedMenuItem from '../../components/AddTransaction/SelectedMenuItem';
+import { insertIncome } from '../../database/Incomes/incomeQueries';
 
 const AddIncome = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -31,9 +32,22 @@ const AddIncome = () => {
   };
 
   const totalPrice = selectedMenus.reduce(
-    (acc, curr) => acc + curr.item.harga * curr.quantity,
+    (acc, curr) => acc + curr.item.price * curr.quantity,
     0
   );
+
+  const handleSubmit = async () => {
+    try {
+      const now = new Date().toISOString();
+      for (const { item, quantity } of selectedMenus) {
+        await insertIncome(item.id, quantity, now, now);
+        Alert.alert('Berhasil', 'Menu berhasil disimpan');
+      }
+    } catch (e) {
+      console.error('Insert income error:', e);
+      Alert.alert('Error', 'Gagal menyimpan pemasukan');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.wrapper}>
@@ -75,13 +89,13 @@ const AddIncome = () => {
         {/* Menu Yang Dipilih */}
         {selectedMenus.map(({ item, quantity }) => (
             <SelectedMenuItem
-                key={item.namaMenu}
+                key={item.id}
                 item={item}
                 quantity={quantity}
                 onIncrease={() =>
                 setSelectedMenus(prev =>
                     prev.map(m =>
-                    m.item.namaMenu === item.namaMenu ? { ...m, quantity: m.quantity + 1 } : m
+                    m.item.id === item.id ? { ...m, quantity: m.quantity + 1 } : m
                     )
                 )
                 }
@@ -89,7 +103,7 @@ const AddIncome = () => {
                 setSelectedMenus(prev =>
                     prev
                     .map(m =>
-                        m.item.namaMenu === item.namaMenu ? { ...m, quantity: m.quantity - 1 } : m
+                        m.item.id === item.id ? { ...m, quantity: m.quantity - 1 } : m
                     )
                     .filter(m => m.quantity > 0)
                 )
@@ -105,7 +119,7 @@ const AddIncome = () => {
               <CustomText variant="subtitle">Total Harga</CustomText>
               <CustomText variant="body">Rp{totalPrice.toLocaleString('id-ID')}</CustomText>
             </View>
-            <Button variant="primary" title="Simpan" onPress={() => { /* TODO: handle save */ }} />
+            <Button title="SIMPAN" variant="primary" onPress={handleSubmit} />
           </View>
         )}
       </ScrollView>
@@ -114,14 +128,14 @@ const AddIncome = () => {
       <MenuModal
         visible={showMenuModal}
         onClose={() => setShowMenuModal(false)}
-        onSelect={(menu: MenuItem) => {
+        onSelect={(item: MenuItem) => {
           setSelectedMenus(prev => {
-            const existing = prev.find(m => m.item.namaMenu === menu.namaMenu);
+            const existing = prev.find(m => m.item.id === item.id);
             return existing
               ? prev.map(m =>
-                  m.item.namaMenu === menu.namaMenu ? { ...m, quantity: m.quantity + 1 } : m
+                  m.item.id === item.id ? { ...m, quantity: m.quantity + 1 } : m
                 )
-              : [...prev, { item: menu, quantity: 1 }];
+              : [...prev, { item: item, quantity: 1 }];
           });
           setShowMenuModal(false);
         }}

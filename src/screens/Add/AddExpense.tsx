@@ -6,8 +6,9 @@ import {
   StyleSheet,
   Platform,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
-import { ExpenseItem } from '../../data/data';
+import { ExpenseItem } from '../../types/menu';
 import CustomText from '../../components/Text/CustomText';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -15,6 +16,7 @@ import { COLORS } from '../../constants';
 import ExpenseInputModal from '../../components/Modal/ExpenseInputModal';
 import SelectedMenuItem from '../../components/AddTransaction/SelectedMenuItem';
 import Button from '../../components/Button/Button';
+import { insertExpense } from '../../database/Expense/expenseQueries';
 
 const AddExpense = () => {
   const [showFormModal, setShowFormModal] = useState(false);
@@ -47,7 +49,12 @@ const AddExpense = () => {
         // Jika deskripsi belum ada, tambahkan item baru
         setExpenses(prev => [
         ...prev,
-        { description: description.trim(), amount: Number(amount), quantity: 1 },
+        {
+            id: prev.length > 0 ? prev[prev.length - 1].id + 1 : 1,
+            description: description.trim(),
+            price: Number(amount),
+            quantity: 1,
+        },
         ]);
     }
 
@@ -56,8 +63,22 @@ const AddExpense = () => {
     setShowFormModal(false);
   };
 
+    const handleSubmit = async () => {
+      try {
+        const now = new Date().toISOString();
+        for (const item of expenses) {
+          await insertExpense(item.description, item.price, item.quantity, now, now);
+        }
+        Alert.alert('Berhasil', 'Pengeluaran berhasil disimpan');
+        setExpenses([]);
+      } catch (e) {
+        console.error('Insert expense error:', e);
+        Alert.alert('Error', 'Gagal menyimpan pengeluaran');
+      }
+    };
+
   const totalPrice = expenses.reduce(
-        (acc, curr) => acc + curr.amount * curr.quantity,
+        (acc, curr) => acc + curr.price * curr.quantity,
         0
   );
 
@@ -121,7 +142,7 @@ const AddExpense = () => {
               <CustomText variant="subtitle">Total Harga</CustomText>
               <CustomText variant="body">Rp{totalPrice.toLocaleString('id-ID')}</CustomText>
             </View>
-            <Button variant="primary" title="Simpan" onPress={() => { /* TODO: handle save */ }} />
+            <Button variant="primary" title="Simpan" onPress={handleSubmit} />
           </View>
         )}
 

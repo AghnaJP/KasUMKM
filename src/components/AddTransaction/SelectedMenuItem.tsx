@@ -2,19 +2,18 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
-import { MenuItem, ExpenseItem } from '../../data/data';
+import { SelectedMenuItemProps } from '../../types/menu';
 import { COLORS } from '../../constants';
 
-interface Props {
-  item: MenuItem | ExpenseItem;
-  quantity: number;
-  onIncrease: () => void;
-  onDecrease: () => void;
-}
 
-const SelectedMenuItem: React.FC<Props> = ({ item, quantity, onIncrease, onDecrease }) => {
-  const name = 'namaMenu' in item ? item.namaMenu : item.description;
-  const price = 'harga' in item ? item.harga : item.amount;
+const SelectedMenuItem: React.FC<SelectedMenuItemProps> = ({
+  item,
+  quantity,
+  onIncrease,
+  onDecrease,
+}) => {
+  const name = 'name' in item ? item.name : item.description;
+  const price = item.price;
   return (
     <View style={styles.menu}>
       <View style={styles.menuInfo}>

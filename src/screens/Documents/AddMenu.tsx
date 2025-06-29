@@ -5,13 +5,7 @@ import FormField from '../../components/Form/FormField';
 import DropdownField from '../../components/Form/DropDownField';
 import {formatRupiah} from '../../utils/formatIDR';
 import {insertMenu} from '../../database/menus/menuQueries';
-
-const CATEGORIES = [
-  {label: 'Makanan', value: 'food'},
-  {label: 'Minuman', value: 'drink'},
-] as const;
-type Category = (typeof CATEGORIES)[number]['value'];
-type CategoryWithEmpty = Category | '';
+import {CATEGORIES, CategoryWithEmpty} from '../../types/menu';
 
 interface FieldErrors {
   category?: string;

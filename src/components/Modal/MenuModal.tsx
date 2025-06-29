@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -10,24 +10,44 @@ import {
 import CustomText from '../../components/Text/CustomText';
 import SwitchBar from '../AddTransaction/SwitchBar';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { dummyMenus, MenuItem } from '../../data/data';
+import { MenuModalProps, CATEGORIES } from '../../types/menu';
 import { COLORS } from '../../constants/colors';
 import EmptyListMessage from '../../components/EmptyListMessage';
-
-interface MenuModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (menu: MenuItem) => void;
-}
+import {getAllMenus} from '../../database/menus/menuQueries';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../types/navigation';
 
 const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [menus, setMenus] = useState<
+  {id: number; name: string; category: string; price: number}[]
+  >([]);
+
+  useEffect(() => {
+    if (visible) {
+      const fetchData = async () => {
+        try {
+          const data = await getAllMenus();
+          setMenus(data);
+        } catch (err) {
+          console.error('Failed to load menus:', err);
+        }
+      };
+      fetchData();
+    }
+  }, [visible]);
+
   const [selectedOption, setSelectedOption] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredOptions = dummyMenus.filter((menu) => {
-    const cocokKategori = selectedOption === 'Semua' || menu.kategori === selectedOption;
-    const cocokSearch = menu.namaMenu.toLowerCase().includes(searchQuery.toLowerCase());
-    return cocokKategori && cocokSearch;
+  const switchOptions = [
+    'Semua', ...CATEGORIES.map(cat => cat.label),
+  ];
+  const labelToValue = Object.fromEntries(CATEGORIES.map(cat => [cat.label, cat.value]));
+  const filteredOptions = menus.filter((menu) => {
+    const filterCategory = selectedOption === 'Semua' || menu.category === labelToValue[selectedOption];
+    const filterSearch = menu.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return filterCategory && filterSearch;
   });
 
   return (
@@ -51,7 +71,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
           />
 
           <SwitchBar
-            options={['Semua', 'Makanan', 'Minuman']}
+            options={switchOptions}
             selected={selectedOption}
             onChange={setSelectedOption}
             size="small"
@@ -60,14 +80,8 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
           <TouchableOpacity
             style={styles.addItemContainer}
             onPress={() => {
-              // You may want to open a "Tambah Menu" modal or handle this differently.
-              // For now, we'll pass a placeholder MenuItem.
-              onSelect({
-                namaMenu: 'Tambah Menu',
-                harga: 0,
-                kategori: 'Makanan',
-              });
               onClose();
+              navigation.navigate('App', { screen: 'AddMenu' });
             }}
           >
             <View style={styles.menuInfo}>
@@ -78,26 +92,36 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
 
           <FlatList
             data={filteredOptions}
-            keyExtractor={(item) => item.namaMenu}
+            keyExtractor={(item) => item.id.toString()}
             style={styles.scrollArea}
             renderItem={({ item: menu }) => (
               <TouchableOpacity
                 style={styles.menuItemContainer}
                 onPress={() => {
-                  onSelect(menu);
+                  onSelect({
+                    id: menu.id,
+                    name: menu.name,
+                    price: menu.price,
+                    category: menu.category,
+                  });
                   onClose();
                 }}
               >
                 <View style={styles.menuInfo}>
-                  <CustomText variant="body">{menu.namaMenu}</CustomText>
+                  <CustomText variant="body">{menu.name}</CustomText>
                   <CustomText variant="caption">
-                    Rp{menu.harga.toLocaleString('id-ID')}
+                    Rp{menu.price.toLocaleString('id-ID')}
                   </CustomText>
                 </View>
                 <TouchableOpacity
                   style={styles.addButton}
                   onPress={() => {
-                    onSelect(menu);
+                    onSelect({
+                      id: menu.id,
+                      name: menu.name,
+                      price: menu.price,
+                      category: menu.category,
+                    });
                     onClose();
                   }}
                 >

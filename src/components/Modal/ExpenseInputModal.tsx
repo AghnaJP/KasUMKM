@@ -12,6 +12,7 @@ import FormField from '../Form/FormField';
 import Button from '../Button/Button';
 import CustomText from '../Text/CustomText';
 import { COLORS } from '../../constants/colors';
+import {formatRupiah} from '../../utils/formatIDR';
 
 interface Props {
   visible: boolean;
@@ -38,12 +39,14 @@ const ExpenseInputModal: React.FC<Props> = ({
   onSave,
 }) => {
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [displayAmount, setDisplayAmount] = useState('');
 
   useEffect(() => {
     if (!visible) {
       setErrors({});
     }
-  }, [visible]);
+    setDisplayAmount(amount ? `Rp ${formatRupiah(amount)}` : '');
+  }, [visible, amount]);
 
   const validate = (): boolean => {
     const newErrors: FieldErrors = {
@@ -90,8 +93,12 @@ const ExpenseInputModal: React.FC<Props> = ({
               label="Jumlah Pengeluaran (Rp)"
               placeholder="Contoh: 100000"
               keyboardType="numeric"
-              value={amount}
-              onChangeText={setAmount}
+              value={displayAmount}
+              onChangeText={text => {
+                const cleaned = text.replace(/\D/g, '');
+                setAmount(cleaned);
+                setDisplayAmount(cleaned ? `Rp ${formatRupiah(cleaned)}` : '');
+              }}
               error={errors.amount}
             />
 
