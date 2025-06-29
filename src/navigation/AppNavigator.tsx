@@ -37,6 +37,7 @@ const AppNavigator = () => {
       />
       <Tab.Screen
         name="Add"
+        options={{title: 'Tambah Transaksi'}}
         children={() => (
           <MainLayout>
             <AddScreen />

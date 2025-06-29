@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#F7F7F7',
   },
 });
 export default MainLayout;
