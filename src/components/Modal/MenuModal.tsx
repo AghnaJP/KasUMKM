@@ -113,20 +113,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
                     Rp{menu.price.toLocaleString('id-ID')}
                   </CustomText>
                 </View>
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={() => {
-                    onSelect({
-                      id: menu.id,
-                      name: menu.name,
-                      price: menu.price,
-                      category: menu.category,
-                    });
-                    onClose();
-                  }}
-                >
-                  <Icon name="add-circle" size={25} color={COLORS.darkBlue} />
-                </TouchableOpacity>
+                <Icon name="add-circle" size={25} color={COLORS.darkBlue} />
               </TouchableOpacity>
             )}
             ListEmptyComponent={<EmptyListMessage message="Menu tidak ditemukan" />}
