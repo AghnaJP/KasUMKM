@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
-import { SelectedMenuItemProps } from '../../types/menu';
-import { COLORS } from '../../constants';
-
+import {SelectedMenuItemProps} from '../../types/menu';
+import {COLORS} from '../../constants';
 
 const SelectedMenuItem: React.FC<SelectedMenuItemProps> = ({
   item,
@@ -18,11 +17,17 @@ const SelectedMenuItem: React.FC<SelectedMenuItemProps> = ({
     <View style={styles.menu}>
       <View style={styles.menuInfo}>
         <CustomText variant="body">{name}</CustomText>
-        <CustomText variant="caption">Rp{price.toLocaleString('id-ID')}</CustomText>
+        <CustomText variant="caption">
+          Rp{price.toLocaleString('id-ID')}
+        </CustomText>
       </View>
       <View style={styles.counterWrapper}>
         <TouchableOpacity onPress={onDecrease}>
-          <Icon name="remove-circle-outline" size={24} color={COLORS.darkBlue} />
+          <Icon
+            name="remove-circle-outline"
+            size={24}
+            color={COLORS.darkBlue}
+          />
         </TouchableOpacity>
         <CustomText style={styles.quantityText}>{quantity}</CustomText>
         <TouchableOpacity onPress={onIncrease}>

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, StyleSheet } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, FlatList, Text, StyleSheet} from 'react-native';
 import CustomText from '../../components/Text/CustomText';
-import { getAllExpenses } from '../../database/Expense/expenseQueries';
-import { useIsFocused } from '@react-navigation/native';
-import { ExpenseItem } from '../../types/menu';
+import {getAllExpenses} from '../../database/Expense/expenseQueries';
+import {useIsFocused} from '@react-navigation/native';
+import {ExpenseItem} from '../../types/menu';
 
 const ExpenseList = () => {
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
@@ -15,7 +15,9 @@ const ExpenseList = () => {
         try {
           const result = await getAllExpenses();
           const data = result.rows
-            ? Array.from({ length: result.rows.length }, (_, i) => result.rows.item(i))
+            ? Array.from({length: result.rows.length}, (_, i) =>
+                result.rows.item(i),
+              )
             : result;
           setExpenses(data);
         } catch (e) {
@@ -35,7 +37,7 @@ const ExpenseList = () => {
         data={expenses}
         style={styles.list}
         keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
+        renderItem={({item}) => (
           <View style={styles.itemContainer}>
             <Text>Deskripsi: {item.description}</Text>
             <Text>Jumlah: {item.quantity}</Text>

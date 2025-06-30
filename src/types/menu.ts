@@ -1,8 +1,8 @@
 export interface MenuItem {
-    id: number;
-    name: string;
-    price: number;
-    category: string;
+  id: number;
+  name: string;
+  price: number;
+  category: string;
 }
 
 export interface IncomeItem {
@@ -19,8 +19,8 @@ export interface ExpenseItem {
 }
 
 export const CATEGORIES = [
-  { label: 'Makanan', value: 'food' },
-  { label: 'Minuman', value: 'drink' },
+  {label: 'Makanan', value: 'food'},
+  {label: 'Minuman', value: 'drink'},
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number]['value'];

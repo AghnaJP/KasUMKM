@@ -1,7 +1,7 @@
-// src/screens/Add/AddExpense.tsx
 import React, {useState} from 'react';
 import {
   SafeAreaView,
+  ScrollView,
   View,
   StyleSheet,
   TouchableOpacity,
@@ -81,7 +81,7 @@ const AddExpense = () => {
 
   return (
     <SafeAreaView style={styles.wrapper}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         <DatePickerField value={selectedDate} onChange={setSelectedDate} />
 
         <View style={styles.section}>
@@ -141,7 +141,7 @@ const AddExpense = () => {
             handleSave();
           }}
         />
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -173,25 +173,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: '#fff',
     borderWidth: 0.5,
-  },
-  datePickerButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    backgroundColor: '#fff',
-    borderWidth: 0.5,
-  },
-  expenseItem: {
-    marginTop: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#FAFAFA',
   },
   divider: {
     height: 1,

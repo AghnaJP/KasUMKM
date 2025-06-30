@@ -46,9 +46,7 @@ const AddIncome = () => {
   return (
     <SafeAreaView style={styles.wrapper}>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.section}>
-          <DatePickerField value={selectedDate} onChange={setSelectedDate} />
-        </View>
+        <DatePickerField value={selectedDate} onChange={setSelectedDate} />
 
         <View style={styles.section}>
           <TouchableOpacity
@@ -126,29 +124,13 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'flex-start',
-    alignItems: 'center',
     padding: 16,
     backgroundColor: '#fff',
     borderRadius: 10,
   },
-  title: {
-    marginTop: 16,
-    marginBottom: 24,
-  },
   section: {
     width: '100%',
     marginTop: 10,
-  },
-  datePickerButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    backgroundColor: '#fff',
-    borderWidth: 0.5,
   },
   menu: {
     flexDirection: 'row',
@@ -161,19 +143,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 0.5,
   },
-  menuName: {
-    flex: 1,
+  divider: {
+    height: 1,
+    backgroundColor: '#ccc',
+    marginVertical: 8,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#ccc',
-    marginVertical: 8,
   },
 });
 

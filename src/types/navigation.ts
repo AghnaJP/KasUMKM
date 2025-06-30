@@ -1,6 +1,6 @@
 export type RootStackParamList = {
   Auth: {screen: keyof AuthStackParamList; params?: object};
-  App: { screen: string; params?: object };
+  App: {screen: string; params?: object};
 };
 
 export type AuthStackParamList = {

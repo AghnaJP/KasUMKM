@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   Modal,
   View,
@@ -10,18 +10,19 @@ import {
 import CustomText from '../../components/Text/CustomText';
 import SwitchBar from '../AddTransaction/SwitchBar';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { MenuModalProps, CATEGORIES } from '../../types/menu';
-import { COLORS } from '../../constants/colors';
+import {MenuModalProps, CATEGORIES} from '../../types/menu';
+import {COLORS} from '../../constants/colors';
 import EmptyListMessage from '../../components/EmptyListMessage';
 import {getAllMenus} from '../../database/menus/menuQueries';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../types/navigation';
+import type {RootStackParamList} from '../../types/navigation';
 
-const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+const MenuModal: React.FC<MenuModalProps> = ({visible, onClose, onSelect}) => {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [menus, setMenus] = useState<
-  {id: number; name: string; category: string; price: number}[]
+    {id: number; name: string; category: string; price: number}[]
   >([]);
 
   useEffect(() => {
@@ -40,13 +41,17 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
 
   const [selectedOption, setSelectedOption] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
-  const switchOptions = [
-    'Semua', ...CATEGORIES.map(cat => cat.label),
-  ];
-  const labelToValue = Object.fromEntries(CATEGORIES.map(cat => [cat.label, cat.value]));
-  const filteredOptions = menus.filter((menu) => {
-    const filterCategory = selectedOption === 'Semua' || menu.category === labelToValue[selectedOption];
-    const filterSearch = menu.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const switchOptions = ['Semua', ...CATEGORIES.map(cat => cat.label)];
+  const labelToValue = Object.fromEntries(
+    CATEGORIES.map(cat => [cat.label, cat.value]),
+  );
+  const filteredOptions = menus.filter(menu => {
+    const filterCategory =
+      selectedOption === 'Semua' ||
+      menu.category === labelToValue[selectedOption];
+    const filterSearch = menu.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     return filterCategory && filterSearch;
   });
 
@@ -55,9 +60,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <CustomText variant="subtitle">
-              Pilih Menu
-            </CustomText>
+            <CustomText variant="subtitle">Pilih Menu</CustomText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color={COLORS.darkBlue} />
             </TouchableOpacity>
@@ -81,9 +84,8 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
             style={styles.addItemContainer}
             onPress={() => {
               onClose();
-              navigation.navigate('App', { screen: 'AddMenu' });
-            }}
-          >
+              navigation.navigate('App', {screen: 'AddMenu'});
+            }}>
             <View style={styles.addMenu}>
               <CustomText variant="body">Tambah Menu</CustomText>
             </View>
@@ -92,9 +94,9 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
 
           <FlatList
             data={filteredOptions}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={item => item.id.toString()}
             style={styles.scrollArea}
-            renderItem={({ item: menu }) => (
+            renderItem={({item: menu}) => (
               <TouchableOpacity
                 style={styles.menuItemContainer}
                 onPress={() => {
@@ -105,8 +107,7 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
                     category: menu.category,
                   });
                   onClose();
-                }}
-              >
+                }}>
                 <View style={styles.addMenu}>
                   <CustomText variant="body">{menu.name}</CustomText>
                   <CustomText variant="caption">
@@ -116,7 +117,9 @@ const MenuModal: React.FC<MenuModalProps> = ({ visible, onClose, onSelect }) => 
                 <Icon name="add-circle" size={25} color={COLORS.darkBlue} />
               </TouchableOpacity>
             )}
-            ListEmptyComponent={<EmptyListMessage message="Menu tidak ditemukan" />}
+            ListEmptyComponent={
+              <EmptyListMessage message="Menu tidak ditemukan" />
+            }
           />
         </View>
       </View>
@@ -177,13 +180,6 @@ const styles = StyleSheet.create({
   addMenu: {
     flex: 1,
     marginRight: 8,
-  },
-  addButton: {
-    paddingLeft: 8,
-  },
-  emptyMenuContainer: {
-    padding: 16,
-    alignItems: 'center',
   },
 });
 

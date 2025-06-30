@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   Modal,
   View,
@@ -11,7 +11,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import FormField from '../Form/FormField';
 import Button from '../Button/Button';
 import CustomText from '../Text/CustomText';
-import { COLORS } from '../../constants/colors';
+import {COLORS} from '../../constants/colors';
 import {formatRupiah} from '../../utils/formatIDR';
 
 interface Props {
@@ -47,7 +47,7 @@ const ExpenseInputModal: React.FC<Props> = ({
       setDescription('');
       setAmount('');
       setDisplayAmount('');
-    } else{
+    } else {
       setDisplayAmount(amount ? `Rp ${formatRupiah(amount)}` : '');
     }
   }, [visible, amount, setAmount, setDescription]);
@@ -77,12 +77,10 @@ const ExpenseInputModal: React.FC<Props> = ({
         <View style={styles.overlay}>
           <View style={styles.modalContent}>
             <View style={styles.header}>
-                <CustomText variant="subtitle">
-                    Tambah Pengeluaran
-                </CustomText>
-                <TouchableOpacity onPress={onClose}>
-                    <Icon name="close" size={24} color={COLORS.darkBlue} />
-                </TouchableOpacity>
+              <CustomText variant="subtitle">Tambah Pengeluaran</CustomText>
+              <TouchableOpacity onPress={onClose}>
+                <Icon name="close" size={24} color={COLORS.darkBlue} />
+              </TouchableOpacity>
             </View>
 
             <FormField
@@ -123,16 +121,13 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
     marginBottom: 16,
   },
 });
