@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, SafeAreaView, View } from 'react-native';
+import {StyleSheet, SafeAreaView, View} from 'react-native';
 import IncomeList from '../../screens/Wallet/IncomeList';
 import ExpenseList from '../../screens/Wallet/ExpenseList';
 

@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import {COLORS} from '../../constants';
 
 interface SwitchBarProps {
   options: string[];
@@ -9,10 +9,15 @@ interface SwitchBarProps {
   size?: 'small';
 }
 
-const SwitchBar: React.FC<SwitchBarProps> = ({ options, selected, onChange, size }) => {
+const SwitchBar: React.FC<SwitchBarProps> = ({
+  options,
+  selected,
+  onChange,
+  size,
+}) => {
   return (
-    <View style={styles.container}>
-      {options.map((option) => (
+    <View style={[styles.container, size === 'small' && styles.containerSmall]}>
+      {options.map(option => (
         <TouchableOpacity
           key={option}
           style={[
@@ -20,13 +25,13 @@ const SwitchBar: React.FC<SwitchBarProps> = ({ options, selected, onChange, size
             size === 'small' && styles.tabSmall,
             selected === option && styles.activeTab,
           ]}
-          onPress={() => onChange(option)}
-        >
-          <Text style={[
-            styles.text,
-            size === 'small' && styles.textSmall,
-            selected === option && styles.activeText,
-          ]}>
+          onPress={() => onChange(option)}>
+          <Text
+            style={[
+              styles.text,
+              size === 'small' && styles.textSmall,
+              selected === option && styles.activeText,
+            ]}>
             {option}
           </Text>
         </TouchableOpacity>
@@ -40,7 +45,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 15,
     overflow: 'hidden',
-    marginVertical: 5,
+    marginVertical: 20,
   },
   tab: {
     flex: 1,
@@ -58,6 +63,9 @@ const styles = StyleSheet.create({
   },
   activeText: {
     color: COLORS.black,
+  },
+  containerSmall: {
+    marginVertical: 5,
   },
   tabSmall: {
     paddingVertical: 4,

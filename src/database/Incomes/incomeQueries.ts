@@ -1,11 +1,11 @@
 import db from '../db';
-import { Transaction } from 'react-native-sqlite-storage';
+import {Transaction} from 'react-native-sqlite-storage';
 
 export const insertIncome = async (
   menuId: number,
   quantity: number,
   createdAt: string,
-  updatedAt: string
+  updatedAt: string,
 ): Promise<void> => {
   const database = await db;
   return new Promise<void>((resolve, reject) => {
@@ -15,10 +15,17 @@ export const insertIncome = async (
         [menuId, quantity, createdAt, updatedAt],
         () => resolve(),
         (_, error) => {
-          console.error('SQL Insert Error:', error, menuId, quantity, createdAt, updatedAt);
+          console.error(
+            'SQL Insert Error:',
+            error,
+            menuId,
+            quantity,
+            createdAt,
+            updatedAt,
+          );
           reject(error ?? new Error('Unknown SQL error'));
           return false;
-        }
+        },
       );
     });
   });
@@ -37,9 +44,8 @@ export const getAllIncomes = async (): Promise<any> => {
         (_, error) => {
           reject(error);
           return false;
-        }
+        },
       );
     });
   });
 };
-

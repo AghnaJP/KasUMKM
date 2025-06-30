@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, StyleSheet } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, FlatList, Text, StyleSheet} from 'react-native';
 import CustomText from '../../components/Text/CustomText';
-import { getAllIncomes } from '../../database/Incomes/incomeQueries';
-import { useIsFocused } from '@react-navigation/native';
-import { IncomeItem } from '../../types/menu';
+import {getAllIncomes} from '../../database/Incomes/incomeQueries';
+import {useIsFocused} from '@react-navigation/native';
+import {IncomeItem} from '../../types/menu';
 
 const IncomeList = () => {
   const [incomes, setIncomes] = useState<IncomeItem[]>([]);
@@ -15,7 +15,9 @@ const IncomeList = () => {
         try {
           const result = await getAllIncomes();
           const data = result.rows
-            ? Array.from({ length: result.rows.length }, (_, i) => result.rows.item(i))
+            ? Array.from({length: result.rows.length}, (_, i) =>
+                result.rows.item(i),
+              )
             : result;
           setIncomes(data);
         } catch (e) {
@@ -28,38 +30,38 @@ const IncomeList = () => {
 
   return (
     <View>
-        <CustomText variant="title" style={styles.title}>
+      <CustomText variant="title" style={styles.title}>
         Daftar Pemasukan
-        </CustomText>
-        <FlatList
+      </CustomText>
+      <FlatList
         data={incomes}
         style={styles.list}
         keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-            <View style={styles.itemContainer}>
+        renderItem={({item}) => (
+          <View style={styles.itemContainer}>
             <Text>Menu ID: {item.menu_id}</Text>
             <Text>Jumlah: {item.quantity}</Text>
-            </View>
+          </View>
         )}
         ListEmptyComponent={<Text>Tidak ada pemasukan</Text>}
-        />
+      />
     </View>
-    );
-  };
+  );
+};
 
-  const styles = StyleSheet.create({
-    itemContainer: {
-        padding: 10,
-        borderBottomWidth: 1,
-        borderColor: '#ccc',
-    },
-    title: {
-        marginVertical: 12,
-    },
-    list: {
-        maxHeight: 200,
-        flexGrow: 1,
-    },
-  });
+const styles = StyleSheet.create({
+  itemContainer: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+  },
+  title: {
+    marginVertical: 12,
+  },
+  list: {
+    maxHeight: 200,
+    flexGrow: 1,
+  },
+});
 
 export default IncomeList;

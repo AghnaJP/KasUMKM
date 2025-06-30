@@ -1,12 +1,12 @@
 import db from '../db';
-import { Transaction } from 'react-native-sqlite-storage';
+import {Transaction} from 'react-native-sqlite-storage';
 
 export const insertExpense = async (
   description: string,
   price: number,
   quantity: number,
   createdAt: string,
-  updatedAt: string
+  updatedAt: string,
 ): Promise<void> => {
   const database = await db;
   return new Promise<void>((resolve, reject) => {
@@ -18,7 +18,7 @@ export const insertExpense = async (
         (_, error) => {
           reject(error);
           return false;
-        }
+        },
       );
     });
   });
@@ -37,7 +37,7 @@ export const getAllExpenses = async (): Promise<any> => {
         (_, error) => {
           reject(error);
           return false;
-        }
+        },
       );
     });
   });
