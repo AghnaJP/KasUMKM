@@ -1,61 +1,52 @@
 // src/screens/Add/AddExpense.tsx
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   SafeAreaView,
   View,
   StyleSheet,
-  Platform,
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { ExpenseItem } from '../../types/menu';
+import {ExpenseItem} from '../../types/menu';
 import CustomText from '../../components/Text/CustomText';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { COLORS } from '../../constants';
+import {COLORS} from '../../constants';
 import ExpenseInputModal from '../../components/Modal/ExpenseInputModal';
 import SelectedMenuItem from '../../components/AddTransaction/SelectedMenuItem';
 import Button from '../../components/Button/Button';
-import { insertExpense } from '../../database/Expense/expenseQueries';
+import {insertExpense} from '../../database/Expense/expenseQueries';
+import DatePickerField from '../../components/Form/DatePickerField';
 
 const AddExpense = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showPicker, setShowPicker] = useState(false);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
 
-  const onChange = (_: any, date?: Date) => {
-    setShowPicker(Platform.OS === 'ios');
-    if (date) {
-      setSelectedDate(date);
-    }
-  };
-
   const handleSave = () => {
-    const existing = expenses.find(exp => exp.description === description.trim());
+    const existing = expenses.find(
+      exp => exp.description === description.trim(),
+    );
 
     if (existing) {
-        // Jika deskripsi sudah ada, tambahkan quantity
-        setExpenses(prev =>
+      setExpenses(prev =>
         prev.map(exp =>
-            exp.description === description.trim()
-            ? { ...exp, quantity: exp.quantity + 1 }
-            : exp
-        )
-        );
+          exp.description === description.trim()
+            ? {...exp, quantity: exp.quantity + 1}
+            : exp,
+        ),
+      );
     } else {
-        // Jika deskripsi belum ada, tambahkan item baru
-        setExpenses(prev => [
+      setExpenses(prev => [
         ...prev,
         {
-            id: prev.length > 0 ? prev[prev.length - 1].id + 1 : 1,
-            description: description.trim(),
-            price: Number(amount),
-            quantity: 1,
+          id: prev.length > 0 ? prev[prev.length - 1].id + 1 : 1,
+          description: description.trim(),
+          price: Number(amount),
+          quantity: 1,
         },
-        ]);
+      ]);
     }
 
     setDescription('');
@@ -63,100 +54,92 @@ const AddExpense = () => {
     setShowFormModal(false);
   };
 
-    const handleSubmit = async () => {
-      try {
-        const now = new Date().toISOString();
-        for (const item of expenses) {
-          await insertExpense(item.description, item.price, item.quantity, now, now);
-        }
-        Alert.alert('Berhasil', 'Pengeluaran berhasil disimpan');
-        setExpenses([]);
-      } catch (e) {
-        console.error('Insert expense error:', e);
-        Alert.alert('Error', 'Gagal menyimpan pengeluaran');
+  const handleSubmit = async () => {
+    try {
+      const now = new Date().toISOString();
+      for (const item of expenses) {
+        await insertExpense(
+          item.description,
+          item.price,
+          item.quantity,
+          now,
+          now,
+        );
       }
-    };
+      Alert.alert('Berhasil', 'Pengeluaran berhasil disimpan');
+      setExpenses([]);
+    } catch (e) {
+      console.error('Insert expense error:', e);
+      Alert.alert('Error', 'Gagal menyimpan pengeluaran');
+    }
+  };
 
   const totalPrice = expenses.reduce(
-        (acc, curr) => acc + curr.price * curr.quantity,
-        0
+    (acc, curr) => acc + curr.price * curr.quantity,
+    0,
   );
 
   return (
     <SafeAreaView style={styles.wrapper}>
       <View style={styles.container}>
-        <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.datePickerButton}>
-          {/* Tanggal */}
-          <CustomText>
-            {selectedDate.toLocaleDateString('id-ID', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </CustomText>
-          <Icon name="calendar" size={20} color={COLORS.darkBlue} />
-        </TouchableOpacity>
-        {showPicker && (
-          <DateTimePicker value={selectedDate} mode="date" display="default" onChange={onChange} />
-        )}
+        <DatePickerField value={selectedDate} onChange={setSelectedDate} />
 
-        {/* Masukkan Pengeluaran */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.expense} onPress={() => setShowFormModal(true)}>
+          <TouchableOpacity
+            style={styles.expense}
+            onPress={() => setShowFormModal(true)}>
             <CustomText>Masukkan Pengeluaran</CustomText>
             <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
           </TouchableOpacity>
         </View>
 
-        {/* List Data Pengeluaran */}
         {expenses.map((item, index) => (
-            <SelectedMenuItem
-                key={item.id}
-                item={item}
-                quantity={item.quantity}
-                onIncrease={() =>
-                setExpenses(prev =>
-                    prev.map((exp, i) =>
-                    i === index ? { ...exp, quantity: exp.quantity + 1 } : exp
-                    )
-                )
-                }
-                onDecrease={() =>
-                setExpenses(prev =>
-                    prev
-                    .map((exp, i) =>
-                        i === index ? { ...exp, quantity: exp.quantity - 1 } : exp
-                    )
-                    .filter(exp => exp.quantity > 0)
-                )
-                }
-            />
+          <SelectedMenuItem
+            key={item.id}
+            item={item}
+            quantity={item.quantity}
+            onIncrease={() =>
+              setExpenses(prev =>
+                prev.map((exp, i) =>
+                  i === index ? {...exp, quantity: exp.quantity + 1} : exp,
+                ),
+              )
+            }
+            onDecrease={() =>
+              setExpenses(prev =>
+                prev
+                  .map((exp, i) =>
+                    i === index ? {...exp, quantity: exp.quantity - 1} : exp,
+                  )
+                  .filter(exp => exp.quantity > 0),
+              )
+            }
+          />
         ))}
 
-        {/* Total */}
         {expenses.length > 0 && (
           <View style={styles.section}>
             <View style={styles.divider} />
             <View style={styles.totalRow}>
               <CustomText variant="subtitle">Total Harga</CustomText>
-              <CustomText variant="body">Rp{totalPrice.toLocaleString('id-ID')}</CustomText>
+              <CustomText variant="body">
+                Rp{totalPrice.toLocaleString('id-ID')}
+              </CustomText>
             </View>
             <Button variant="primary" title="Simpan" onPress={handleSubmit} />
           </View>
         )}
 
-        {/* Modal Form Pengeluaran */}
         <ExpenseInputModal
-            visible={showFormModal}
-            onClose={() => setShowFormModal(false)}
-            description={description}
-            setDescription={setDescription}
-            amount={amount}
-            setAmount={setAmount}
-            onSave={() => {
-                handleSave();
-            }}
+          visible={showFormModal}
+          onClose={() => setShowFormModal(false)}
+          description={description}
+          setDescription={setDescription}
+          amount={amount}
+          setAmount={setAmount}
+          onSave={() => {
+            handleSave();
+          }}
         />
       </View>
     </SafeAreaView>
@@ -190,7 +173,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: '#fff',
     borderWidth: 0.5,
- },
+  },
   datePickerButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
