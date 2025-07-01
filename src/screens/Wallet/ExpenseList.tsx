@@ -1,68 +1,79 @@
-import React, {useEffect, useState} from 'react';
-import {View, FlatList, Text, StyleSheet} from 'react-native';
-import CustomText from '../../components/Text/CustomText';
-import {getAllExpenses} from '../../database/Expense/expenseQueries';
-import {useIsFocused} from '@react-navigation/native';
-import {ExpenseItem} from '../../types/menu';
+// File: src/screens/Wallet/ExpenseList.tsx
 
-const ExpenseList = () => {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+import React, { useEffect, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
+// Ganti import ini ke service/query untuk pengeluaran
+import { ExpenseQueries, ExpenseData } from '../../database/Expense/expenseDBList'; 
+import TransactionList from '../../components/TransactionList/TransactionList';
+
+// Ganti nama interface agar sesuai
+interface Props {
+  selectedMonth: string;
+  selectedYear: string;
+  selectedIds: number[];
+  onToggleCheckbox: (id: number) => void;
+  refreshKey: number;
+  onDataLoaded: (data: ExpenseData[]) => void;
+}
+
+const ExpenseList = ({
+  selectedMonth,
+  selectedYear,
+  selectedIds,
+  onToggleCheckbox,
+  refreshKey,
+  onDataLoaded,
+}: Props) => {
+  // Ganti nama state agar sesuai
+  const [expenses, setExpenses] = useState<ExpenseData[]>([]);
   const isFocused = useIsFocused();
+
+  const monthToNumber = (month: string): string => {
+    const index = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    ].indexOf(month);
+    return (index + 1).toString().padStart(2, '0');
+  };
 
   useEffect(() => {
     if (isFocused) {
       const fetchData = async () => {
         try {
-          const result = await getAllExpenses();
-          const data = result.rows
-            ? Array.from({length: result.rows.length}, (_, i) =>
-                result.rows.item(i),
-              )
-            : result;
-          setExpenses(data);
+          // Ganti panggilan ini ke fungsi untuk mengambil data pengeluaran
+          const result = await ExpenseQueries.getExpenseDetails();
+          const filtered = result.filter((item: ExpenseData) => {
+            const date = new Date(item.date);
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear().toString();
+            return (
+              month === monthToNumber(selectedMonth) &&
+              year === selectedYear
+            );
+          });
+
+          setExpenses(filtered);
+          onDataLoaded(filtered);
         } catch (e) {
-          console.error('Gagal mengambil data pengeluaran:', e);
+          console.error('Gagal ambil data pengeluaran:', e);
         }
       };
       fetchData();
     }
-  }, [isFocused]);
+  }, [isFocused, selectedMonth, selectedYear, refreshKey]);
+  
+  // Hitung total pengeluaran
+  const totalExpense = expenses.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <View>
-      <CustomText variant="title" style={styles.title}>
-        Daftar Pengeluaran
-      </CustomText>
-      <FlatList
-        data={expenses}
-        style={styles.list}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({item}) => (
-          <View style={styles.itemContainer}>
-            <Text>Deskripsi: {item.description}</Text>
-            <Text>Jumlah: {item.quantity}</Text>
-            <Text>Harga: {item.price}</Text>
-          </View>
-        )}
-        ListEmptyComponent={<Text>Tidak ada pengeluaran</Text>}
-      />
-    </View>
+    <TransactionList
+      data={expenses}
+      selectedIds={selectedIds}
+      onToggleCheckbox={onToggleCheckbox}
+      totalAmount={totalExpense}
+      totalLabel="Total Pengeluaran" // Tambahkan label custom
+    />
   );
 };
-
-const styles = StyleSheet.create({
-  itemContainer: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-  },
-  title: {
-    marginVertical: 12,
-  },
-  list: {
-    maxHeight: 200,
-    flexGrow: 1,
-  },
-});
 
 export default ExpenseList;

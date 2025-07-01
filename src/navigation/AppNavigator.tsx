@@ -2,7 +2,7 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/Home/HomeScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
-import WalletScreen from '../screens/Wallet/WalletScreen';
+import TransactionListScreen from '../screens/Wallet/TransactionListScreen';
 import DocumentsScreen from '../screens/Documents/DocumentsScreen';
 import AddScreen from '../screens/Add/AddScreen';
 import MainLayout from '../components/MainLayout';
@@ -29,9 +29,10 @@ const AppNavigator = () => {
       />
       <Tab.Screen
         name="Wallet"
+        options={{title: 'Transaksi Keuangan'}}
         children={() => (
           <MainLayout>
-            <WalletScreen />
+            <TransactionListScreen />
           </MainLayout>
         )}
       />
