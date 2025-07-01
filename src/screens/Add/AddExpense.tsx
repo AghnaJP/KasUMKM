@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -16,13 +16,21 @@ import SelectedMenuItem from '../../components/AddTransaction/SelectedMenuItem';
 import Button from '../../components/Button/Button';
 import {insertExpense} from '../../database/Expense/expenseQueries';
 import DatePickerField from '../../components/Form/DatePickerField';
+import {useIsFocused} from '@react-navigation/native';
 
 const AddExpense = () => {
   const [showFormModal, setShowFormModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      setSelectedDate(new Date());
+    }
+  }, [isFocused]);
 
   const handleSave = () => {
     const existing = expenses.find(
@@ -56,7 +64,7 @@ const AddExpense = () => {
 
   const handleSubmit = async () => {
     try {
-      const now = new Date().toISOString();
+      const now = selectedDate.toISOString();
       for (const item of expenses) {
         await insertExpense(
           item.description,

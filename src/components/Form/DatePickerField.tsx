@@ -39,6 +39,7 @@ const DatePickerField: React.FC<Props> = ({value, onChange}) => {
           mode="date"
           display="default"
           onChange={handleChange}
+          maximumDate={new Date()}
         />
       )}
     </View>

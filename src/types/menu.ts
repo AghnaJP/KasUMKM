@@ -9,6 +9,7 @@ export interface IncomeItem {
   id: number;
   menu_id: number;
   quantity: number;
+  created_at: string;
 }
 
 export interface ExpenseItem {

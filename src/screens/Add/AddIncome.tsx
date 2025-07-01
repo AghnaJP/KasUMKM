@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -16,6 +16,7 @@ import Button from '../../components/Button/Button';
 import SelectedMenuItem from '../../components/AddTransaction/SelectedMenuItem';
 import {insertIncome} from '../../database/Incomes/incomeQueries';
 import DatePickerField from '../../components/Form/DatePickerField';
+import {useIsFocused} from '@react-navigation/native';
 
 const AddIncome = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -29,9 +30,17 @@ const AddIncome = () => {
     0,
   );
 
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      setSelectedDate(new Date());
+    }
+  }, [isFocused]);
+
   const handleSubmit = async () => {
     try {
-      const now = new Date().toISOString();
+      const now = selectedDate.toISOString();
       for (const {item, quantity} of selectedMenus) {
         await insertIncome(item.id, quantity, now, now);
         Alert.alert('Berhasil', 'Menu berhasil disimpan');
