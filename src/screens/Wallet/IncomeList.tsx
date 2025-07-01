@@ -41,6 +41,7 @@ const IncomeList = () => {
           <View style={styles.itemContainer}>
             <Text>Menu ID: {item.menu_id}</Text>
             <Text>Jumlah: {item.quantity}</Text>
+            <Text>Tanggal: {new Date(item.created_at).toLocaleDateString()}</Text>
           </View>
         )}
         ListEmptyComponent={<Text>Tidak ada pemasukan</Text>}
