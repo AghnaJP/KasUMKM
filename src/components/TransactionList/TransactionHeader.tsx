@@ -1,9 +1,6 @@
-// File: src/components/TransactionList/TransactionHeader.tsx
-
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import CustomText from '../Text/CustomText'; // Untuk judul
-import Button from '../Button/Button';       // Komponen Button Anda
+import Button from '../Button/Button';       
 
 interface TransactionHeaderProps {
   onDeletePress: () => void;

@@ -41,7 +41,6 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
         style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            {/* Menggunakan CustomText untuk judul */}
             <CustomText variant="subtitle">Ubah Transaksi</CustomText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#333" />
@@ -49,7 +48,6 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
           </View>
 
           <View style={styles.form}>
-            {/* Menggunakan CustomText untuk label */}
             <CustomText style={styles.label}>Nama Transaksi</CustomText>
             <TextInput
               style={styles.input}
@@ -68,7 +66,6 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
             />
           </View>
 
-          {/* Menggunakan komponen Button custom untuk tombol Simpan */}
           <Button
             title="Simpan"
             onPress={handleSave}
@@ -113,11 +110,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    fontFamily: 'Montserrat-Regular', // Asumsi font ini ada
+    fontFamily: 'Montserrat-Regular', 
     marginBottom: 16,
   },
-  // Style untuk saveButton dan saveButtonText tidak lagi diperlukan
-  // karena sudah di-handle oleh komponen Button
 });
 
 export default EditTransactionModal;

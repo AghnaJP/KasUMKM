@@ -34,8 +34,7 @@ const TransactionList = ({ data, selectedIds, onToggleCheckbox, totalAmount, tot
 
     if (isSameDay(date, today)) return 'Hari ini';
     if (isSameDay(date, yesterday)) return 'Kemarin';
-
-    // PERUBAHAN DI SINI: Tampilkan tanggal, bulan, dan tahun lengkap
+    
     return new Date(inputDate).toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',

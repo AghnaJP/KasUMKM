@@ -42,7 +42,6 @@ const getExpenseDetails = async (): Promise<ExpenseData[]> => {
   });
 };
 
-// FUNGSI BARU: Menghapus pengeluaran berdasarkan ID
 const deleteExpensesByIds = async (ids: number[]): Promise<void> => {
   if (ids.length === 0) {
     return Promise.resolve();

@@ -1,12 +1,8 @@
-// File: src/screens/Wallet/ExpenseList.tsx
-
 import React, { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
-// Ganti import ini ke service/query untuk pengeluaran
 import { ExpenseQueries, ExpenseData } from '../../database/Expense/expenseDBList'; 
 import TransactionList from '../../components/TransactionList/TransactionList';
 
-// Ganti nama interface agar sesuai
 interface Props {
   selectedMonth: string;
   selectedYear: string;
@@ -24,7 +20,6 @@ const ExpenseList = ({
   refreshKey,
   onDataLoaded,
 }: Props) => {
-  // Ganti nama state agar sesuai
   const [expenses, setExpenses] = useState<ExpenseData[]>([]);
   const isFocused = useIsFocused();
 
@@ -40,7 +35,6 @@ const ExpenseList = ({
     if (isFocused) {
       const fetchData = async () => {
         try {
-          // Ganti panggilan ini ke fungsi untuk mengambil data pengeluaran
           const result = await ExpenseQueries.getExpenseDetails();
           const filtered = result.filter((item: ExpenseData) => {
             const date = new Date(item.date);
@@ -62,7 +56,6 @@ const ExpenseList = ({
     }
   }, [isFocused, selectedMonth, selectedYear, refreshKey]);
   
-  // Hitung total pengeluaran
   const totalExpense = expenses.reduce((sum, item) => sum + item.amount, 0);
 
   return (
@@ -71,7 +64,7 @@ const ExpenseList = ({
       selectedIds={selectedIds}
       onToggleCheckbox={onToggleCheckbox}
       totalAmount={totalExpense}
-      totalLabel="Total Pengeluaran" // Tambahkan label custom
+      totalLabel="Total Pengeluaran"
     />
   );
 };

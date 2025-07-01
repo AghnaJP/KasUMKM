@@ -5,8 +5,7 @@ import CustomText from '../Text/CustomText';
 import IncomeList from '../../screens/Wallet/IncomeList';
 import ExpenseList from '../../screens/Wallet/ExpenseList';
 import { IncomeData } from '../../database/Incomes/incomeDBList';
-import { ExpenseData } from '../../database/Expense/expenseDBList'; // Pastikan path ini benar
-
+import { ExpenseData } from '../../database/Expense/expenseDBList'; 
 
 const getCurrentDateInfo = () => {
   const months = [
