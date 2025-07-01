@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Text, Alert } from 'react-native';
+import { Modal, View, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import CustomText from '../Text/CustomText';
+import Button from '../Button/Button';
 
 interface EditTransactionModalProps {
   visible: boolean;
@@ -22,7 +24,6 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
 
   const handleSave = () => {
     if (!name || !price) {
-      // 2. Gunakan Alert.alert, bukan alert()
       Alert.alert('Peringatan', 'Nama dan Harga tidak boleh kosong.');
       return;
     }
@@ -40,15 +41,16 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
         style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            {/* 3. Semua teks dibungkus <Text> */}
-            <Text style={styles.title}>Ubah Transaksi</Text>
+            {/* Menggunakan CustomText untuk judul */}
+            <CustomText variant="subtitle">Ubah Transaksi</CustomText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.form}>
-            <Text style={styles.label}>Nama Transaksi</Text>
+            {/* Menggunakan CustomText untuk label */}
+            <CustomText style={styles.label}>Nama Transaksi</CustomText>
             <TextInput
               style={styles.input}
               value={name}
@@ -56,7 +58,7 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
               placeholder="cth: Nasi Goreng"
             />
 
-            <Text style={styles.label}>Harga Transaksi</Text>
+            <CustomText style={styles.label}>Harga Transaksi</CustomText>
             <TextInput
               style={styles.input}
               value={price}
@@ -66,9 +68,12 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
             />
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Simpan</Text>
-          </TouchableOpacity>
+          {/* Menggunakan komponen Button custom untuk tombol Simpan */}
+          <Button
+            title="Simpan"
+            onPress={handleSave}
+            variant="primary"
+          />
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -94,19 +99,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  title: {
-    fontSize: 18,
-    fontFamily: 'Montserrat-SemiBold', // Pastikan font ini ada di projectmu
-    color: '#0E3345',
-  },
   form: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   label: {
-    fontSize: 14,
-    color: '#555',
     marginBottom: 6,
-    fontFamily: 'Montserrat-Regular',
+    color: '#555',
   },
   input: {
     borderWidth: 1,
@@ -115,19 +113,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Montserrat-Regular', // Asumsi font ini ada
+    marginBottom: 16,
   },
-  saveButton: {
-    backgroundColor: '#375A93',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontFamily: 'Montserrat-SemiBold',
-  },
+  // Style untuk saveButton dan saveButtonText tidak lagi diperlukan
+  // karena sudah di-handle oleh komponen Button
 });
 
 export default EditTransactionModal;

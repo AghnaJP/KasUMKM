@@ -5,7 +5,19 @@ import CustomText from '../Text/CustomText';
 import IncomeList from '../../screens/Wallet/IncomeList';
 import ExpenseList from '../../screens/Wallet/ExpenseList';
 import { IncomeData } from '../../database/Incomes/incomeDBList';
-import { ExpenseData } from '../../database//Expense/expenseDBList';
+import { ExpenseData } from '../../database/Expense/expenseDBList'; // Pastikan path ini benar
+
+
+const getCurrentDateInfo = () => {
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const today = new Date();
+  const currentMonthName = months[today.getMonth()];
+  const currentYear = today.getFullYear().toString();
+  return { currentMonthName, currentYear };
+};
 
 interface TransactionSwitcherProps {
   activeTab: 'income' | 'expense';
@@ -17,9 +29,10 @@ interface TransactionSwitcherProps {
 }
 
 const TransactionSwitcher = ({ activeTab, onTabChange, selectedIds, onToggleCheckbox, refreshKey, onDataLoaded }: TransactionSwitcherProps) => {
-  const [selectedMonth, setSelectedMonth] = useState('Juli');
-  const [selectedYear, setSelectedYear] = useState('2025');
- 
+  const { currentMonthName, currentYear } = getCurrentDateInfo(); 
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthName);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
   return (
     <View style={styles.card}>
       <View style={styles.tabRow}>

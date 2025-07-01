@@ -19,7 +19,6 @@ interface TransactionListProps {
   totalLabel?: string;
 }
 
-// PERUBAHAN DI SINI: tambahkan 'totalLabel'
 const TransactionList = ({ data, selectedIds, onToggleCheckbox, totalAmount, totalLabel = "Total" }: TransactionListProps) => {
 
   const formatRelativeDate = (inputDate: string): string => {
@@ -36,7 +35,12 @@ const TransactionList = ({ data, selectedIds, onToggleCheckbox, totalAmount, tot
     if (isSameDay(date, today)) return 'Hari ini';
     if (isSameDay(date, yesterday)) return 'Kemarin';
 
-    return date.toLocaleDateString('id-ID', {month: 'long'});
+    // PERUBAHAN DI SINI: Tampilkan tanggal, bulan, dan tahun lengkap
+    return new Date(inputDate).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   };
   
   const renderFooter = () => {
@@ -46,7 +50,6 @@ const TransactionList = ({ data, selectedIds, onToggleCheckbox, totalAmount, tot
 
     return (
       <View style={styles.footerContainer}>
-        {/* 'totalLabel' sekarang akan menampilkan teks yang benar */}
         <CustomText style={styles.footerText}>{totalLabel}</CustomText> 
         <CustomText style={styles.footerAmount}>
           {totalAmount.toLocaleString('id-ID', {
