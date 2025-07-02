@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import Button from '../Button/Button';       
+import {View, StyleSheet} from 'react-native';
+import Button from '../Button/Button';
 
 interface TransactionHeaderProps {
   onDeletePress: () => void;
@@ -8,10 +8,13 @@ interface TransactionHeaderProps {
   selectionCount: number;
 }
 
-const TransactionHeader = ({ onDeletePress, onEditPress, selectionCount }: TransactionHeaderProps) => {
+const TransactionHeader = ({
+  onDeletePress,
+  onEditPress,
+  selectionCount,
+}: TransactionHeaderProps) => {
   return (
     <View style={styles.container}>
-
       {selectionCount > 0 && (
         <View style={styles.buttonRow}>
           <Button

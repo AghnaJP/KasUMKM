@@ -1,5 +1,5 @@
-import React from 'react';
-import {View, FlatList, StyleSheet} from 'react-native';
+import React, {useCallback} from 'react';
+import {View, FlatList, StyleSheet, Text} from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import CustomText from '../Text/CustomText';
 
@@ -19,47 +19,96 @@ interface TransactionListProps {
   totalLabel?: string;
 }
 
-const TransactionList = ({ data, selectedIds, onToggleCheckbox, totalAmount, totalLabel = "Total" }: TransactionListProps) => {
+const formatRelativeDate = (inputDate: string): string => {
+  const date = new Date(inputDate);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
 
-  const formatRelativeDate = (inputDate: string): string => {
-    const date = new Date(inputDate);
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
+  const isSameDay = (d1: Date, d2: Date) =>
+    d1.getDate() === d2.getDate() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getFullYear() === d2.getFullYear();
 
-    const isSameDay = (d1: Date, d2: Date) =>
-      d1.getDate() === d2.getDate() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getFullYear() === d2.getFullYear();
+  if (isSameDay(date, today)) {
+    return 'Hari ini';
+  }
+  if (isSameDay(date, yesterday)) {
+    return 'Kemarin';
+  }
 
-    if (isSameDay(date, today)) return 'Hari ini';
-    if (isSameDay(date, yesterday)) return 'Kemarin';
-    
-    return new Date(inputDate).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
-  
-  const renderFooter = () => {
+  return new Date(inputDate).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+const TransactionList = ({
+  data,
+  selectedIds,
+  onToggleCheckbox,
+  totalAmount,
+  totalLabel = 'Total',
+}: TransactionListProps) => {
+  // UPDATE: renderFooter dibungkus dengan useCallback
+  // Ini memastikan fungsi tidak dibuat ulang kecuali jika dependensinya berubah.
+  const renderFooter = useCallback(() => {
     if (!data || data.length === 0 || totalAmount === undefined) {
       return null;
     }
 
+    const formattedTotal = totalAmount.toLocaleString('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    });
+
     return (
       <View style={styles.footerContainer}>
-        <CustomText style={styles.footerText}>{totalLabel}</CustomText> 
-        <CustomText style={styles.footerAmount}>
-          {totalAmount.toLocaleString('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-          })}
-        </CustomText>
+        <CustomText style={styles.footerText}>{totalLabel}</CustomText>
+        <CustomText style={styles.footerAmount}>{formattedTotal}</CustomText>
       </View>
     );
-  };
+  }, [data, totalAmount, totalLabel]);
+
+  const renderItem = useCallback(
+    ({item}: {item: TransactionItem}) => {
+      const isSelected = selectedIds.includes(item.id);
+      const formattedAmount = item.amount.toLocaleString('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+      });
+
+      return (
+        <View style={styles.itemContainer}>
+          <CheckBox
+            value={isSelected}
+            onValueChange={() => onToggleCheckbox(item.id)}
+            tintColors={{true: '#0E3345', false: '#ccc'}}
+          />
+          <View style={styles.textContainer}>
+            <CustomText style={styles.title}>{item.description}</CustomText>
+            <CustomText style={styles.subtitle}>
+              {formatRelativeDate(item.date)}
+            </CustomText>
+          </View>
+          <CustomText style={styles.amount}>{formattedAmount}</CustomText>
+        </View>
+      );
+    },
+    [selectedIds, onToggleCheckbox],
+  );
+
+  const renderEmptyComponent = useCallback(
+    () => (
+      <CustomText style={styles.empty}>
+        <Text>Tidak ada transaksi</Text>
+      </CustomText>
+    ),
+    [],
+  );
 
   return (
     <View style={styles.container}>
@@ -68,34 +117,8 @@ const TransactionList = ({ data, selectedIds, onToggleCheckbox, totalAmount, tot
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.listContent}
         style={styles.list}
-        renderItem={({item}) => {
-          const isSelected = selectedIds.includes(item.id);
-          return (
-            <View style={styles.itemContainer}>
-              <CheckBox
-                value={isSelected}
-                onValueChange={() => onToggleCheckbox(item.id)}
-                tintColors={{true: '#0E3345', false: '#ccc'}}
-              />
-              <View style={styles.textContainer}>
-                <CustomText style={styles.title}>{item.description}</CustomText>
-                <CustomText style={styles.subtitle}>
-                  {formatRelativeDate(item.date)}
-                </CustomText>
-              </View>
-              <CustomText style={styles.amount}>
-                {item.amount.toLocaleString('id-ID', {
-                  style: 'currency',
-                  currency: 'IDR',
-                  minimumFractionDigits: 0,
-                })}
-              </CustomText>
-            </View>
-          );
-        }}
-        ListEmptyComponent={
-          <CustomText style={styles.empty}>Tidak ada transaksi</CustomText>
-        }
+        renderItem={renderItem}
+        ListEmptyComponent={renderEmptyComponent}
         ListFooterComponent={renderFooter}
       />
     </View>

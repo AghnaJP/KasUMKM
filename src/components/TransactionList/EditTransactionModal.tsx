@@ -1,17 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  Modal,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
+import {Text} from 'react-native-gesture-handler';
 
 interface EditTransactionModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (updatedData: { name: string; price: string }) => void;
-  transactionData: { name: string; price: number } | null;
+  onSave: (updatedData: {name: string; price: string}) => void;
+  transactionData: {name: string; price: number} | null;
 }
 
-const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: EditTransactionModalProps) => {
+const EditTransactionModal = ({
+  visible,
+  onClose,
+  onSave,
+  transactionData,
+}: EditTransactionModalProps) => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
 
@@ -27,7 +42,7 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
       Alert.alert('Peringatan', 'Nama dan Harga tidak boleh kosong.');
       return;
     }
-    onSave({ name, price });
+    onSave({name, price});
   };
 
   return (
@@ -41,14 +56,18 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
         style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <CustomText variant="subtitle">Ubah Transaksi</CustomText>
+            <CustomText variant="subtitle">
+              <Text>Ubah Transaksi</Text>
+            </CustomText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.form}>
-            <CustomText style={styles.label}>Nama Transaksi</CustomText>
+            <CustomText style={styles.label}>
+              <Text>Nama Transaksi</Text>
+            </CustomText>
             <TextInput
               style={styles.input}
               value={name}
@@ -56,7 +75,9 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
               placeholder="cth: Nasi Goreng"
             />
 
-            <CustomText style={styles.label}>Harga Transaksi</CustomText>
+            <CustomText style={styles.label}>
+              <Text>Harga Transaksi</Text>
+            </CustomText>
             <TextInput
               style={styles.input}
               value={price}
@@ -66,11 +87,7 @@ const EditTransactionModal = ({ visible, onClose, onSave, transactionData }: Edi
             />
           </View>
 
-          <Button
-            title="Simpan"
-            onPress={handleSave}
-            variant="primary"
-          />
+          <Button title="Simpan" onPress={handleSave} variant="primary" />
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -110,7 +127,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    fontFamily: 'Montserrat-Regular', 
+    fontFamily: 'Montserrat-Regular',
     marginBottom: 16,
   },
 });
