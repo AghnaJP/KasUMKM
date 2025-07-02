@@ -1,11 +1,11 @@
 import db from '../db';
-import { SQLiteDatabase } from 'react-native-sqlite-storage';
+import {SQLiteDatabase} from 'react-native-sqlite-storage';
 
 export interface ExpenseData {
   id: number;
   description: string;
   amount: number;
-  price: number; 
+  price: number;
   date: string;
 }
 
@@ -42,7 +42,6 @@ const getExpenseDetails = async (): Promise<ExpenseData[]> => {
   });
 };
 
-// FUNGSI BARU: Menghapus pengeluaran berdasarkan ID
 const deleteExpensesByIds = async (ids: number[]): Promise<void> => {
   if (ids.length === 0) {
     return Promise.resolve();
@@ -52,23 +51,38 @@ const deleteExpensesByIds = async (ids: number[]): Promise<void> => {
     database.transaction(tx => {
       const placeholders = ids.map(() => '?').join(', ');
       const query = `DELETE FROM expenses WHERE id IN (${placeholders})`;
-      tx.executeSql(query, ids, () => resolve(), (_, error) => {
-        reject(error);
-        return false;
-      });
+      tx.executeSql(
+        query,
+        ids,
+        () => resolve(),
+        (_, error) => {
+          reject(error);
+          return false;
+        },
+      );
     });
   });
 };
 
-const updateExpenseDetails = async (id: number, newDescription: string, newPrice: number): Promise<void> => {
+const updateExpenseDetails = async (
+  id: number,
+  newDescription: string,
+  newPrice: number,
+): Promise<void> => {
   const database: SQLiteDatabase = await db;
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
-      const query = "UPDATE expenses SET description = ?, price = ? WHERE id = ?";
-      tx.executeSql(query, [newDescription, newPrice, id], () => resolve(), (_, error) => {
-        reject(error);
-        return false;
-      });
+      const query =
+        'UPDATE expenses SET description = ?, price = ? WHERE id = ?';
+      tx.executeSql(
+        query,
+        [newDescription, newPrice, id],
+        () => resolve(),
+        (_, error) => {
+          reject(error);
+          return false;
+        },
+      );
     });
   });
 };

@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {View, StyleSheet} from 'react-native';
+import Button from '../Button/Button';
 
 interface TransactionHeaderProps {
   onDeletePress: () => void;
@@ -8,22 +8,31 @@ interface TransactionHeaderProps {
   selectionCount: number;
 }
 
-const TransactionHeader = ({ onDeletePress, onEditPress, selectionCount }: TransactionHeaderProps) => {
-  const navigation = useNavigation();
-
+const TransactionHeader = ({
+  onDeletePress,
+  onEditPress,
+  selectionCount,
+}: TransactionHeaderProps) => {
   return (
     <View style={styles.container}>
-      
       {selectionCount > 0 && (
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.button} onPress={onDeletePress}>
-            <Text style={styles.buttonText}>Hapus Transaksi</Text>
-          </TouchableOpacity>
+          <Button
+            title="Hapus Transaksi"
+            onPress={onDeletePress}
+            variant="primary"
+            fullWidth={false}
+            customStyle={styles.button}
+          />
 
           {selectionCount === 1 && (
-            <TouchableOpacity style={styles.button} onPress={onEditPress}>
-              <Text style={styles.buttonText}>Ubah Transaksi</Text>
-            </TouchableOpacity>
+            <Button
+              title="Ubah Transaksi"
+              onPress={onEditPress}
+              variant="primary"
+              fullWidth={false}
+              customStyle={styles.button}
+            />
           )}
         </View>
       )}
@@ -37,16 +46,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
-  topRow: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    position: 'relative',
-  },
-  backButton: {
-    position: 'absolute',
-    left: 0,
-    padding: 4,
+  title: {
+    marginBottom: 16,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -54,15 +55,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   button: {
-    backgroundColor: '#375A93',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-  },
-  buttonText: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 14,
-    color: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginVertical: 0,
   },
 });
 

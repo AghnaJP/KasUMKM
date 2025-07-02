@@ -1,11 +1,35 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import React, {useState, useCallback, useEffect} from 'react';
+import {View, StyleSheet, TouchableOpacity, Text} from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import { Dropdown } from 'react-native-element-dropdown';
 import CustomText from '../Text/CustomText';
 import IncomeList from '../../screens/Wallet/IncomeList';
 import ExpenseList from '../../screens/Wallet/ExpenseList';
-import { IncomeData } from '../../database/Incomes/incomeDBList';
-import { ExpenseData } from '../../database//Expense/expenseDBList';
+import { IncomeListService, IncomeData } from '../../database/Incomes/incomeDBList';
+import { ExpenseQueries, ExpenseData } from '../../database/Expense/expenseDBList';
+
+
+const getCurrentDateInfo = () => {
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ];
+  const today = new Date();
+  const currentMonthName = months[today.getMonth()];
+  const currentYear = today.getFullYear();
+  return {currentMonthName, currentYear: currentYear};
+};
+
+const monthData = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+].map(month => ({ label: month, value: month }));
+
+
+interface DropdownItem {
+  label: string;
+  value: string;
+}
 
 interface TransactionSwitcherProps {
   activeTab: 'income' | 'expense';
@@ -16,91 +40,151 @@ interface TransactionSwitcherProps {
   onDataLoaded: (data: (IncomeData | ExpenseData)[]) => void;
 }
 
-const TransactionSwitcher = ({ activeTab, onTabChange, selectedIds, onToggleCheckbox, refreshKey, onDataLoaded }: TransactionSwitcherProps) => {
-  const [selectedMonth, setSelectedMonth] = useState('Juli');
-  const [selectedYear, setSelectedYear] = useState('2025');
- 
+const TransactionSwitcher = ({
+  activeTab,
+  onTabChange,
+  selectedIds,
+  onToggleCheckbox,
+  refreshKey,
+  onDataLoaded,
+}: TransactionSwitcherProps) => {
+  const {currentMonthName, currentYear} = getCurrentDateInfo();
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthName);
+  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const [yearData, setYearData] = useState<DropdownItem[]>([]);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    const generateYearList = async () => {
+      if (isFocused) {
+        try {
+          const allIncomes = await IncomeListService.getIncomeDetails();
+          const allExpenses = await ExpenseQueries.getExpenseDetails();
+          const allTransactions = [...allIncomes, ...allExpenses];
+
+          let startYear = currentYear;
+
+          if (allTransactions.length > 0) {
+            const firstTransactionYear = new Date(
+              Math.min(...allTransactions.map(t => new Date(t.date).getTime()))
+            ).getFullYear();
+            startYear = firstTransactionYear;
+          }
+
+          const endYear = currentYear + 1;
+          const years = [];
+          for (let i = startYear; i <= endYear; i++) {
+            years.push({ label: i.toString(), value: i.toString() });
+          }
+          setYearData(years);
+
+        } catch (error) {
+          setYearData([
+              { label: currentYear.toString(), value: currentYear.toString() },
+              { label: (currentYear + 1).toString(), value: (currentYear + 1).toString() },
+          ]);
+        }
+      }
+    };
+
+    generateYearList();
+  }, [isFocused, refreshKey, currentYear]);
+
+
+  const handleTabPress = useCallback((tab: 'income' | 'expense') => {
+    onTabChange(tab);
+  }, [onTabChange]);
+
+  const handleMonthChange = useCallback((item: DropdownItem) => {
+    setSelectedMonth(item.value);
+  }, []);
+
+  const handleYearChange = useCallback((item: DropdownItem) => {
+    setSelectedYear(item.value);
+  }, []);
+
+  let listComponent;
+  if (activeTab === 'income') {
+    listComponent = (
+      <IncomeList
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        selectedIds={selectedIds}
+        onToggleCheckbox={onToggleCheckbox}
+        refreshKey={refreshKey}
+        onDataLoaded={onDataLoaded}
+      />
+    );
+  } else {
+    listComponent = (
+      <ExpenseList
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        selectedIds={selectedIds}
+        onToggleCheckbox={onToggleCheckbox}
+        refreshKey={refreshKey}
+        onDataLoaded={onDataLoaded}
+      />
+    );
+  }
+
   return (
     <View style={styles.card}>
-      <View style={styles.tabRow}>
-        <TouchableOpacity onPress={() => onTabChange('income')} style={styles.tabButton}>
+       <View style={styles.tabRow}>
+        <TouchableOpacity
+          onPress={() => handleTabPress('income')}
+          style={styles.tabButton}>
           <CustomText style={[styles.tabText, activeTab === 'income' && styles.activeTabText]}>
-            Pendapatan
+            <Text>Pendapatan</Text>
           </CustomText>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => onTabChange('expense')} style={styles.tabButton}>
+        <TouchableOpacity
+          onPress={() => handleTabPress('expense')}
+          style={styles.tabButton}>
           <CustomText style={[styles.tabText, activeTab === 'expense' && styles.activeTabText]}>
-            Pengeluaran
+            <Text>Pengeluaran</Text>
           </CustomText>
         </TouchableOpacity>
       </View>
 
       <View style={styles.underlineTrack}>
-        <View
-          style={[
-            styles.activeUnderline,
-            activeTab === 'income' ? styles.leftUnderline : styles.rightUnderline,
-          ]}
+        <View style={[styles.activeUnderline, activeTab === 'income' ? styles.leftUnderline : styles.rightUnderline]} />
+      </View>
+
+      <View style={styles.filterRow}>
+        <Dropdown
+          style={styles.dropdown}
+          placeholderStyle={styles.placeholderStyle}
+          selectedTextStyle={styles.selectedTextStyle}
+          data={monthData}
+          maxHeight={300}
+          labelField="label"
+          valueField="value"
+          value={selectedMonth}
+          onChange={handleMonthChange}
+        />
+        <Dropdown
+          style={styles.dropdown}
+          placeholderStyle={styles.placeholderStyle}
+          selectedTextStyle={styles.selectedTextStyle}
+          data={yearData}
+          maxHeight={300}
+          labelField="label"
+          valueField="value"
+          value={selectedYear}
+          onChange={handleYearChange}
         />
       </View>
-      
-      <View style={styles.filterRow}>
-        <View style={styles.dropdownContainer}>
-          <Picker
-            selectedValue={selectedMonth}
-            onValueChange={value => setSelectedMonth(value)}
-            style={styles.picker}
-            dropdownIconColor="#888888">
-            {months.map(month => (
-              <Picker.Item key={month} label={month} value={month} color="#0E3345" />
-            ))}
-          </Picker>
-        </View>
-        <View style={styles.dropdownContainer}>
-          <Picker
-            selectedValue={selectedYear}
-            onValueChange={value => setSelectedYear(value)}
-            style={styles.picker}
-            dropdownIconColor="#888888">
-            {['2024', '2025'].map(year => (
-              <Picker.Item key={year} label={year} value={year} color="#0E3345" />
-            ))}
-          </Picker>
-        </View>
-      </View>
-      
+
       <View style={styles.listContainer}>
-        {activeTab === 'income' ? (
-          <IncomeList
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            selectedIds={selectedIds}
-            onToggleCheckbox={onToggleCheckbox}
-            refreshKey={refreshKey}
-            onDataLoaded={onDataLoaded}
-          />
-        ) : (
-          <ExpenseList
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            selectedIds={selectedIds}
-            onToggleCheckbox={onToggleCheckbox}
-            refreshKey={refreshKey}
-            onDataLoaded={onDataLoaded}
-          />
-        )}
+        {listComponent}
       </View>
     </View>
   );
 };
 
-const months = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-];
-
 const styles = StyleSheet.create({
-  card: {
+    card: {
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
@@ -149,23 +233,29 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
     marginBottom: 12,
   },
-  dropdownContainer: {
+  dropdown: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-    borderRadius: 8,
     height: 40,
-    justifyContent: 'center',
+    borderColor: '#DDDDDD',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginHorizontal: 4,
   },
-  picker: {
+  placeholderStyle: {
+    fontSize: 15,
+    color: '#888',
+  },
+  selectedTextStyle: {
+    fontSize: 15,
     color: '#0E3345',
   },
   listContainer: {
     paddingTop: 4,
   },
 });
+
 
 export default TransactionSwitcher;

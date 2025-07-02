@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { IncomeListService, IncomeData } from '../../database/Incomes/incomeDBList';
 import TransactionList from '../../components/TransactionList/TransactionList';
@@ -12,6 +12,14 @@ interface Props {
   onDataLoaded: (data: IncomeData[]) => void;
 }
 
+const monthToNumber = (month: string): string => {
+  const index = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ].indexOf(month);
+  return (index + 1).toString().padStart(2, '0');
+};
+
 const IncomeList = ({
   selectedMonth,
   selectedYear,
@@ -23,42 +31,31 @@ const IncomeList = ({
   const [incomes, setIncomes] = useState<IncomeData[]>([]);
   const isFocused = useIsFocused();
 
-  const monthToNumber = (month: string): string => {
-    const index = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-    ].indexOf(month);
-    return (index + 1).toString().padStart(2, '0');
-  };
+  const fetchData = useCallback(async () => {
+    try {
+      const result = await IncomeListService.getIncomeDetails();
+      const filtered = result.filter((item: IncomeData) => {
+        const date = new Date(item.date);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear().toString();
+        return (
+          month === monthToNumber(selectedMonth) &&
+          year === selectedYear
+        );
+      });
+
+      setIncomes(filtered);
+      onDataLoaded(filtered);
+    } catch (e) {
+      console.error('Gagal ambil data pemasukan:', e);
+    }
+  }, [selectedMonth, selectedYear, onDataLoaded]);
 
   useEffect(() => {
     if (isFocused) {
-      const fetchData = async () => {
-        try {
-          const result = await IncomeListService.getIncomeDetails();
-          
-          // --- PERBAIKAN DI SINI ---
-          // 1. Logika filter diaktifkan kembali
-          const filtered = result.filter((item: IncomeData) => {
-            const date = new Date(item.date);
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const year = date.getFullYear().toString();
-            return (
-              month === monthToNumber(selectedMonth) &&
-              year === selectedYear
-            );
-          });
-
-          // 2. Gunakan 'filtered' lagi, bukan 'result'
-          setIncomes(filtered);
-          onDataLoaded(filtered);
-        } catch (e) {
-          console.error('Gagal ambil data pemasukan:', e);
-        }
-      };
       fetchData();
     }
-  }, [isFocused, selectedMonth, selectedYear, refreshKey]);
+  }, [isFocused, refreshKey, fetchData]);
 
   const totalIncome = incomes.reduce((sum, item) => sum + item.amount, 0);
 
