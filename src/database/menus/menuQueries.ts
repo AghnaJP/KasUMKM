@@ -1,24 +1,6 @@
 import db from '../db';
 import {Transaction, ResultSet} from 'react-native-sqlite-storage';
 
-export const insertMenu = async (
-  name: string,
-  category: string,
-  price: number,
-): Promise<void> => {
-  const database = await db;
-  return new Promise((resolve, reject) => {
-    database.transaction((tx: Transaction) => {
-      tx.executeSql(
-        'INSERT INTO menus (name, category, price) VALUES (?, ?, ?)',
-        [name, category, price],
-        () => resolve(),
-        (_, error) => reject(error),
-      );
-    });
-  });
-};
-
 export const getAllMenus = async (): Promise<
   {id: number; name: string; category: string; price: number}[]
 > => {
@@ -39,6 +21,56 @@ export const getAllMenus = async (): Promise<
           reject(error);
           return false;
         },
+      );
+    });
+  });
+};
+
+export const insertMenu = async (
+  name: string,
+  category: string,
+  price: number,
+): Promise<void> => {
+  const database = await db;
+  return new Promise((resolve, reject) => {
+    database.transaction((tx: Transaction) => {
+      tx.executeSql(
+        'INSERT INTO menus (name, category, price) VALUES (?, ?, ?)',
+        [name, category, price],
+        () => resolve(),
+        (_, error) => reject(error),
+      );
+    });
+  });
+};
+
+export const updateMenuById = async (
+  id: number,
+  name: string,
+  price: number,
+): Promise<void> => {
+  const database = await db;
+
+  return new Promise((resolve, reject) => {
+    database.transaction(tx => {
+      tx.executeSql(
+        'UPDATE menus SET name = ?, price = ? WHERE id = ?',
+        [name, price, id],
+        () => resolve(),
+        (_, error) => reject(error),
+      );
+    });
+  });
+};
+export const deleteMenuById = async (id: number) => {
+  const dbInstance = await db;
+  return new Promise((resolve, reject) => {
+    dbInstance.transaction(tx => {
+      tx.executeSql(
+        'DELETE FROM menus WHERE id = ?',
+        [id],
+        (_, result) => resolve(result),
+        (_, error) => reject(error),
       );
     });
   });

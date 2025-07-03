@@ -17,4 +17,6 @@ export const BUTTON_COLORS = {
   danger: {bg: '#EF4444', text: '#ffffff'}, // Red (Alert)
   outline: {bg: '#ffffff', text: '#163CAA'},
   success: {bg: '#22c55e', text: '#fff'}, // Green, White Text
+  edit: {bg: '#e2f4e8', text: '#1e5631'},
+  delete: {bg: '#fde7e9', text: '#d32f2f'}, // kuning peringatan
 };
