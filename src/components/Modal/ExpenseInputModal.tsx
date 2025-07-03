@@ -48,9 +48,10 @@ const ExpenseInputModal: React.FC<Props> = ({
       setAmount('');
       setDisplayAmount('');
     } else {
-      setDisplayAmount(amount ? `Rp ${formatRupiah(amount)}` : '');
+      setDisplayAmount(amount ? formatRupiah(amount) : '');
     }
-  }, [visible, amount, setAmount, setDescription]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   const validate = (): boolean => {
     const newErrors: FieldErrors = {
@@ -99,7 +100,11 @@ const ExpenseInputModal: React.FC<Props> = ({
               onChangeText={text => {
                 const cleaned = text.replace(/\D/g, '');
                 setAmount(cleaned);
-                setDisplayAmount(cleaned ? `Rp ${formatRupiah(cleaned)}` : '');
+                if (cleaned === '') {
+                  setDisplayAmount('');
+                } else {
+                  setDisplayAmount(formatRupiah(cleaned));
+                }
               }}
               error={errors.amount}
             />

@@ -6,6 +6,7 @@ import DropdownField from '../../components/Form/DropDownField';
 import {formatRupiah} from '../../utils/formatIDR';
 import {insertMenu} from '../../database/menus/menuQueries';
 import {CATEGORIES, CategoryWithEmpty} from '../../types/menu';
+import {useNavigation} from '@react-navigation/native';
 
 interface FieldErrors {
   category?: string;
@@ -14,6 +15,7 @@ interface FieldErrors {
 }
 
 const AddMenu: React.FC = () => {
+  const navigation = useNavigation();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [displayPrice, setDisplayPrice] = useState('');
@@ -44,8 +46,15 @@ const AddMenu: React.FC = () => {
 
     try {
       await insertMenu(name.trim(), selectedCategory, numeric);
-      Alert.alert('Berhasil', 'Menu berhasil disimpan');
-      resetForm();
+      Alert.alert('Berhasil', 'Menu berhasil disimpan', [
+        {
+          text: 'OK',
+          onPress: () => {
+            resetForm();
+            navigation.goBack();
+          },
+        },
+      ]);
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Gagal menyimpan menu');
@@ -76,7 +85,10 @@ const AddMenu: React.FC = () => {
           label="Nama Menu"
           placeholder="Masukkan nama menu"
           value={name}
-          onChangeText={setName}
+          onChangeText={text => {
+            const formatted = text.charAt(0).toUpperCase() + text.slice(1);
+            setName(formatted);
+          }}
           error={errors.name}
         />
 
@@ -87,7 +99,7 @@ const AddMenu: React.FC = () => {
           onChangeText={text => {
             const cleaned = text.replace(/\D/g, '');
             setPrice(cleaned);
-            setDisplayPrice(cleaned ? `Rp ${formatRupiah(cleaned)}` : '');
+            setDisplayPrice(cleaned ? formatRupiah(cleaned) : '');
           }}
           keyboardType="numeric"
           error={errors.price}
