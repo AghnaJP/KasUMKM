@@ -12,7 +12,14 @@ import CustomText from '../Text/CustomText';
 interface Props {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'success';
+  variant?:
+    | 'primary'
+    | 'secondary'
+    | 'danger'
+    | 'outline'
+    | 'success'
+    | 'edit'
+    | 'delete';
   fullWidth?: boolean;
   customStyle?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;

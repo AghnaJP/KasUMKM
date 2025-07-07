@@ -1,49 +1,169 @@
-import React, {useEffect, useState} from 'react';
-import {View, FlatList, StyleSheet} from 'react-native';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+  View,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import {SwipeListView} from 'react-native-swipe-list-view';
+import {deleteMenuById, updateMenuById} from '../../database/menus/menuQueries';
+import SwitchBar from '../../components/AddTransaction/SwitchBar';
+import MenuItemRow from '../../components/Menu/MenuItemRow';
+import HiddenMenuActions from '../../components/Menu/HiddenMenuAction';
+import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
+import {CategoryWithEmpty, MenuItem, CATEGORIES} from '../../types/menu';
 import CustomText from '../../components/Text/CustomText';
-import {getAllMenus} from '../../database/menus/menuQueries';
-import {formatRupiah} from '../../utils/formatIDR';
+import {COLORS} from '../../constants';
+import Icon from 'react-native-vector-icons/Ionicons';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {AppStackParamList} from '../../types/navigation';
+import {fetchAndFormatMenus} from '../../services/menuService';
+
+const categoryOptions = [{label: 'Semua', value: ''}, ...CATEGORIES];
 
 const MenuList = () => {
-  const [menus, setMenus] = useState<
-    {id: number; name: string; category: string; price: number}[]
-  >([]);
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryWithEmpty>('');
+  const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
+  const [editVisible, setEditVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const rowMapRef = useRef<{[key: number]: any}>({});
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await getAllMenus();
-        setMenus(data);
-      } catch (err) {
-        console.error('Failed to load menus:', err);
-      }
-    };
-
-    fetchData();
+    fetchMenus();
   }, []);
+
+  const fetchMenus = async () => {
+    setLoading(true);
+    const mapped = await fetchAndFormatMenus();
+    setMenus(mapped);
+    setLoading(false);
+  };
+
+  const handleEdit = (item: MenuItem) => {
+    const row = rowMapRef.current[item.id];
+    if (row) {
+      row.closeRow();
+    }
+    setSelectedMenu(item);
+    setEditVisible(true);
+  };
+
+  const handleSaveEdit = async (updated: {name: string; price: string}) => {
+    if (!selectedMenu) {
+      return;
+    }
+
+    const row = rowMapRef.current[selectedMenu.id];
+    if (row) {
+      row.closeRow();
+    }
+
+    await updateMenuById(selectedMenu.id, updated.name, Number(updated.price));
+    fetchMenus();
+    setEditVisible(false);
+    setSelectedMenu(null);
+
+    Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
+  };
+
+  const handleDelete = useCallback((id: number) => {
+    Alert.alert(
+      'Hapus Menu',
+      'Apakah kamu yakin ingin menghapus menu ini?',
+      [
+        {text: 'Batal', style: 'cancel'},
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteMenuById(id);
+            fetchMenus();
+            Alert.alert('Berhasil', 'Menu berhasil dihapus.');
+          },
+        },
+      ],
+      {cancelable: true},
+    );
+  }, []);
+
+  const filteredMenus = useMemo(() => {
+    if (selectedCategory === '') {
+      return menus;
+    }
+    return menus.filter(item => item.category === selectedCategory);
+  }, [menus, selectedCategory]);
 
   return (
     <View style={styles.container}>
-      <CustomText variant="title" style={styles.title}>
-        Daftar Menu
-      </CustomText>
-
-      <FlatList
-        data={menus}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({item}) => (
-          <View style={styles.item}>
-            <CustomText variant="body">{item.name}</CustomText>
-            <CustomText variant="caption">
-              {item.category === 'food' ? 'Makanan' : 'Minuman'} - Rp{' '}
-              {formatRupiah(item.price.toString())}
-            </CustomText>
-          </View>
-        )}
-        ListEmptyComponent={
-          <CustomText variant="body">Belum ada menu.</CustomText>
-        }
+      <SwitchBar
+        options={categoryOptions}
+        selected={selectedCategory}
+        onChange={val => setSelectedCategory(val as CategoryWithEmpty)}
       />
+
+      <View style={styles.cardWrapper}>
+        <SwipeListView
+          data={filteredMenus}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({item}) => (
+            <MenuItemRow
+              name={item.name}
+              category={item.category as 'food' | 'drink'}
+              price={item.price}
+            />
+          )}
+          renderHiddenItem={(data, rowMap) => {
+            rowMapRef.current[data.item.id] = rowMap[data.item.id];
+            return (
+              <HiddenMenuActions
+                item={data.item}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyWrapper}>
+              {loading ? (
+                <ActivityIndicator color={COLORS.darkBlue} />
+              ) : (
+                <CustomText
+                  variant="caption"
+                  align="center"
+                  color={COLORS.darkGray}>
+                  Tidak ada menu untuk kategori ini.
+                </CustomText>
+              )}
+            </View>
+          }
+          rightOpenValue={-160}
+          disableRightSwipe
+          contentContainerStyle={styles.contentContainerStyle}
+        />
+      </View>
+
+      <EditTransactionModal
+        visible={editVisible}
+        onClose={() => {
+          setEditVisible(false);
+          setSelectedMenu(null);
+        }}
+        transactionData={selectedMenu}
+        onSave={handleSaveEdit}
+      />
+
+      <TouchableOpacity
+        onPress={() => navigation.navigate('AddMenu')}
+        activeOpacity={0.8}
+        style={styles.fab}>
+        <Icon name="add" size={28} color="white" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -51,17 +171,44 @@ const MenuList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
     padding: 16,
+    backgroundColor: 'white',
   },
-  title: {
-    marginBottom: 12,
+  cardWrapper: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 4,
+    maxHeight: 500,
+    marginTop: 8,
   },
-  item: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+  contentContainerStyle: {
+    paddingVertical: 8,
+  },
+  emptyWrapper: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    backgroundColor: COLORS.darkBlue,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: {width: 0, height: 3},
+    shadowRadius: 4,
   },
 });
 

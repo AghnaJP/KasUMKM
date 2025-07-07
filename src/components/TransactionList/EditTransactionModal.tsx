@@ -4,7 +4,6 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -12,7 +11,8 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
-import {Text} from 'react-native-gesture-handler';
+import FormField from '../Form/FormField';
+import {formatRupiah, parseRupiah} from '../../utils/formatIDR';
 
 interface EditTransactionModalProps {
   visible: boolean;
@@ -33,7 +33,7 @@ const EditTransactionModal = ({
   useEffect(() => {
     if (transactionData) {
       setName(transactionData.name);
-      setPrice(transactionData.price.toString());
+      setPrice(formatRupiah(transactionData.price));
     }
   }, [transactionData]);
 
@@ -42,7 +42,8 @@ const EditTransactionModal = ({
       Alert.alert('Peringatan', 'Nama dan Harga tidak boleh kosong.');
       return;
     }
-    onSave({name, price});
+    const numericPrice = parseRupiah(price);
+    onSave({name, price: numericPrice.toString()});
   };
 
   return (
@@ -56,36 +57,25 @@ const EditTransactionModal = ({
         style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <CustomText variant="subtitle">
-              <Text>Ubah Transaksi</Text>
-            </CustomText>
+            <CustomText variant="subtitle">Ubah Transaksi</CustomText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.form}>
-            <CustomText style={styles.label}>
-              <Text>Nama Transaksi</Text>
-            </CustomText>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="cth: Nasi Goreng"
-            />
-
-            <CustomText style={styles.label}>
-              <Text>Harga Transaksi</Text>
-            </CustomText>
-            <TextInput
-              style={styles.input}
-              value={price}
-              onChangeText={setPrice}
-              placeholder="cth: 20000"
-              keyboardType="number-pad"
-            />
-          </View>
+          <FormField
+            label="Nama Transaksi"
+            placeholder="cth: Nasi Goreng"
+            value={name}
+            onChangeText={setName}
+          />
+          <FormField
+            label="Harga Transaksi"
+            placeholder="cth: 20.000"
+            value={price}
+            onChangeText={text => setPrice(formatRupiah(text))}
+            keyboardType="numeric"
+          />
 
           <Button title="Simpan" onPress={handleSave} variant="primary" />
         </View>
@@ -112,23 +102,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
-  },
-  form: {
-    marginBottom: 12,
-  },
-  label: {
-    marginBottom: 6,
-    color: '#555',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    fontFamily: 'Montserrat-Regular',
-    marginBottom: 16,
   },
 });
 
