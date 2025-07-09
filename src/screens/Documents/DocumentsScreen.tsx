@@ -3,7 +3,7 @@ import {StyleSheet, SafeAreaView} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import MenuManagementCard from '../../components/Menu/MenuManagementCard';
-import type {AppStackParamList} from '../../types/navigation'; // ganti sesuai file kamu
+import type {AppStackParamList} from '../../types/navigation';
 
 const DocumentsScreen = () => {
   const navigation =

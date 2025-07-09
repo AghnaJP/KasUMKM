@@ -1,9 +1,12 @@
+import {Category, MenuItem} from '../../types/menu';
 import db from '../db';
 import {Transaction, ResultSet} from 'react-native-sqlite-storage';
 
-export const getAllMenus = async (): Promise<
-  {id: number; name: string; category: string; price: number}[]
-> => {
+const isValidCategory = (value: string): value is Category => {
+  return value === 'food' || value === 'drink';
+};
+
+export const getAllMenus = async (): Promise<MenuItem[]> => {
   const database = await db;
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
@@ -11,9 +14,21 @@ export const getAllMenus = async (): Promise<
         'SELECT * FROM menus ORDER BY name ASC',
         [],
         (_, result: ResultSet) => {
-          const menus = [];
+          const menus: MenuItem[] = [];
           for (let i = 0; i < result.rows.length; i++) {
-            menus.push(result.rows.item(i));
+            const item = result.rows.item(i);
+            if (isValidCategory(item.category)) {
+              menus.push({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                category: item.category,
+              });
+            } else {
+              console.warn(
+                `Invalid category found: ${item.category}, skipping item`,
+              );
+            }
           }
           resolve(menus);
         },

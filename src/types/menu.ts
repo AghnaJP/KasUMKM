@@ -26,13 +26,6 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number]['value'];
 export type CategoryWithEmpty = Category | '';
-
-export interface MenuModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (item: MenuItem) => void;
-}
-
 export interface SelectedMenuItemProps {
   item: MenuItem | ExpenseItem;
   quantity: number;

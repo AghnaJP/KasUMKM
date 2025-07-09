@@ -5,7 +5,7 @@ import {COLORS} from '../../constants';
 type Option<T> = {label: string; value: T};
 
 type SwitchBarProps<T extends string> = {
-  options: Option<T>[] | T[]; // bisa array of string atau object
+  options: Option<T>[] | T[];
   selected: T;
   onChange: (value: T) => void;
   size?: 'small';
@@ -17,7 +17,6 @@ function SwitchBar<T extends string>({
   onChange,
   size,
 }: SwitchBarProps<T>) {
-  // ubah semua opsi jadi bentuk { label, value }
   const normalizedOptions: Option<T>[] = options.map(opt =>
     typeof opt === 'string' ? {label: opt, value: opt as T} : opt,
   );
