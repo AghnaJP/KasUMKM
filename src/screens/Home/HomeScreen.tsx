@@ -1,13 +1,15 @@
-import React from 'react';
-import {ScrollView, StyleSheet, SafeAreaView} from 'react-native';
+import React, {useContext} from 'react';
+import {StyleSheet, SafeAreaView} from 'react-native';
 import CustomText from '../../components/Text/CustomText';
+import {AuthContext} from '../../context/AuthContext';
 
 const HomeScreen = () => {
+  const {userName} = useContext(AuthContext);
+
   return (
     <SafeAreaView style={styles.wrapper}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <CustomText variant="title">Halo Ini Home Screen</CustomText>
-      </ScrollView>
+      <CustomText variant="subtitle">Selamat Sore,</CustomText>
+      <CustomText variant="title">{userName}</CustomText>
     </SafeAreaView>
   );
 };
@@ -15,13 +17,7 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+    backgroundColor: 'white',
   },
 });
 

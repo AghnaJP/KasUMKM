@@ -22,7 +22,6 @@ import {hashText} from '../../utils/crypto';
 import {User} from '../../types/user';
 import {useContext} from 'react';
 import {AuthContext} from '../../context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {normalizePhone} from '../../utils/phone';
 
 const LoginScreen = () => {
@@ -76,12 +75,7 @@ const LoginScreen = () => {
         return;
       }
 
-      await AsyncStorage.multiSet([
-        ['isLoggedIn', 'true'],
-        ['userPhone', user.phone],
-        ['userName', user.name],
-      ]);
-      login();
+      login(user.name, user.phone);
     } catch (error) {
       console.error('Login failed:', error);
       setFormError('Terjadi kesalahan. Coba lagi nanti.');
