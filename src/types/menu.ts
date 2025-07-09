@@ -3,6 +3,8 @@ export interface MenuItem {
   name: string;
   price: number;
   category: Category;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface IncomeItem {
@@ -26,9 +28,3 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number]['value'];
 export type CategoryWithEmpty = Category | '';
-export interface SelectedMenuItemProps {
-  item: MenuItem | ExpenseItem;
-  quantity: number;
-  onIncrease: () => void;
-  onDecrease: () => void;
-}

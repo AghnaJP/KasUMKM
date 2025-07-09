@@ -24,6 +24,7 @@ import {COLORS, STRINGS} from '../../constants';
 import {insertUser, getUserByPhone} from '../../database/users/userQueries';
 import {validateRegisterInput} from '../../utils/form';
 import {hashText} from '../../utils/crypto';
+import {normalizePhone} from '../../utils/phone';
 
 const RegisterScreen = () => {
   const navigation =
@@ -45,12 +46,12 @@ const RegisterScreen = () => {
     setFormError('');
 
     const trimmedName = name.trim();
-    const trimmedPhone = '08' + phone.trim();
+    const normalizedPhone = normalizePhone(phone.trim());
     const trimmedPassword = password.trim();
 
     const errors = validateRegisterInput(
       trimmedName,
-      trimmedPhone,
+      normalizedPhone,
       trimmedPassword,
     );
 
@@ -64,7 +65,7 @@ const RegisterScreen = () => {
     }
 
     try {
-      const existingUser = await getUserByPhone(trimmedPhone);
+      const existingUser = await getUserByPhone(normalizedPhone);
 
       if (existingUser) {
         setPhoneError('Nomor handphone sudah terdaftar');
@@ -73,7 +74,7 @@ const RegisterScreen = () => {
       }
 
       const hashedPassword = await hashText(trimmedPassword);
-      await insertUser(trimmedName, trimmedPhone, hashedPassword);
+      await insertUser(trimmedName, normalizedPhone, hashedPassword);
 
       setShowModal(true);
     } catch (error) {
