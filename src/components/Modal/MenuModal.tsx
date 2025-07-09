@@ -109,6 +109,8 @@ const MenuModal: React.FC<MenuModalProps> = ({visible, onClose, onSelect}) => {
                     name: menu.name,
                     price: menu.price,
                     category: menu.category as Category,
+                    created_at: menu.created_at,
+                    updated_at: menu.updated_at,
                   });
                   onClose();
                 }}>

@@ -11,7 +11,7 @@ export const getAllMenus = async (): Promise<MenuItem[]> => {
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
-        'SELECT * FROM menus ORDER BY name ASC',
+        'SELECT * FROM menus ORDER BY name DESC',
         [],
         (_, result: ResultSet) => {
           const menus: MenuItem[] = [];
@@ -23,6 +23,8 @@ export const getAllMenus = async (): Promise<MenuItem[]> => {
                 name: item.name,
                 price: item.price,
                 category: item.category,
+                created_at: item.created_at,
+                updated_at: item.updated_at,
               });
             } else {
               console.warn(
@@ -47,11 +49,12 @@ export const insertMenu = async (
   price: number,
 ): Promise<void> => {
   const database = await db;
+  const now = new Date().toISOString();
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
-        'INSERT INTO menus (name, category, price) VALUES (?, ?, ?)',
-        [name, category, price],
+        'INSERT INTO menus (name, category, price, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+        [name, category, price, now, now],
         () => resolve(),
         (_, error) => reject(error),
       );
@@ -65,18 +68,19 @@ export const updateMenuById = async (
   price: number,
 ): Promise<void> => {
   const database = await db;
-
+  const now = new Date().toISOString();
   return new Promise((resolve, reject) => {
-    database.transaction(tx => {
+    database.transaction((tx: Transaction) => {
       tx.executeSql(
-        'UPDATE menus SET name = ?, price = ? WHERE id = ?',
-        [name, price, id],
+        'UPDATE menus SET name = ?, price = ?, updated_at = ? WHERE id = ?',
+        [name, price, now, id],
         () => resolve(),
         (_, error) => reject(error),
       );
     });
   });
 };
+
 export const deleteMenuById = async (id: number) => {
   const dbInstance = await db;
   return new Promise((resolve, reject) => {

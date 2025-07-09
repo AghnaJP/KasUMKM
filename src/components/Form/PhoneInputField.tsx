@@ -26,13 +26,13 @@ const PhoneInputField = ({
         </CustomText>
       )}
       <View style={[styles.wrapper, error && styles.wrapperError]}>
-        <Text style={styles.prefix}>08</Text>
+        <Text style={styles.prefix}>+62</Text>
         <TextInput
           value={value}
           onChangeText={text => {
             let cleaned = text;
 
-            if (text.startsWith('08')) {
+            if (text.startsWith('62')) {
               cleaned = text.slice(2);
             } else if (text.startsWith('0')) {
               cleaned = text.slice(1);
