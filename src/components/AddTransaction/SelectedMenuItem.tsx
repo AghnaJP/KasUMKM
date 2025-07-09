@@ -2,8 +2,15 @@ import React from 'react';
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
-import {SelectedMenuItemProps} from '../../types/menu';
+import {ExpenseItem, MenuItem} from '../../types/menu';
 import {COLORS} from '../../constants';
+
+interface SelectedMenuItemProps {
+  item: MenuItem | ExpenseItem;
+  quantity: number;
+  onIncrease: () => void;
+  onDecrease: () => void;
+}
 
 const SelectedMenuItem: React.FC<SelectedMenuItemProps> = ({
   item,

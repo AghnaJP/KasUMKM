@@ -51,8 +51,6 @@ const TransactionList = ({
   totalAmount,
   totalLabel = 'Total',
 }: TransactionListProps) => {
-  // UPDATE: renderFooter dibungkus dengan useCallback
-  // Ini memastikan fungsi tidak dibuat ulang kecuali jika dependensinya berubah.
   const renderFooter = useCallback(() => {
     if (!data || data.length === 0 || totalAmount === undefined) {
       return null;
