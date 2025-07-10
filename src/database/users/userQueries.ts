@@ -1,5 +1,9 @@
-import db from '../db';
-import {Transaction, ResultSet} from 'react-native-sqlite-storage';
+import {getDBConnection} from '../db';
+import {
+  Transaction,
+  ResultSet,
+  SQLiteDatabase,
+} from 'react-native-sqlite-storage';
 import {User} from '../../types/user';
 
 export const insertUser = async (
@@ -7,7 +11,7 @@ export const insertUser = async (
   phone: string,
   password: string,
 ) => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
 
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
@@ -22,7 +26,7 @@ export const insertUser = async (
 };
 
 export const getUserByPhone = async (phone: string): Promise<User | null> => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
 
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {

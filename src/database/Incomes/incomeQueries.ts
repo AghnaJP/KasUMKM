@@ -1,5 +1,5 @@
-import db from '../db';
-import {Transaction} from 'react-native-sqlite-storage';
+import {getDBConnection} from '../db';
+import {SQLiteDatabase, Transaction} from 'react-native-sqlite-storage';
 
 export const insertIncome = async (
   menuId: number,
@@ -7,7 +7,7 @@ export const insertIncome = async (
   createdAt: string,
   updatedAt: string,
 ): Promise<void> => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise<void>((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
@@ -32,7 +32,7 @@ export const insertIncome = async (
 };
 
 export const getAllIncomes = async (): Promise<any> => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(

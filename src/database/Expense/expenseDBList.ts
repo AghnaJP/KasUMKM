@@ -1,4 +1,4 @@
-import db from '../db';
+import {getDBConnection} from '../db';
 import {SQLiteDatabase} from 'react-native-sqlite-storage';
 
 export interface ExpenseData {
@@ -10,7 +10,7 @@ export interface ExpenseData {
 }
 
 const getExpenseDetails = async (): Promise<ExpenseData[]> => {
-  const database: SQLiteDatabase = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
       const query = `
@@ -46,7 +46,7 @@ const deleteExpensesByIds = async (ids: number[]): Promise<void> => {
   if (ids.length === 0) {
     return Promise.resolve();
   }
-  const database: SQLiteDatabase = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
       const placeholders = ids.map(() => '?').join(', ');
@@ -69,7 +69,7 @@ const updateExpenseDetails = async (
   newDescription: string,
   newPrice: number,
 ): Promise<void> => {
-  const database: SQLiteDatabase = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
       const query =
