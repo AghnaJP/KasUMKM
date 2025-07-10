@@ -6,6 +6,7 @@ type AuthContextType = {
   userPhone: string;
   login: (name: string, phone: string) => void;
   logout: () => void;
+  updateUserName: (name: string) => void;
 };
 
 export const AuthContext = createContext<AuthContextType>({
@@ -14,4 +15,5 @@ export const AuthContext = createContext<AuthContextType>({
   userPhone: '',
   login: () => {},
   logout: () => {},
+  updateUserName: () => {},
 });

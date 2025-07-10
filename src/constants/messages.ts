@@ -22,4 +22,7 @@ export const VALIDATION_MESSAGES = {
   passwordInvalid:
     'Kata sandi harus minimal 6 karakter, ada huruf besar, angka, dan simbol.',
   phoneInvalidLength: 'Nomor handphone harus 9–13 digit',
+  newPasswordRequired: 'Kata sandi baru tidak boleh kosong',
+  oldPasswordRequired: 'Kata sandi lama tidak boleh kosong',
+  oldPasswordInvalid: 'Kata sandi lama salah',
 };

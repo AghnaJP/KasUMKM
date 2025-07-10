@@ -49,3 +49,49 @@ export const getUserByPhone = async (phone: string): Promise<User | null> => {
     });
   });
 };
+
+export const editUsername = async (name: string, phone: string) => {
+  const database: SQLiteDatabase = await getDBConnection();
+
+  return new Promise((resolve, reject) => {
+    database.transaction((tx: Transaction) => {
+      tx.executeSql(
+        'UPDATE users SET name = ? WHERE phone = ?',
+        [name, phone],
+        (_, result) => resolve(result),
+        (_, error) => reject(error),
+      );
+    });
+  });
+};
+
+export const updateUserPassword = async (
+  phone: string,
+  newPassword: string,
+) => {
+  const database: SQLiteDatabase = await getDBConnection();
+  return new Promise((resolve, reject) => {
+    database.transaction((tx: Transaction) => {
+      tx.executeSql(
+        'UPDATE users SET password = ? WHERE phone = ?',
+        [newPassword, phone],
+        (_, result) => resolve(result),
+        (_, error) => reject(error),
+      );
+    });
+  });
+};
+
+export const deleteUser = async (phone: string) => {
+  const database: SQLiteDatabase = await getDBConnection();
+  return new Promise((resolve, reject) => {
+    database.transaction((tx: Transaction) => {
+      tx.executeSql(
+        'DELETE FROM users WHERE phone = ?',
+        [phone],
+        (_, result) => resolve(result),
+        (_, error) => reject(error),
+      );
+    });
+  });
+};
