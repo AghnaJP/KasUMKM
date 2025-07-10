@@ -1,5 +1,5 @@
-import db from '../db';
-import { SQLiteDatabase } from 'react-native-sqlite-storage';
+import {getDBConnection} from '../db';
+import {SQLiteDatabase} from 'react-native-sqlite-storage';
 
 export interface IncomeData {
   id: number;
@@ -12,7 +12,7 @@ export interface IncomeData {
 
 export const IncomeListService = {
   getIncomeDetails: async (): Promise<IncomeData[]> => {
-    const database: SQLiteDatabase = await db;
+    const database: SQLiteDatabase = await getDBConnection();
     return new Promise((resolve, reject) => {
       database.transaction(tx => {
         const query = `
@@ -21,7 +21,7 @@ export const IncomeListService = {
             i.menu_id,
             m.name AS description,
             (i.quantity * m.price) AS amount,
-            m.price, -- <-- 2. AMBIL HARGA ASLI DI SINI
+            m.price,
             i.created_at AS date
           FROM incomes i
           JOIN menus m ON i.menu_id = m.id
@@ -41,14 +41,18 @@ export const IncomeListService = {
           (_, error) => {
             reject(error);
             return false;
-          }
+          },
         );
       });
     });
   },
 
-  updateMenuDetails: async (menuId: number, newName: string, newPrice: number): Promise<void> => {
-    const database: SQLiteDatabase = await db;
+  updateMenuDetails: async (
+    menuId: number,
+    newName: string,
+    newPrice: number,
+  ): Promise<void> => {
+    const database: SQLiteDatabase = await getDBConnection();
     return new Promise((resolve, reject) => {
       database.transaction(tx => {
         const query = `
@@ -64,7 +68,7 @@ export const IncomeListService = {
             console.error('Gagal update menu:', error);
             reject(error);
             return false;
-          }
+          },
         );
       });
     });
@@ -74,7 +78,7 @@ export const IncomeListService = {
     if (ids.length === 0) {
       return Promise.resolve();
     }
-    const database: SQLiteDatabase = await db;
+    const database: SQLiteDatabase = await getDBConnection();
     return new Promise((resolve, reject) => {
       database.transaction(tx => {
         const placeholders = ids.map(() => '?').join(', ');
@@ -88,7 +92,7 @@ export const IncomeListService = {
             console.error('Gagal menghapus incomes:', error);
             reject(error);
             return false;
-          }
+          },
         );
       });
     });

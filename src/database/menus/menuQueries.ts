@@ -1,13 +1,17 @@
 import {Category, MenuItem} from '../../types/menu';
-import db from '../db';
-import {Transaction, ResultSet} from 'react-native-sqlite-storage';
+import {getDBConnection} from '../db';
+import {
+  Transaction,
+  ResultSet,
+  SQLiteDatabase,
+} from 'react-native-sqlite-storage';
 
 const isValidCategory = (value: string): value is Category => {
   return value === 'food' || value === 'drink';
 };
 
 export const getAllMenus = async (): Promise<MenuItem[]> => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
@@ -48,7 +52,7 @@ export const insertMenu = async (
   category: string,
   price: number,
 ): Promise<void> => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   const now = new Date().toISOString();
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
@@ -67,7 +71,7 @@ export const updateMenuById = async (
   name: string,
   price: number,
 ): Promise<void> => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   const now = new Date().toISOString();
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
@@ -82,9 +86,9 @@ export const updateMenuById = async (
 };
 
 export const deleteMenuById = async (id: number) => {
-  const dbInstance = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
-    dbInstance.transaction(tx => {
+    database.transaction(tx => {
       tx.executeSql(
         'DELETE FROM menus WHERE id = ?',
         [id],
