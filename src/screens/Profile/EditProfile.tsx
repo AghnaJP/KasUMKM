@@ -24,7 +24,7 @@ import EditProfileModal from '../../components/Modal/EditProfileModal';
 import EditPasswordModal from '../../components/Modal/EditPasswordModal';
 
 const EditProfile = () => {
-  const {logout, userPhone} = useContext(AuthContext);
+  const {userName, userPhone, logout} = useContext(AuthContext);
   const [user, setUser] = useState<User | null>(null);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
@@ -115,13 +115,13 @@ const EditProfile = () => {
       <View style={styles.profile}>
         <FormField
           label="Nama Pengguna"
-          value={user?.name}
+          value={userName}
           touchableOnly
           onPress={() => setShowEditProfileModal(true)}
           rightIcon={<Icon name="edit" size={16} color={COLORS.darkBlue} />}
         />
 
-        <FormField label="Nomor Telepon" value={user?.phone} touchableOnly />
+        <FormField label="Nomor Telepon" value={userPhone} touchableOnly />
 
         <TouchableOpacity
           style={styles.password}

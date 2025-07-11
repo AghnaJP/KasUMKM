@@ -11,8 +11,8 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../types/navigation';
 
 const ProfileScreen = () => {
-  const {userPhone} = useContext(AuthContext);
-  const [user, setUser] = useState<User | null>(null);
+  const {userPhone, userName} = useContext(AuthContext);
+  const [_user, setUser] = useState<User | null>(null);
 
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -34,8 +34,8 @@ const ProfileScreen = () => {
           source={require('../../assets/images/profile.png')}
           style={styles.avatar}
         />
-        <CustomText variant="title">{user?.name || '-'}</CustomText>
-        <CustomText variant="body">{user?.phone || '-'}</CustomText>
+        <CustomText variant="title">{userName || '-'}</CustomText>
+        <CustomText variant="body">{userPhone || '-'}</CustomText>
       </View>
 
       <TouchableOpacity
@@ -47,7 +47,9 @@ const ProfileScreen = () => {
 
       <TouchableOpacity
         style={styles.menu}
-        onPress={() => navigation.navigate('App', {screen: 'TransactionReport'})}>
+        onPress={() =>
+          navigation.navigate('App', {screen: 'TransactionReport'})
+        }>
         <CustomText variant="body">Laporan keuangan</CustomText>
         <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
       </TouchableOpacity>
