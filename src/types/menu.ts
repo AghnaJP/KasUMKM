@@ -19,6 +19,7 @@ export interface ExpenseItem {
   description: string;
   price: number;
   quantity: number;
+  created_at: string;
 }
 
 export const CATEGORIES = [

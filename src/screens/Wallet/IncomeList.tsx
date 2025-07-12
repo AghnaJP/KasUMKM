@@ -20,14 +20,12 @@ const IncomeList = ({
   selectedYear,
   selectedIds,
   onToggleCheckbox,
-  refreshKey,
   onDataLoaded,
 }: Props) => {
   const incomes = useTransactionList<IncomeData>(
     IncomeListService.getIncomeDetails,
     selectedMonth,
     selectedYear,
-    refreshKey,
     onDataLoaded,
   );
 

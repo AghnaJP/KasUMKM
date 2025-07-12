@@ -11,7 +11,6 @@ interface Props {
   selectedYear: string;
   selectedIds: number[];
   onToggleCheckbox: (id: number) => void;
-  refreshKey: number;
   onDataLoaded: (data: ExpenseData[]) => void;
 }
 
@@ -20,14 +19,12 @@ const ExpenseList = ({
   selectedYear,
   selectedIds,
   onToggleCheckbox,
-  refreshKey,
   onDataLoaded,
 }: Props) => {
   const expenses = useTransactionList<ExpenseData>(
     ExpenseQueries.getExpenseDetails,
     selectedMonth,
     selectedYear,
-    refreshKey,
     onDataLoaded,
   );
 

@@ -23,7 +23,6 @@ export function useTransactionList<T>(
   getDataFn: () => Promise<T[]>,
   selectedMonth: string,
   selectedYear: string,
-  refreshKey: number,
   onDataLoaded: (data: T[]) => void,
 ) {
   const [data, setData] = useState<T[]>([]);
@@ -50,7 +49,7 @@ export function useTransactionList<T>(
     if (isFocused) {
       fetchData();
     }
-  }, [isFocused, refreshKey, fetchData]);
+  }, [isFocused, fetchData]);
 
   return data;
 }

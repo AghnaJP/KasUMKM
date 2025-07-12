@@ -53,6 +53,7 @@ const AddExpense = () => {
           description: description.trim(),
           price: Number(amount),
           quantity: 1,
+          created_at: selectedDate.toISOString(),
         },
       ]);
     }
