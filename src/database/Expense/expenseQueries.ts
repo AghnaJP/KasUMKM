@@ -1,3 +1,4 @@
+import {ExpenseItem} from '../../types/menu';
 import {getDBConnection} from '../db';
 import {SQLiteDatabase, Transaction} from 'react-native-sqlite-storage';
 
@@ -24,15 +25,19 @@ export const insertExpense = async (
   });
 };
 
-export const getAllExpenses = async (): Promise<any> => {
-  const database: SQLiteDatabase = await getDBConnection();
+export const getAllExpenses = async (): Promise<ExpenseItem[]> => {
+  const db = await getDBConnection();
   return new Promise((resolve, reject) => {
-    database.transaction((tx: Transaction) => {
+    db.transaction(tx => {
       tx.executeSql(
         'SELECT * FROM expenses',
         [],
-        (_, result: any) => {
-          resolve(result);
+        (_, result) => {
+          const items: ExpenseItem[] = [];
+          for (let i = 0; i < result.rows.length; i++) {
+            items.push(result.rows.item(i));
+          }
+          resolve(items);
         },
         (_, error) => {
           reject(error);

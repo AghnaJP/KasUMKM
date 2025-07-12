@@ -15,6 +15,7 @@ interface Props extends TextProps {
   align?: TextStyle['textAlign'];
   style?: StyleProp<TextStyle>;
   onPress?: () => void;
+  uppercase?: boolean;
   children: React.ReactNode;
 }
 
@@ -25,13 +26,20 @@ const CustomText: React.FC<Props> = ({
   style,
   onPress,
   children,
+  uppercase = false,
+  numberOfLines,
+  ellipsizeMode,
   ...rest
 }) => {
   const content = (
     <Text
       style={[baseStyles[variant], {color, textAlign: align}, style]}
+      numberOfLines={numberOfLines}
+      ellipsizeMode={ellipsizeMode}
       {...rest}>
-      {children}
+      {uppercase && typeof children === 'string'
+        ? children.toUpperCase()
+        : children}
     </Text>
   );
 
