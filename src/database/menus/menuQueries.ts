@@ -1,19 +1,40 @@
-import db from '../db';
-import {Transaction, ResultSet} from 'react-native-sqlite-storage';
+import {Category, MenuItem} from '../../types/menu';
+import {getDBConnection} from '../db';
+import {
+  Transaction,
+  ResultSet,
+  SQLiteDatabase,
+} from 'react-native-sqlite-storage';
 
-export const getAllMenus = async (): Promise<
-  {id: number; name: string; category: string; price: number}[]
-> => {
-  const database = await db;
+const isValidCategory = (value: string): value is Category => {
+  return value === 'food' || value === 'drink';
+};
+
+export const getAllMenus = async (): Promise<MenuItem[]> => {
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
-        'SELECT * FROM menus ORDER BY name ASC',
+        'SELECT * FROM menus ORDER BY name DESC',
         [],
         (_, result: ResultSet) => {
-          const menus = [];
+          const menus: MenuItem[] = [];
           for (let i = 0; i < result.rows.length; i++) {
-            menus.push(result.rows.item(i));
+            const item = result.rows.item(i);
+            if (isValidCategory(item.category)) {
+              menus.push({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                category: item.category,
+                created_at: item.created_at,
+                updated_at: item.updated_at,
+              });
+            } else {
+              console.warn(
+                `Invalid category found: ${item.category}, skipping item`,
+              );
+            }
           }
           resolve(menus);
         },
@@ -31,12 +52,13 @@ export const insertMenu = async (
   category: string,
   price: number,
 ): Promise<void> => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
+  const now = new Date().toISOString();
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
-        'INSERT INTO menus (name, category, price) VALUES (?, ?, ?)',
-        [name, category, price],
+        'INSERT INTO menus (name, category, price, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+        [name, category, price, now, now],
         () => resolve(),
         (_, error) => reject(error),
       );
@@ -49,23 +71,24 @@ export const updateMenuById = async (
   name: string,
   price: number,
 ): Promise<void> => {
-  const database = await db;
-
+  const database: SQLiteDatabase = await getDBConnection();
+  const now = new Date().toISOString();
   return new Promise((resolve, reject) => {
-    database.transaction(tx => {
+    database.transaction((tx: Transaction) => {
       tx.executeSql(
-        'UPDATE menus SET name = ?, price = ? WHERE id = ?',
-        [name, price, id],
+        'UPDATE menus SET name = ?, price = ?, updated_at = ? WHERE id = ?',
+        [name, price, now, id],
         () => resolve(),
         (_, error) => reject(error),
       );
     });
   });
 };
+
 export const deleteMenuById = async (id: number) => {
-  const dbInstance = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
-    dbInstance.transaction(tx => {
+    database.transaction(tx => {
       tx.executeSql(
         'DELETE FROM menus WHERE id = ?',
         [id],

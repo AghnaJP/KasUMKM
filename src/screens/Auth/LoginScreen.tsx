@@ -22,7 +22,7 @@ import {hashText} from '../../utils/crypto';
 import {User} from '../../types/user';
 import {useContext} from 'react';
 import {AuthContext} from '../../context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {normalizePhone} from '../../utils/phone';
 
 const LoginScreen = () => {
   const navigation =
@@ -43,10 +43,10 @@ const LoginScreen = () => {
     setPasswordError('');
     setIsLoading(true);
 
-    const trimmedPhone = phone.trim();
+    const normalizedPhone = normalizePhone(phone.trim());
     const trimmedPassword = password.trim();
 
-    if (!trimmedPhone) {
+    if (!normalizedPhone) {
       setPhoneError('Nomor handphone wajib diisi');
       setIsLoading(false);
       return;
@@ -59,7 +59,7 @@ const LoginScreen = () => {
     }
 
     try {
-      const user: User | null = await getUserByPhone(trimmedPhone);
+      const user: User | null = await getUserByPhone(normalizedPhone);
 
       if (!user) {
         setPhoneError(STRINGS.login.errorPhoneNotFound);
@@ -75,12 +75,7 @@ const LoginScreen = () => {
         return;
       }
 
-      await AsyncStorage.multiSet([
-        ['isLoggedIn', 'true'],
-        ['userPhone', user.phone],
-        ['userName', user.name],
-      ]);
-      login();
+      login(user.name, user.phone);
     } catch (error) {
       console.error('Login failed:', error);
       setFormError('Terjadi kesalahan. Coba lagi nanti.');

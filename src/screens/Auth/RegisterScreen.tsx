@@ -10,7 +10,7 @@ import {
 // Navigation
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {AuthStackParamList} from '../../types/navigation';
+import {RootStackParamList} from '../../types/navigation';
 // UI Components
 import CustomText from '../../components/Text/CustomText';
 import Button from '../../components/Button/Button';
@@ -24,10 +24,12 @@ import {COLORS, STRINGS} from '../../constants';
 import {insertUser, getUserByPhone} from '../../database/users/userQueries';
 import {validateRegisterInput} from '../../utils/form';
 import {hashText} from '../../utils/crypto';
+import {normalizePhone} from '../../utils/phone';
+// import {AuthContext} from '../../context/AuthContext';
 
 const RegisterScreen = () => {
   const navigation =
-    useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -39,18 +41,19 @@ const RegisterScreen = () => {
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // const {login} = useContext(AuthContext);
 
   const handleRegister = async () => {
     setIsLoading(true);
     setFormError('');
 
     const trimmedName = name.trim();
-    const trimmedPhone = '08' + phone.trim();
+    const normalizedPhone = normalizePhone(phone.trim());
     const trimmedPassword = password.trim();
 
     const errors = validateRegisterInput(
       trimmedName,
-      trimmedPhone,
+      normalizedPhone,
       trimmedPassword,
     );
 
@@ -64,7 +67,7 @@ const RegisterScreen = () => {
     }
 
     try {
-      const existingUser = await getUserByPhone(trimmedPhone);
+      const existingUser = await getUserByPhone(normalizedPhone);
 
       if (existingUser) {
         setPhoneError('Nomor handphone sudah terdaftar');
@@ -73,11 +76,16 @@ const RegisterScreen = () => {
       }
 
       const hashedPassword = await hashText(trimmedPassword);
-      await insertUser(trimmedName, trimmedPhone, hashedPassword);
+      await insertUser(trimmedName, normalizedPhone, hashedPassword);
 
+      // login(trimmedName, normalizedPhone);
       setShowModal(true);
+      navigation.replace('Auth', {screen: 'Login'});
     } catch (error) {
       console.error('Registration failed:', error);
+      setFormError('Terjadi kesalahan saat mendaftar');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -140,7 +148,8 @@ const RegisterScreen = () => {
         />
         <View style={styles.loginRow}>
           <CustomText variant="caption">Sudah punya akun?</CustomText>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Auth', {screen: 'Login'})}>
             <CustomText variant="caption" style={styles.loginLink}>
               {STRINGS.register.loginLink}
             </CustomText>
@@ -159,7 +168,7 @@ const RegisterScreen = () => {
           setPhone('');
           setPassword('');
           setFormError('');
-          navigation.navigate('Login');
+          navigation.navigate('Auth', {screen: 'Login'});
         }}
       />
     </KeyboardAvoidingView>

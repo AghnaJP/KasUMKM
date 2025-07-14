@@ -1,24 +1,16 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {StatusBar} from 'react-native';
 import RootNavigator from './navigation/RootNavigator';
 import Toast from 'react-native-toast-message';
-import {AuthContext} from './context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {initAllTables} from './database/initDB';
+import AuthProvider from './context/AuthProvider';
 
 const App = (): React.JSX.Element => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
   useEffect(() => {
     const setupApp = async () => {
       try {
         await initAllTables();
         console.log('User table initialized');
-
-        const isLogged = await AsyncStorage.getItem('isLoggedIn');
-        if (isLogged === 'true') {
-          setIsLoggedIn(true);
-        }
       } catch (error) {
         console.error('App setup failed', error);
       }
@@ -28,16 +20,11 @@ const App = (): React.JSX.Element => {
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        isLoggedIn,
-        login: () => setIsLoggedIn(true),
-        logout: () => setIsLoggedIn(false),
-      }}>
+    <AuthProvider>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
       <RootNavigator />
       <Toast />
-    </AuthContext.Provider>
+    </AuthProvider>
   );
 };
 

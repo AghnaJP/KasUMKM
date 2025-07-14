@@ -10,7 +10,7 @@ import {
 import CustomText from '../../components/Text/CustomText';
 import SwitchBar from '../AddTransaction/SwitchBar';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {MenuModalProps, CATEGORIES} from '../../types/menu';
+import {CATEGORIES, Category, MenuItem} from '../../types/menu';
 import {COLORS} from '../../constants/colors';
 import EmptyListMessage from '../../components/EmptyListMessage';
 import {getAllMenus} from '../../database/menus/menuQueries';
@@ -18,12 +18,16 @@ import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../types/navigation';
 
+interface MenuModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (item: MenuItem) => void;
+}
+
 const MenuModal: React.FC<MenuModalProps> = ({visible, onClose, onSelect}) => {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [menus, setMenus] = useState<
-    {id: number; name: string; category: string; price: number}[]
-  >([]);
+  const [menus, setMenus] = useState<MenuItem[]>([]);
 
   useEffect(() => {
     if (visible) {
@@ -104,7 +108,9 @@ const MenuModal: React.FC<MenuModalProps> = ({visible, onClose, onSelect}) => {
                     id: menu.id,
                     name: menu.name,
                     price: menu.price,
-                    category: menu.category,
+                    category: menu.category as Category,
+                    created_at: menu.created_at,
+                    updated_at: menu.updated_at,
                   });
                   onClose();
                 }}>

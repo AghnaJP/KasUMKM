@@ -3,6 +3,8 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import AppNavigator from './AppNavigator';
 import AddMenu from '../screens/Documents/AddMenu';
 import MenuList from '../screens/Documents/MenuList';
+import EditProfile from '../screens/Profile/EditProfile';
+import TransactionReport from '../screens/Reports/TransactionReport';
 import BackButton from '../components/Button/BackButton';
 import {AppStackParamList} from '../types/navigation';
 
@@ -30,6 +32,24 @@ const AppStackNavigator = () => (
       component={MenuList}
       options={{
         title: 'Semua Menu',
+        headerTitleAlign: 'center',
+        headerLeft: renderBackButton,
+      }}
+    />
+    <Stack.Screen
+      name="EditProfile"
+      component={EditProfile}
+      options={{
+        title: 'Akun Saya',
+        headerTitleAlign: 'center',
+        headerLeft: renderBackButton,
+      }}
+    />
+    <Stack.Screen
+      name="TransactionReport"
+      component={TransactionReport}
+      options={{
+        title: 'Laporan Keuangan',
         headerTitleAlign: 'center',
         headerLeft: renderBackButton,
       }}

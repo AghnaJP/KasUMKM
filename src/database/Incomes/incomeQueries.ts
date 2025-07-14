@@ -1,5 +1,6 @@
-import db from '../db';
-import {Transaction} from 'react-native-sqlite-storage';
+import {IncomeItem} from '../../types/menu';
+import {getDBConnection} from '../db';
+import {SQLiteDatabase, Transaction} from 'react-native-sqlite-storage';
 
 export const insertIncome = async (
   menuId: number,
@@ -7,7 +8,7 @@ export const insertIncome = async (
   createdAt: string,
   updatedAt: string,
 ): Promise<void> => {
-  const database = await db;
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise<void>((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
@@ -31,15 +32,21 @@ export const insertIncome = async (
   });
 };
 
-export const getAllIncomes = async (): Promise<any> => {
-  const database = await db;
+export const getAllIncomes = async (): Promise<IncomeItem[]> => {
+  const database: SQLiteDatabase = await getDBConnection();
+
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
         'SELECT * FROM incomes',
         [],
-        (_, result: any) => {
-          resolve(result);
+        (_, result) => {
+          const items: IncomeItem[] = [];
+
+          for (let i = 0; i < result.rows.length; i++) {
+            items.push(result.rows.item(i));
+          }
+          resolve(items);
         },
         (_, error) => {
           reject(error);

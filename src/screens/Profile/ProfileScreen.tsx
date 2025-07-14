@@ -1,51 +1,57 @@
-import React, {useContext} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import React, {useContext, useEffect, useState} from 'react';
+import {View, StyleSheet, Image, TouchableOpacity} from 'react-native';
 import {COLORS} from '../../constants';
 import {AuthContext} from '../../context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getUserByPhone} from '../../database/users/userQueries';
+import type {User} from '../../types/user';
+import CustomText from '../../components/Text/CustomText';
+import Icon from 'react-native-vector-icons/Ionicons';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../types/navigation';
 
 const ProfileScreen = () => {
-  const {logout} = useContext(AuthContext);
+  const {userPhone, userName} = useContext(AuthContext);
+  const [_user, setUser] = useState<User | null>(null);
 
-  const handleLogout = async () => {
-    Alert.alert('Logout', 'Yakin ingin keluar dari akun?', [
-      {
-        text: 'Batal',
-        style: 'cancel',
-      },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await AsyncStorage.removeItem('isLoggedIn');
-          logout();
-        },
-      },
-    ]);
-  };
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (userPhone) {
+        const userData = await getUserByPhone(userPhone);
+        setUser(userData);
+      }
+    };
+    fetchUser();
+  }, [userPhone]);
 
   return (
     <View style={styles.container}>
-      <Image
-        source={{uri: 'https://i.pravatar.cc/150'}}
-        style={styles.avatar}
-      />
-      <Text style={styles.name}>John Doe</Text>
-      <Text style={styles.email}>john.doe@example.com</Text>
-      <Text style={styles.bio}>
-        Ini adalah profil pengguna contoh. Kamu bisa tambahkan informasi lain di
-        sini.
-      </Text>
+      <View style={styles.profile}>
+        <Image
+          source={require('../../assets/images/profile.png')}
+          style={styles.avatar}
+        />
+        <CustomText variant="title">{userName || '-'}</CustomText>
+        <CustomText variant="body">{userPhone || '-'}</CustomText>
+      </View>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Keluar</Text>
+      <TouchableOpacity
+        style={styles.menu}
+        onPress={() => navigation.navigate('App', {screen: 'EditProfile'})}>
+        <CustomText variant="body">Akun Saya</CustomText>
+        <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.menu}
+        onPress={() =>
+          navigation.navigate('App', {screen: 'TransactionReport'})
+        }>
+        <CustomText variant="body">Laporan keuangan</CustomText>
+        <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
       </TouchableOpacity>
     </View>
   );
@@ -55,15 +61,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 24,
+    marginVertical: 50,
+    borderWidth: 0.8,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+  },
+  profile: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
   avatar: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 200,
     borderRadius: 60,
-    marginBottom: 16,
   },
   name: {
     fontSize: 22,
@@ -76,22 +89,17 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginBottom: 16,
   },
-  bio: {
-    fontSize: 14,
-    color: COLORS.gray,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  logoutBtn: {
-    backgroundColor: COLORS.red,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  menu: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 8,
-  },
-  logoutText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    marginVertical: 8,
+    backgroundColor: '#fff',
+    borderWidth: 0.5,
   },
 });
 

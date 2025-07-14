@@ -20,10 +20,8 @@ declare module 'react-native-sqlite-storage' {
 
   export interface SQLiteDatabase {
     transaction: (callback: (tx: Transaction) => void) => Promise<void>;
-    executeSql: (
-      sqlStatement: string,
-      args?: any[],
-    ) => Promise<[Transaction, ResultSet]>;
+    executeSql: (sqlStatement: string, args?: any[]) => Promise<[ResultSet]>;
+
     close: () => Promise<void>;
   }
 

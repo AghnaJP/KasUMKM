@@ -3,6 +3,8 @@ export interface MenuItem {
   name: string;
   price: number;
   category: Category;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface IncomeItem {
@@ -17,6 +19,7 @@ export interface ExpenseItem {
   description: string;
   price: number;
   quantity: number;
+  created_at: string;
 }
 
 export const CATEGORIES = [
@@ -26,16 +29,3 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number]['value'];
 export type CategoryWithEmpty = Category | '';
-
-export interface MenuModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (item: MenuItem) => void;
-}
-
-export interface SelectedMenuItemProps {
-  item: MenuItem | ExpenseItem;
-  quantity: number;
-  onIncrease: () => void;
-  onDecrease: () => void;
-}
