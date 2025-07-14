@@ -1,5 +1,3 @@
-// EditTransactionModal.tsx
-
 import React, {useState, useEffect} from 'react';
 import {
   Modal,
@@ -14,11 +12,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
 import FormField from '../Form/FormField';
-// Impor DatePickerField yang baru
 import DatePickerField from '../Form/DatePickerField';
 import {formatRupiah, parseRupiah} from '../../utils/formatIDR';
 
-// Definisikan tipe data yang diterima dan dikirim
 interface TransactionEditData {
   name: string;
   price: number;
@@ -40,14 +36,12 @@ const EditTransactionModal = ({
 }: EditTransactionModalProps) => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
-  // UBAH: State tanggal sekarang adalah objek Date
   const [date, setDate] = useState(new Date());
 
   useEffect(() => {
     if (transactionData) {
       setName(transactionData.name);
       setPrice(formatRupiah(transactionData.price));
-      // Set state tanggal dari string ke objek Date
       setDate(new Date(transactionData.date));
     }
   }, [transactionData]);
@@ -58,7 +52,6 @@ const EditTransactionModal = ({
       return;
     }
     const numericPrice = parseRupiah(price);
-    // Konversi objek Date kembali ke format string YYYY-MM-DD untuk disimpan
     const formattedDate = date.toISOString().split('T')[0];
     onSave({name, price: numericPrice.toString(), date: formattedDate});
   };

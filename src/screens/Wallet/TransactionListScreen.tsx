@@ -60,10 +60,10 @@ const TransactionListScreen = () => {
             try {
               if (activeTab === 'income') {
                 await IncomeListService.deleteIncomesByIds(selectedIds);
-                setSelectedIncomeIds([]); // ✅ Reset setelah delete
+                setSelectedIncomeIds([]);
               } else {
                 await ExpenseQueries.deleteExpensesByIds(selectedIds);
-                setSelectedExpenseIds([]); // ✅ Reset setelah delete
+                setSelectedExpenseIds([]);
               }
               setRefreshKey(prevKey => prevKey + 1);
             } catch (error) {

@@ -91,7 +91,6 @@ const TransactionList = ({
         contentContainerStyle={styles.listContent}
         renderItem={renderItem}
         ListEmptyComponent={renderEmptyComponent}
-        // --- TAMBAHKAN PROP INI ---
         scrollIndicatorInsets={{right: -8}}
       />
       {typeof totalAmount === 'number' && totalAmount > 0 && (
@@ -110,7 +109,6 @@ const TransactionList = ({
   );
 };
 
-// ... (Styles tidak berubah)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

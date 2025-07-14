@@ -56,23 +56,20 @@ const deleteExpensesByIds = async (ids: number[]): Promise<void> => {
     });
   });
 };
-
-// --- FUNGSI YANG DIPERBARUI ---
 const updateExpenseDetails = async (
   id: number,
   newDescription: string,
   newPrice: number,
-  newDate: string, // 1. Tambahkan parameter tanggal
+  newDate: string,
 ): Promise<void> => {
   const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
-      // 2. Tambahkan created_at ke query
       const query =
         'UPDATE expenses SET description = ?, price = ?, created_at = ? WHERE id = ?';
       tx.executeSql(
         query,
-        [newDescription, newPrice, newDate, id], // 3. Tambahkan tanggal ke parameter query
+        [newDescription, newPrice, newDate, id],
         () => resolve(),
         (_, error) => {
           reject(error);

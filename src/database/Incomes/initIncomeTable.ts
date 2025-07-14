@@ -7,6 +7,4 @@ export const initIncomeTable = async () => {
   await database.transaction((tx: Transaction) => {
     tx.executeSql(CREATE_INCOME_TABLE);
   });
-  //await database.executeSql('ALTER TABLE incomes ADD COLUMN description TEXT;');
-  //await database.executeSql('ALTER TABLE incomes ADD COLUMN price REAL;');
 };

@@ -6,7 +6,6 @@ const getIncomeDetails = async (): Promise<IncomeData[]> => {
   const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
-      // Query ini diperbarui untuk menangani data lama dan baru
       const query = `
         SELECT
           i.id,

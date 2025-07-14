@@ -237,7 +237,7 @@ const TransactionSwitcher = ({
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1, // Penting agar bisa expand
+    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     color: '#0E3345',
   },
   listContainer: {
-    flex: 1, // Penting agar FlatList di dalamnya bisa scroll
+    flex: 1,
     paddingTop: 4,
   },
 });
