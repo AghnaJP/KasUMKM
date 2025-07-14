@@ -1,16 +1,12 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {StyleSheet, SafeAreaView, View, Alert} from 'react-native';
 import TransactionHeader from '../../components/TransactionList/TransactionHeader';
 import TransactionSwitcher from '../../components/TransactionList/TransactionSwitcher';
 import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
-import {
-  IncomeListService,
-  IncomeData,
-} from '../../database/Incomes/incomeDBList';
-import {
-  ExpenseQueries,
-  ExpenseData,
-} from '../../database/Expense/expenseDBList';
+import {IncomeListService} from '../../database/Incomes/incomeDBList';
+import {ExpenseQueries} from '../../database/Expense/expenseDBList';
+import {ExpenseData, IncomeData} from '../../types/transaction';
+import {useIsFocused} from '@react-navigation/native';
 
 const TransactionListScreen = () => {
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
@@ -24,6 +20,13 @@ const TransactionListScreen = () => {
   const [allTransactions, setAllTransactions] = useState<
     (IncomeData | ExpenseData)[]
   >([]);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      setRefreshKey(prevKey => prevKey + 1);
+    }
+  }, [isFocused]);
 
   const handleToggleCheckbox = (id: number) => {
     if (activeTab === 'income') {
@@ -57,12 +60,11 @@ const TransactionListScreen = () => {
             try {
               if (activeTab === 'income') {
                 await IncomeListService.deleteIncomesByIds(selectedIds);
-                setSelectedIncomeIds([]);
+                setSelectedIncomeIds([]); // ✅ Reset setelah delete
               } else {
                 await ExpenseQueries.deleteExpensesByIds(selectedIds);
-                setSelectedExpenseIds([]);
+                setSelectedExpenseIds([]); // ✅ Reset setelah delete
               }
-              Alert.alert('Sukses', 'Transaksi berhasil dihapus.');
               setRefreshKey(prevKey => prevKey + 1);
             } catch (error) {
               Alert.alert('Error', 'Gagal menghapus transaksi.');
@@ -90,33 +92,59 @@ const TransactionListScreen = () => {
     }
   };
 
-  const handleSaveEdit = async (updatedData: {name: string; price: string}) => {
-    if (!transactionToEdit) {
-      return;
-    }
+  const handleSaveEdit = async (updatedData: {
+    name: string;
+    price: string;
+    date: string;
+  }) => {
+    if (!transactionToEdit) return;
+
     try {
       const priceNumber = parseFloat(updatedData.price);
-      if (activeTab === 'income' && 'menu_id' in transactionToEdit) {
-        await IncomeListService.updateMenuDetails(
-          transactionToEdit.menu_id,
+
+      if (activeTab === 'income') {
+        await IncomeListService.updateIncomeTransaction(
+          transactionToEdit.id,
           updatedData.name,
           priceNumber,
+          updatedData.date,
         );
       } else {
         await ExpenseQueries.updateExpenseDetails(
           transactionToEdit.id,
           updatedData.name,
           priceNumber,
+          updatedData.date,
         );
       }
+
+      setAllTransactions(currentTransactions => {
+        const updated = currentTransactions.map(t =>
+          t.id === transactionToEdit.id
+            ? {
+                ...t,
+                description: updatedData.name,
+                price: priceNumber,
+                amount: priceNumber,
+                date: updatedData.date,
+              }
+            : t,
+        );
+
+        updated.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
+
+        return updated;
+      });
+
       setEditModalVisible(false);
       setTransactionToEdit(null);
-
       setSelectedIncomeIds([]);
       setSelectedExpenseIds([]);
-      setRefreshKey(prevKey => prevKey + 1);
       Alert.alert('Sukses', 'Transaksi berhasil diperbarui.');
     } catch (error) {
+      console.error('Update Error:', error);
       Alert.alert('Error', 'Gagal memperbarui transaksi.');
     }
   };
@@ -124,23 +152,20 @@ const TransactionListScreen = () => {
   return (
     <SafeAreaView style={styles.wrapper}>
       <View style={styles.container}>
-        <View style={styles.fullWidth}>
-          <TransactionHeader
-            onDeletePress={handleDelete}
-            onEditPress={handleEdit}
-            selectionCount={selectedIds.length}
-          />
-          <TransactionSwitcher
-            activeTab={activeTab}
-            onTabChange={tab => {
-              setActiveTab(tab);
-            }}
-            selectedIds={selectedIds}
-            onToggleCheckbox={handleToggleCheckbox}
-            refreshKey={refreshKey}
-            onDataLoaded={setAllTransactions}
-          />
-        </View>
+        <TransactionHeader
+          onDeletePress={handleDelete}
+          onEditPress={handleEdit}
+          selectionCount={selectedIds.length}
+        />
+        <TransactionSwitcher
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          selectedIds={selectedIds}
+          onToggleCheckbox={handleToggleCheckbox}
+          refreshKey={refreshKey}
+          onDataLoaded={setAllTransactions}
+          transactions={allTransactions}
+        />
       </View>
       {transactionToEdit && (
         <EditTransactionModal
@@ -150,6 +175,7 @@ const TransactionListScreen = () => {
           transactionData={{
             name: transactionToEdit.description,
             price: transactionToEdit.price,
+            date: transactionToEdit.date,
           }}
         />
       )}
@@ -158,21 +184,8 @@ const TransactionListScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    padding: 24,
-    width: '100%',
-    backgroundColor: '#fff',
-  },
-  fullWidth: {
-    width: '100%',
-  },
+  wrapper: {flex: 1, backgroundColor: '#fff'},
+  container: {flex: 1, paddingHorizontal: 24, paddingTop: 16},
 });
 
 export default TransactionListScreen;

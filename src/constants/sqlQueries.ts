@@ -23,6 +23,8 @@ export const CREATE_INCOME_TABLE = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     menu_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL,
+    description TEXT,
+    price REAL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (menu_id) REFERENCES menus(id)

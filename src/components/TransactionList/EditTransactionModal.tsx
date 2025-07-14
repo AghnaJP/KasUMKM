@@ -1,3 +1,5 @@
+// EditTransactionModal.tsx
+
 import React, {useState, useEffect} from 'react';
 import {
   Modal,
@@ -12,13 +14,22 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
 import FormField from '../Form/FormField';
+// Impor DatePickerField yang baru
+import DatePickerField from '../Form/DatePickerField';
 import {formatRupiah, parseRupiah} from '../../utils/formatIDR';
+
+// Definisikan tipe data yang diterima dan dikirim
+interface TransactionEditData {
+  name: string;
+  price: number;
+  date: string;
+}
 
 interface EditTransactionModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (updatedData: {name: string; price: string}) => void;
-  transactionData: {name: string; price: number} | null;
+  onSave: (updatedData: {name: string; price: string; date: string}) => void;
+  transactionData: TransactionEditData | null;
 }
 
 const EditTransactionModal = ({
@@ -29,11 +40,15 @@ const EditTransactionModal = ({
 }: EditTransactionModalProps) => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  // UBAH: State tanggal sekarang adalah objek Date
+  const [date, setDate] = useState(new Date());
 
   useEffect(() => {
     if (transactionData) {
       setName(transactionData.name);
       setPrice(formatRupiah(transactionData.price));
+      // Set state tanggal dari string ke objek Date
+      setDate(new Date(transactionData.date));
     }
   }, [transactionData]);
 
@@ -43,7 +58,9 @@ const EditTransactionModal = ({
       return;
     }
     const numericPrice = parseRupiah(price);
-    onSave({name, price: numericPrice.toString()});
+    // Konversi objek Date kembali ke format string YYYY-MM-DD untuk disimpan
+    const formattedDate = date.toISOString().split('T')[0];
+    onSave({name, price: numericPrice.toString(), date: formattedDate});
   };
 
   return (
@@ -65,19 +82,26 @@ const EditTransactionModal = ({
 
           <FormField
             label="Nama Transaksi"
-            placeholder="cth: Nasi Goreng"
             value={name}
             onChangeText={setName}
           />
           <FormField
             label="Harga Transaksi"
-            placeholder="cth: 20.000"
             value={price}
             onChangeText={text => setPrice(formatRupiah(text))}
             keyboardType="numeric"
           />
 
-          <Button title="Simpan" onPress={handleSave} variant="primary" />
+          {/* UBAH: Ganti FormField tanggal dengan DatePickerField */}
+          <CustomText style={styles.dateLabel}>Tanggal Transaksi</CustomText>
+          <DatePickerField
+            value={date}
+            onChange={newDate => setDate(newDate)}
+          />
+
+          <View style={{marginTop: 20}}>
+            <Button title="Simpan" onPress={handleSave} variant="primary" />
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -102,6 +126,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  dateLabel: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 16,
   },
 });
 

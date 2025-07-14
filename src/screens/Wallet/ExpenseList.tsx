@@ -1,38 +1,19 @@
 import React from 'react';
-import {
-  ExpenseQueries,
-  ExpenseData,
-} from '../../database/Expense/expenseDBList';
 import TransactionList from '../../components/TransactionList/TransactionList';
-import {useTransactionList} from '../../hooks/useTransactionList';
+import {ExpenseData} from '../../types/transaction';
 
 interface Props {
-  selectedMonth: string;
-  selectedYear: string;
+  data: ExpenseData[];
   selectedIds: number[];
   onToggleCheckbox: (id: number) => void;
-  onDataLoaded: (data: ExpenseData[]) => void;
 }
 
-const ExpenseList = ({
-  selectedMonth,
-  selectedYear,
-  selectedIds,
-  onToggleCheckbox,
-  onDataLoaded,
-}: Props) => {
-  const expenses = useTransactionList<ExpenseData>(
-    ExpenseQueries.getExpenseDetails,
-    selectedMonth,
-    selectedYear,
-    onDataLoaded,
-  );
-
-  const totalExpense = expenses.reduce((sum, item) => sum + item.amount, 0);
+const ExpenseList = ({data, selectedIds, onToggleCheckbox}: Props) => {
+  const totalExpense = data.reduce((sum, item) => sum + (item.amount || 0), 0);
 
   return (
     <TransactionList
-      data={expenses}
+      data={data}
       selectedIds={selectedIds}
       onToggleCheckbox={onToggleCheckbox}
       totalAmount={totalExpense}

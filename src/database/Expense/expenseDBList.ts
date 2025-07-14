@@ -1,13 +1,6 @@
 import {getDBConnection} from '../db';
 import {SQLiteDatabase} from 'react-native-sqlite-storage';
-
-export interface ExpenseData {
-  id: number;
-  description: string;
-  amount: number;
-  price: number;
-  date: string;
-}
+import {ExpenseData} from '../../types/transaction';
 
 const getExpenseDetails = async (): Promise<ExpenseData[]> => {
   const database: SQLiteDatabase = await getDBConnection();
@@ -21,7 +14,7 @@ const getExpenseDetails = async (): Promise<ExpenseData[]> => {
           (price * quantity) as amount,
           created_at as date
         FROM expenses
-        ORDER BY id DESC;
+        ORDER BY created_at DESC;
       `;
       tx.executeSql(
         query,
@@ -64,19 +57,22 @@ const deleteExpensesByIds = async (ids: number[]): Promise<void> => {
   });
 };
 
+// --- FUNGSI YANG DIPERBARUI ---
 const updateExpenseDetails = async (
   id: number,
   newDescription: string,
   newPrice: number,
+  newDate: string, // 1. Tambahkan parameter tanggal
 ): Promise<void> => {
   const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
+      // 2. Tambahkan created_at ke query
       const query =
-        'UPDATE expenses SET description = ?, price = ? WHERE id = ?';
+        'UPDATE expenses SET description = ?, price = ?, created_at = ? WHERE id = ?';
       tx.executeSql(
         query,
-        [newDescription, newPrice, id],
+        [newDescription, newPrice, newDate, id], // 3. Tambahkan tanggal ke parameter query
         () => resolve(),
         (_, error) => {
           reject(error);

@@ -2,47 +2,37 @@ import React, {useCallback} from 'react';
 import {View, FlatList, StyleSheet, Text} from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import CustomText from '../Text/CustomText';
-
-export interface TransactionItem {
-  id: number;
-  description: string;
-  amount: number;
-  date: string;
-}
-
-interface TransactionListProps {
-  title?: string;
-  data: TransactionItem[];
-  selectedIds: number[];
-  onToggleCheckbox: (id: number) => void;
-  totalAmount?: number;
-  totalLabel?: string;
-}
+import {Transaction} from '../../types/transaction';
 
 const formatRelativeDate = (inputDate: string): string => {
+  if (!inputDate) return '';
   const date = new Date(inputDate);
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
 
   const isSameDay = (d1: Date, d2: Date) =>
-    d1.getDate() === d2.getDate() &&
+    d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
-    d1.getFullYear() === d2.getFullYear();
+    d1.getDate() === d2.getDate();
 
-  if (isSameDay(date, today)) {
-    return 'Hari ini';
-  }
-  if (isSameDay(date, yesterday)) {
-    return 'Kemarin';
-  }
+  if (isSameDay(date, today)) return 'Hari ini';
+  if (isSameDay(date, yesterday)) return 'Kemarin';
 
-  return new Date(inputDate).toLocaleDateString('id-ID', {
+  return date.toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
 };
+
+interface TransactionListProps {
+  data: Transaction[];
+  selectedIds: number[];
+  onToggleCheckbox: (id: number) => void;
+  totalAmount?: number;
+  totalLabel?: string;
+}
 
 const TransactionList = ({
   data,
@@ -51,29 +41,10 @@ const TransactionList = ({
   totalAmount,
   totalLabel = 'Total',
 }: TransactionListProps) => {
-  const renderFooter = useCallback(() => {
-    if (!data || data.length === 0 || totalAmount === undefined) {
-      return null;
-    }
-
-    const formattedTotal = totalAmount.toLocaleString('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    });
-
-    return (
-      <View style={styles.footerContainer}>
-        <CustomText style={styles.footerText}>{totalLabel}</CustomText>
-        <CustomText style={styles.footerAmount}>{formattedTotal}</CustomText>
-      </View>
-    );
-  }, [data, totalAmount, totalLabel]);
-
   const renderItem = useCallback(
-    ({item}: {item: TransactionItem}) => {
+    ({item}: {item: Transaction}) => {
       const isSelected = selectedIds.includes(item.id);
-      const formattedAmount = item.amount.toLocaleString('id-ID', {
+      const formattedAmount = (item.amount || 0).toLocaleString('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
@@ -87,7 +58,9 @@ const TransactionList = ({
             tintColors={{true: '#0E3345', false: '#ccc'}}
           />
           <View style={styles.textContainer}>
-            <CustomText style={styles.title}>{item.description}</CustomText>
+            <CustomText style={styles.title} numberOfLines={2}>
+              {item.description}
+            </CustomText>
             <CustomText style={styles.subtitle}>
               {formatRelativeDate(item.date)}
             </CustomText>
@@ -101,9 +74,11 @@ const TransactionList = ({
 
   const renderEmptyComponent = useCallback(
     () => (
-      <CustomText style={styles.empty}>
-        <Text>Tidak ada transaksi</Text>
-      </CustomText>
+      <View style={styles.emptyContainer}>
+        <CustomText style={styles.empty}>
+          <Text>Tidak ada transaksi</Text>
+        </CustomText>
+      </View>
     ),
     [],
   );
@@ -114,21 +89,31 @@ const TransactionList = ({
         data={data}
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.listContent}
-        style={styles.list}
         renderItem={renderItem}
         ListEmptyComponent={renderEmptyComponent}
-        ListFooterComponent={renderFooter}
+        // --- TAMBAHKAN PROP INI ---
+        scrollIndicatorInsets={{right: -8}}
       />
+      {typeof totalAmount === 'number' && totalAmount > 0 && (
+        <View style={styles.footerContainer}>
+          <CustomText style={styles.footerText}>{totalLabel}</CustomText>
+          <CustomText style={styles.footerAmount}>
+            {totalAmount.toLocaleString('id-ID', {
+              style: 'currency',
+              currency: 'IDR',
+              minimumFractionDigits: 0,
+            })}
+          </CustomText>
+        </View>
+      )}
     </View>
   );
 };
 
+// ... (Styles tidak berubah)
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-  },
-  list: {
-    backgroundColor: '#fff',
+    flex: 1,
   },
   listContent: {
     paddingBottom: 12,
@@ -142,7 +127,9 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
+    flexShrink: 1,
     marginLeft: 10,
+    marginRight: 8,
   },
   title: {
     fontSize: 15,
@@ -157,27 +144,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Montserrat-SemiBold',
     color: '#0E3345',
-    marginLeft: 8,
+    marginRight: 10,
+  },
+  emptyContainer: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   empty: {
     textAlign: 'center',
-    marginTop: 16,
     color: '#888',
   },
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
     marginTop: 8,
-    borderColor: '#EEEEEE',
+    backgroundColor: '#fff',
   },
+
   footerText: {
-    fontSize: 15,
+    fontSize: 17,
     fontFamily: 'Montserrat-SemiBold',
     color: '#0E3345',
   },
   footerAmount: {
-    fontSize: 15,
+    fontSize: 17,
     fontFamily: 'Montserrat-Bold',
     color: '#0E3345',
   },
