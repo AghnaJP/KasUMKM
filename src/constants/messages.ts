@@ -26,3 +26,12 @@ export const VALIDATION_MESSAGES = {
   oldPasswordRequired: 'Kata sandi lama tidak boleh kosong',
   oldPasswordInvalid: 'Kata sandi lama salah',
 };
+
+export const MENU_ALERTS = {
+  deleteWithTransaction: (count: number, name: string) =>
+    `Terdapat ${count} transaksi pada menu "${name}".\nApakah kamu yakin ingin menghapus menu ini beserta semua transaksinya?`,
+  deleteWithoutTransaction: (name: string) =>
+    `Apakah kamu yakin ingin menghapus menu "${name}"?`,
+  editWithTransaction: (count: number, name: string) =>
+    `Terdapat ${count} transaksi pada menu "${name}".\nMengubah nama atau harga akan memengaruhi data transaksi sebelumnya.\n\nSebaiknya buat menu baru jika ini menu berbeda.`,
+};

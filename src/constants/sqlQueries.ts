@@ -25,7 +25,7 @@ export const CREATE_INCOME_TABLE = `
     quantity INTEGER NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    FOREIGN KEY (menu_id) REFERENCES menus(id)
+    FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE CASCADE
   );
 `;
 

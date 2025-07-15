@@ -1,8 +1,7 @@
-// src/components/TransactionItem.tsx
-
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import CustomText from '../Text/CustomText';
+import {COLORS} from '../../constants';
 
 interface Props {
   name: string;
@@ -22,10 +21,12 @@ const TransactionItem: React.FC<Props> = ({name, date, amount, type}) => {
           {date}
         </CustomText>
       </View>
-      {/* TO-DO : FIX ESLINT */}
       <CustomText
         variant="body"
-        style={[styles.amount, {color: type === 'income' ? 'green' : 'red'}]}>
+        style={[
+          styles.amount,
+          {color: type === 'income' ? COLORS.green : COLORS.red},
+        ]}>
         {type === 'income' ? '+' : '-'}Rp{' '}
         {Math.abs(amount).toLocaleString('id-ID')}.00
       </CustomText>

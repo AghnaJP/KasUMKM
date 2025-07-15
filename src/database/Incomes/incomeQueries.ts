@@ -56,3 +56,15 @@ export const getAllIncomes = async (): Promise<IncomeItem[]> => {
     });
   });
 };
+
+export const getIncomeCountByMenuId = async (
+  menuId: number,
+): Promise<number> => {
+  const db = await getDBConnection();
+  const [results] = await db.executeSql(
+    'SELECT COUNT(*) as count FROM incomes WHERE menu_id = ?',
+    [menuId],
+  );
+  const count = results.rows.item(0).count;
+  return count;
+};
