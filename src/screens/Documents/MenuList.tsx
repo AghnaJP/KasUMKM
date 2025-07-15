@@ -14,12 +14,13 @@ import HiddenMenuActions from '../../components/Menu/HiddenMenuAction';
 import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
 import {CategoryWithEmpty, MenuItem, CATEGORIES} from '../../types/menu';
 import CustomText from '../../components/Text/CustomText';
-import {COLORS} from '../../constants';
+import {COLORS, MENU_ALERTS} from '../../constants';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {fetchAndFormatMenus} from '../../services/menuService';
+import {getIncomeCountByMenuId} from '../../database/Incomes/incomeQueries';
 
 const categoryOptions = [{label: 'Semua', value: ''}, ...CATEGORIES];
 
@@ -64,18 +65,55 @@ const MenuList = () => {
       row.closeRow();
     }
 
-    await updateMenuById(selectedMenu.id, updated.name, Number(updated.price));
-    fetchMenus();
-    setEditVisible(false);
-    setSelectedMenu(null);
+    const count = await getIncomeCountByMenuId(selectedMenu.id);
 
-    Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
+    if (count > 0) {
+      Alert.alert(
+        'Edit Menu',
+        MENU_ALERTS.editWithTransaction(count, selectedMenu.name),
+        [
+          {text: 'Batal', style: 'cancel'},
+          {
+            text: 'Lanjut Edit',
+            style: 'default',
+            onPress: async () => {
+              await updateMenuById(
+                selectedMenu.id,
+                updated.name,
+                Number(updated.price),
+              );
+              fetchMenus();
+              setEditVisible(false);
+              setSelectedMenu(null);
+              Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
+            },
+          },
+        ],
+      );
+    } else {
+      await updateMenuById(
+        selectedMenu.id,
+        updated.name,
+        Number(updated.price),
+      );
+      fetchMenus();
+      setEditVisible(false);
+      setSelectedMenu(null);
+      Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
+    }
   };
 
-  const handleDelete = useCallback((id: number) => {
+  const handleDelete = useCallback(async (id: number, name: string) => {
+    const count = await getIncomeCountByMenuId(id);
+
+    const message =
+      count > 0
+        ? MENU_ALERTS.deleteWithTransaction(count, name)
+        : MENU_ALERTS.deleteWithoutTransaction(name);
+
     Alert.alert(
       'Hapus Menu',
-      'Apakah kamu yakin ingin menghapus menu ini?',
+      message,
       [
         {text: 'Batal', style: 'cancel'},
         {
@@ -124,7 +162,7 @@ const MenuList = () => {
               <HiddenMenuActions
                 item={data.item}
                 onEdit={handleEdit}
-                onDelete={handleDelete}
+                onDelete={() => handleDelete(data.item.id, data.item.name)}
               />
             );
           }}
