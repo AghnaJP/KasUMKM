@@ -1,122 +1,84 @@
-import React, {useState} from 'react';
+import React, {useState, useCallback} from 'react';
 import {StyleSheet, SafeAreaView, View, Alert} from 'react-native';
 import TransactionHeader from '../../components/TransactionList/TransactionHeader';
 import TransactionSwitcher from '../../components/TransactionList/TransactionSwitcher';
 import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
-import {
-  IncomeListService,
-  IncomeData,
-} from '../../database/Incomes/incomeDBList';
-import {
-  ExpenseQueries,
-  ExpenseData,
-} from '../../database/Expense/expenseDBList';
+import {IncomeListService} from '../../database/Incomes/incomeDBList';
+import {ExpenseQueries} from '../../database/Expense/expenseDBList';
+import {IncomeData, ExpenseData} from '../../types/transaction';
 
 const TransactionListScreen = () => {
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
-  const [selectedIncomeIds, setSelectedIncomeIds] = useState<number[]>([]);
-  const [selectedExpenseIds, setSelectedExpenseIds] = useState<number[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [isEditModalVisible, setEditModalVisible] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<
     IncomeData | ExpenseData | null
   >(null);
-  const [allTransactions, setAllTransactions] = useState<
-    (IncomeData | ExpenseData)[]
-  >([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleToggleCheckbox = (id: number) => {
-    if (activeTab === 'income') {
-      setSelectedIncomeIds(prevIds =>
-        prevIds.includes(id) ? prevIds.filter(i => i !== id) : [...prevIds, id],
-      );
-    } else {
-      setSelectedExpenseIds(prevIds =>
-        prevIds.includes(id) ? prevIds.filter(i => i !== id) : [...prevIds, id],
-      );
+  const getIncomes = useCallback(() => {
+    return IncomeListService.getIncomeDetails();
+  }, []);
+
+  const getExpenses = useCallback(() => {
+    return ExpenseQueries.getExpenseDetails();
+  }, []);
+
+  const handleEdit = (item: IncomeData | ExpenseData) => {
+    setTransactionToEdit(item);
+    setEditModalVisible(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      if (activeTab === 'income') {
+        await IncomeListService.deleteIncomesByIds([id]);
+      } else {
+        await ExpenseQueries.deleteExpensesByIds([id]);
+      }
+      Alert.alert('Sukses', 'Transaksi berhasil dihapus.');
+      setRefreshKey(prev => prev + 1);
+    } catch {
+      Alert.alert('Error', 'Gagal menghapus transaksi.');
     }
   };
 
-  const selectedIds =
-    activeTab === 'income' ? selectedIncomeIds : selectedExpenseIds;
-
-  const handleDelete = () => {
-    if (selectedIds.length === 0) {
-      Alert.alert('Peringatan', 'Pilih minimal satu transaksi untuk dihapus.');
-      return;
-    }
-    Alert.alert(
-      'Konfirmasi Hapus',
-      `Anda yakin ingin menghapus ${selectedIds.length} transaksi terpilih?`,
-      [
-        {text: 'Batal', style: 'cancel'},
-        {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (activeTab === 'income') {
-                await IncomeListService.deleteIncomesByIds(selectedIds);
-                setSelectedIncomeIds([]);
-              } else {
-                await ExpenseQueries.deleteExpensesByIds(selectedIds);
-                setSelectedExpenseIds([]);
-              }
-              Alert.alert('Sukses', 'Transaksi berhasil dihapus.');
-              setRefreshKey(prevKey => prevKey + 1);
-            } catch (error) {
-              Alert.alert('Error', 'Gagal menghapus transaksi.');
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  const handleEdit = () => {
-    if (selectedIds.length !== 1) {
-      Alert.alert(
-        'Peringatan',
-        'Hanya bisa mengubah satu transaksi dalam satu waktu.',
-      );
-      return;
-    }
-    const selectedTransaction = allTransactions.find(
-      t => t.id === selectedIds[0],
-    );
-    if (selectedTransaction) {
-      setTransactionToEdit(selectedTransaction);
-      setEditModalVisible(true);
-    }
-  };
-
-  const handleSaveEdit = async (updatedData: {name: string; price: string}) => {
+  const handleSaveEdit = async (updatedData: {
+    description: string;
+    price: string;
+    quantity: string;
+    date: string;
+  }) => {
     if (!transactionToEdit) {
       return;
     }
     try {
-      const priceNumber = parseFloat(updatedData.price);
-      if (activeTab === 'income' && 'menu_id' in transactionToEdit) {
-        await IncomeListService.updateMenuDetails(
-          transactionToEdit.menu_id,
-          updatedData.name,
-          priceNumber,
+      const price = parseFloat(updatedData.price);
+      const quantity = parseInt(updatedData.quantity, 10);
+      const date = updatedData.date;
+
+      if ('menu_id' in transactionToEdit) {
+        await IncomeListService.updateIncomeDetails(
+          transactionToEdit.id,
+          updatedData.description,
+          price,
+          quantity,
+          date,
         );
       } else {
         await ExpenseQueries.updateExpenseDetails(
           transactionToEdit.id,
-          updatedData.name,
-          priceNumber,
+          updatedData.description,
+          price,
+          quantity,
+          date,
         );
       }
+
       setEditModalVisible(false);
       setTransactionToEdit(null);
-
-      setSelectedIncomeIds([]);
-      setSelectedExpenseIds([]);
-      setRefreshKey(prevKey => prevKey + 1);
+      setRefreshKey(prev => prev + 1);
       Alert.alert('Sukses', 'Transaksi berhasil diperbarui.');
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Gagal memperbarui transaksi.');
     }
   };
@@ -124,32 +86,32 @@ const TransactionListScreen = () => {
   return (
     <SafeAreaView style={styles.wrapper}>
       <View style={styles.container}>
-        <View style={styles.fullWidth}>
-          <TransactionHeader
-            onDeletePress={handleDelete}
-            onEditPress={handleEdit}
-            selectionCount={selectedIds.length}
-          />
-          <TransactionSwitcher
-            activeTab={activeTab}
-            onTabChange={tab => {
-              setActiveTab(tab);
-            }}
-            selectedIds={selectedIds}
-            onToggleCheckbox={handleToggleCheckbox}
-            refreshKey={refreshKey}
-            onDataLoaded={setAllTransactions}
-          />
-        </View>
+        <TransactionHeader
+          onDeletePress={() => {}}
+          onEditPress={() => {}}
+          selectionCount={0}
+        />
+        <TransactionSwitcher
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          getDataFn={activeTab === 'income' ? getIncomes : getExpenses}
+          onDataLoaded={() => {}}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          refreshKey={refreshKey}
+        />
       </View>
+
       {transactionToEdit && (
         <EditTransactionModal
           visible={isEditModalVisible}
           onClose={() => setEditModalVisible(false)}
           onSave={handleSaveEdit}
           transactionData={{
-            name: transactionToEdit.description,
+            description: transactionToEdit.description,
             price: transactionToEdit.price,
+            quantity: transactionToEdit.quantity,
+            date: transactionToEdit.date,
           }}
         />
       )}
@@ -163,14 +125,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   container: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
+    flex: 1,
     padding: 24,
     width: '100%',
     backgroundColor: '#fff',
   },
   fullWidth: {
+    flex: 1,
     width: '100%',
   },
 });

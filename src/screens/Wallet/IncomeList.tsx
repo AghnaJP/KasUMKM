@@ -1,32 +1,33 @@
 import React from 'react';
-import {
-  IncomeListService,
-  IncomeData,
-} from '../../database/Incomes/incomeDBList';
 import TransactionList from '../../components/TransactionList/TransactionList';
 import {useTransactionList} from '../../hooks/useTransactionList';
+import {IncomeData} from '../../types/transaction';
 
 interface Props {
   selectedMonth: string;
   selectedYear: string;
-  selectedIds: number[];
-  onToggleCheckbox: (id: number) => void;
-  refreshKey: number;
+  getDataFn: () => Promise<IncomeData[]>;
   onDataLoaded: (data: IncomeData[]) => void;
+  onEdit: (item: IncomeData) => void;
+  onDelete: (id: number) => void;
+  refreshKey: number;
 }
 
 const IncomeList = ({
   selectedMonth,
   selectedYear,
-  selectedIds,
-  onToggleCheckbox,
+  getDataFn,
   onDataLoaded,
+  onEdit,
+  onDelete,
+  refreshKey,
 }: Props) => {
-  const incomes = useTransactionList<IncomeData>(
-    IncomeListService.getIncomeDetails,
+  const incomes = useTransactionList(
+    getDataFn,
     selectedMonth,
     selectedYear,
     onDataLoaded,
+    refreshKey,
   );
 
   const totalIncome = incomes.reduce((sum, item) => sum + item.amount, 0);
@@ -34,10 +35,11 @@ const IncomeList = ({
   return (
     <TransactionList
       data={incomes}
-      selectedIds={selectedIds}
-      onToggleCheckbox={onToggleCheckbox}
       totalAmount={totalIncome}
       totalLabel="Total Pendapatan"
+      onEdit={onEdit as (item: any) => void}
+      onDelete={onDelete}
+      refreshKey={refreshKey}
     />
   );
 };

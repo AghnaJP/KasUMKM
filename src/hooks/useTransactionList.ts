@@ -24,6 +24,7 @@ export function useTransactionList<T>(
   selectedMonth: string,
   selectedYear: string,
   onDataLoaded: (data: T[]) => void,
+  refreshKey?: number,
 ) {
   const [data, setData] = useState<T[]>([]);
   const isFocused = useIsFocused();
@@ -49,7 +50,7 @@ export function useTransactionList<T>(
     if (isFocused) {
       fetchData();
     }
-  }, [isFocused, fetchData]);
+  }, [isFocused, fetchData, refreshKey]);
 
   return data;
 }

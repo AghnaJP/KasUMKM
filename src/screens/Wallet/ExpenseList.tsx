@@ -1,31 +1,33 @@
 import React from 'react';
-import {
-  ExpenseQueries,
-  ExpenseData,
-} from '../../database/Expense/expenseDBList';
 import TransactionList from '../../components/TransactionList/TransactionList';
 import {useTransactionList} from '../../hooks/useTransactionList';
+import {ExpenseData} from '../../types/transaction';
 
 interface Props {
   selectedMonth: string;
   selectedYear: string;
-  selectedIds: number[];
-  onToggleCheckbox: (id: number) => void;
+  getDataFn: () => Promise<ExpenseData[]>;
   onDataLoaded: (data: ExpenseData[]) => void;
+  onEdit: (item: ExpenseData) => void;
+  onDelete: (id: number) => void;
+  refreshKey: number;
 }
 
 const ExpenseList = ({
   selectedMonth,
   selectedYear,
-  selectedIds,
-  onToggleCheckbox,
+  getDataFn,
   onDataLoaded,
+  onEdit,
+  onDelete,
+  refreshKey,
 }: Props) => {
-  const expenses = useTransactionList<ExpenseData>(
-    ExpenseQueries.getExpenseDetails,
+  const expenses = useTransactionList(
+    getDataFn,
     selectedMonth,
     selectedYear,
     onDataLoaded,
+    refreshKey,
   );
 
   const totalExpense = expenses.reduce((sum, item) => sum + item.amount, 0);
@@ -33,10 +35,11 @@ const ExpenseList = ({
   return (
     <TransactionList
       data={expenses}
-      selectedIds={selectedIds}
-      onToggleCheckbox={onToggleCheckbox}
       totalAmount={totalExpense}
       totalLabel="Total Pengeluaran"
+      onEdit={onEdit}
+      onDelete={onDelete}
+      refreshKey={refreshKey}
     />
   );
 };
