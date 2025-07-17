@@ -7,18 +7,37 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
-import FormField from '../Form/FormField';
-import {formatRupiah, parseRupiah} from '../../utils/formatIDR';
+import DatePickerField from '../Form/DatePickerField';
+
+const formatRupiah = (value: string): string => {
+  if (!value) {
+    return 'Rp 0';
+  }
+  return 'Rp ' + parseInt(value, 10).toLocaleString('id-ID');
+};
+
+const formatToYYYYMMDD = (date: Date) => date.toISOString().split('T')[0];
 
 interface EditTransactionModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (updatedData: {name: string; price: string}) => void;
-  transactionData: {name: string; price: number} | null;
+  onSave: (updatedData: {
+    description: string;
+    price: string;
+    quantity: string;
+    date: string;
+  }) => void;
+  transactionData: {
+    description: string;
+    price: number;
+    quantity?: number;
+    date?: string;
+  } | null;
 }
 
 const EditTransactionModal = ({
@@ -27,23 +46,30 @@ const EditTransactionModal = ({
   onSave,
   transactionData,
 }: EditTransactionModalProps) => {
-  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   useEffect(() => {
     if (transactionData) {
-      setName(transactionData.name);
-      setPrice(formatRupiah(transactionData.price));
+      setDescription(transactionData.description);
+      setPrice(transactionData.price.toString());
+      setQuantity(transactionData.quantity?.toString() ?? '1');
+      if (transactionData.date) {
+        setSelectedDate(new Date(transactionData.date));
+      }
     }
   }, [transactionData]);
 
   const handleSave = () => {
-    if (!name || !price) {
-      Alert.alert('Peringatan', 'Nama dan Harga tidak boleh kosong.');
+    if (!description || !price || !quantity || !selectedDate) {
+      Alert.alert('Peringatan', 'Semua field wajib diisi.');
       return;
     }
-    const numericPrice = parseRupiah(price);
-    onSave({name, price: numericPrice.toString()});
+
+    const formattedDate = formatToYYYYMMDD(selectedDate);
+    onSave({description, price, quantity, date: formattedDate});
   };
 
   return (
@@ -57,25 +83,55 @@ const EditTransactionModal = ({
         style={styles.overlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <CustomText variant="subtitle">Ubah Transaksi</CustomText>
+            <CustomText variant="subtitle">{'Ubah Transaksi'}</CustomText>
             <TouchableOpacity onPress={onClose}>
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
 
-          <FormField
-            label="Nama Transaksi"
+          <CustomText style={styles.label}>Tanggal Transaksi</CustomText>
+          <DatePickerField value={selectedDate} onChange={setSelectedDate} />
+
+          <CustomText style={styles.label}>Nama Transaksi</CustomText>
+          <TextInput
+            style={styles.input}
             placeholder="cth: Nasi Goreng"
-            value={name}
-            onChangeText={setName}
+            value={description}
+            onChangeText={setDescription}
           />
-          <FormField
-            label="Harga Transaksi"
-            placeholder="cth: 20.000"
-            value={price}
-            onChangeText={text => setPrice(formatRupiah(text))}
+
+          <CustomText style={styles.label}>Harga Transaksi</CustomText>
+          <TextInput
+            style={styles.input}
+            placeholder="cth: 20000"
+            value={formatRupiah(price)}
+            onChangeText={text => {
+              const numericValue = text.replace(/[^0-9]/g, '');
+              setPrice(numericValue);
+            }}
             keyboardType="numeric"
           />
+
+          <View style={styles.rowBetween}>
+            <CustomText style={styles.label}>Jumlah</CustomText>
+            <View style={styles.counterRow}>
+              <TouchableOpacity
+                onPress={() =>
+                  setQuantity(q =>
+                    String(Math.max(parseInt(q || '1', 10) - 1, 1)),
+                  )
+                }>
+                <Icon name="remove-circle-outline" size={24} color="#0E3345" />
+              </TouchableOpacity>
+              <CustomText style={styles.quantityText}>{quantity}</CustomText>
+              <TouchableOpacity
+                onPress={() =>
+                  setQuantity(q => String(parseInt(q || '1', 10) + 1))
+                }>
+                <Icon name="add-circle-outline" size={24} color="#0E3345" />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <Button title="Simpan" onPress={handleSave} variant="primary" />
         </View>
@@ -102,6 +158,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  label: {
+    fontSize: 15,
+    color: '#0E3345',
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    marginBottom: 8,
+    color: '#333',
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quantityText: {
+    fontSize: 16,
+    fontFamily: 'Montserrat-SemiBold',
+    color: '#0E3345',
+    width: 24,
+    textAlign: 'center',
   },
 });
 

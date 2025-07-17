@@ -1,13 +1,6 @@
 import {getDBConnection} from '../db';
 import {SQLiteDatabase} from 'react-native-sqlite-storage';
-
-export interface ExpenseData {
-  id: number;
-  description: string;
-  amount: number;
-  price: number;
-  date: string;
-}
+import {ExpenseData} from '../../types/transaction';
 
 const getExpenseDetails = async (): Promise<ExpenseData[]> => {
   const database: SQLiteDatabase = await getDBConnection();
@@ -16,10 +9,11 @@ const getExpenseDetails = async (): Promise<ExpenseData[]> => {
       const query = `
         SELECT
           id,
-          description,
-          price,
-          (price * quantity) as amount,
-          created_at as date
+          COALESCE(custom_description, description) AS description,
+          COALESCE(custom_price, price) AS price,
+          COALESCE(custom_quantity, quantity) AS quantity,
+          (COALESCE(custom_price, price) * COALESCE(custom_quantity, quantity)) AS amount,
+          COALESCE(custom_created_at, created_at) AS date
         FROM expenses
         ORDER BY id DESC;
       `;
@@ -68,15 +62,24 @@ const updateExpenseDetails = async (
   id: number,
   newDescription: string,
   newPrice: number,
+  newQuantity: number,
+  newDate: string,
 ): Promise<void> => {
   const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
-      const query =
-        'UPDATE expenses SET description = ?, price = ? WHERE id = ?';
+      const query = `
+        UPDATE expenses
+        SET
+          custom_description = ?,
+          custom_price = ?,
+          custom_quantity = ?,
+          custom_created_at = ?
+        WHERE id = ?;
+      `;
       tx.executeSql(
         query,
-        [newDescription, newPrice, id],
+        [newDescription, newPrice, newQuantity, newDate, id],
         () => resolve(),
         (_, error) => {
           reject(error);

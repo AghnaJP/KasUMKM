@@ -1,14 +1,6 @@
 import {getDBConnection} from '../db';
 import {SQLiteDatabase} from 'react-native-sqlite-storage';
-
-export interface IncomeData {
-  id: number;
-  menu_id: number;
-  description: string;
-  amount: number;
-  price: number;
-  date: string;
-}
+import {IncomeData} from '../../types/transaction';
 
 export const IncomeListService = {
   getIncomeDetails: async (): Promise<IncomeData[]> => {
@@ -19,10 +11,11 @@ export const IncomeListService = {
           SELECT
             i.id,
             i.menu_id,
-            m.name AS description,
-            (i.quantity * m.price) AS amount,
-            m.price,
-            i.created_at AS date
+            COALESCE(i.custom_description, m.name) AS description,
+            (COALESCE(i.custom_quantity, i.quantity) * COALESCE(i.custom_price, m.price)) AS amount,
+            COALESCE(i.custom_price, m.price) AS price,
+            COALESCE(i.custom_created_at, i.created_at) AS date,
+            COALESCE(i.custom_quantity, i.quantity) AS quantity
           FROM incomes i
           JOIN menus m ON i.menu_id = m.id
           ORDER BY i.id DESC;
@@ -90,6 +83,38 @@ export const IncomeListService = {
           () => resolve(),
           (_, error) => {
             console.error('Gagal menghapus incomes:', error);
+            reject(error);
+            return false;
+          },
+        );
+      });
+    });
+  },
+
+  updateIncomeDetails: async (
+    incomeId: number,
+    newDescription: string,
+    newPrice: number,
+    newQuantity: number,
+    newDate: string,
+  ): Promise<void> => {
+    const db = await getDBConnection();
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        const query = `
+          UPDATE incomes
+          SET
+            custom_description = ?,
+            custom_price = ?,
+            custom_quantity = ?,
+            custom_created_at = ?
+          WHERE id = ?;
+        `;
+        tx.executeSql(
+          query,
+          [newDescription, newPrice, newQuantity, newDate, incomeId],
+          () => resolve(),
+          (_, error) => {
             reject(error);
             return false;
           },
