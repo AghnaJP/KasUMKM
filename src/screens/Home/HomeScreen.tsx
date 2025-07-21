@@ -11,30 +11,16 @@ import {AuthContext} from '../../context/AuthContext';
 import ProfitCard from '../../components/Card/ProfitCard';
 import TransactionItem from '../../components/TransactionList/TransactionItem';
 import {useTransactionList} from '../../hooks/useTransactionList';
-import {getAllTransactions} from '../../database/transactions/getAllTransaction';
+import {getAllTransactions} from '../../database/transactions/transactionQueries';
 import type {TransactionData} from '../../types/transaction';
+import {MONTHS} from '../../constants/months';
 
 const HomeScreen = () => {
   const {userName} = useContext(AuthContext);
   const [_, setLoaded] = useState<TransactionData[]>([]);
 
-  const monthNames = [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
-  ];
-
   const currentDate = new Date();
-  const selectedMonth = monthNames[currentDate.getMonth()];
+  const selectedMonth = MONTHS[currentDate.getMonth()];
   const selectedYear = currentDate.getFullYear().toString();
 
   const transactions = useTransactionList<TransactionData>(

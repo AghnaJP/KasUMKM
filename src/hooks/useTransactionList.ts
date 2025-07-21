@@ -1,21 +1,9 @@
 import {useEffect, useState, useCallback} from 'react';
 import {useIsFocused} from '@react-navigation/native';
+import {MONTHS} from '../constants/months';
 
 const monthToNumber = (month: string): string => {
-  const index = [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
-  ].indexOf(month);
+  const index = MONTHS.indexOf(month);
   return (index + 1).toString().padStart(2, '0');
 };
 

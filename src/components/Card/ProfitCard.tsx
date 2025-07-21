@@ -6,16 +6,15 @@ import {COLORS} from '../../constants';
 import {useProfitData} from '../../hooks/useProfitData';
 
 const ProfitCard = () => {
-  const {menuList, incomeList, expenseList, loading} = useProfitData();
+  const {incomeList, expenseList, loading} = useProfitData();
 
-  const totalIncome = incomeList.reduce((sum, income) => {
-    const menu = menuList.find(m => m.id === income.menu_id);
-    const price = menu?.price || 0;
-    return sum + price * income.quantity;
-  }, 0);
+  const totalIncome = incomeList.reduce(
+    (sum, income) => sum + (Number(income.amount) || 0),
+    0,
+  );
 
   const totalExpense = expenseList.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + (Number(item.amount) || 0),
     0,
   );
 
