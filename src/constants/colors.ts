@@ -9,6 +9,7 @@ export const COLORS = {
   green: '#22c55e',
   softBlue: '#B1D2DD',
   darkGray: '#00000066',
+  veryLightGray: '#F0F0F0',
 };
 
 export const BUTTON_COLORS = {

@@ -2,7 +2,7 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/Home/HomeScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
-import TransactionListScreen from '../screens/Wallet/TransactionListScreen';
+import TransactionListScreen from '../screens/Wallet/WalletScreen';
 import DocumentsScreen from '../screens/Documents/DocumentsScreen';
 import AddScreen from '../screens/Add/AddScreen';
 import MainLayout from '../components/MainLayout';

@@ -52,7 +52,9 @@ const TransactionSwitcher = ({
 
   useEffect(() => {
     const generateYearList = async () => {
-      if (!isFocused) return;
+      if (!isFocused) {
+        return;
+      }
 
       try {
         const allIncomes = await IncomeListService.getIncomeDetails();

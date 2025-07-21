@@ -4,7 +4,7 @@ import AppNavigator from './AppNavigator';
 import AddMenu from '../screens/Documents/AddMenu';
 import MenuList from '../screens/Documents/MenuList';
 import EditProfile from '../screens/Profile/EditProfile';
-import TransactionReport from '../screens/Reports/TransactionReport';
+import TransactionReport from '../screens/Reports/TransactionReportScreen';
 import BackButton from '../components/Button/BackButton';
 import {AppStackParamList} from '../types/navigation';
 
