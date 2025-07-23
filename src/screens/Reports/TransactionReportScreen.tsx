@@ -1,19 +1,22 @@
 import React, {useEffect, useState} from 'react';
-import {View, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import {View, StyleSheet, ScrollView} from 'react-native';
 import CustomText from '../../components/Text/CustomText';
 import {getAllTransactions} from '../../database/transactions/transactionQueries';
 import {groupByMonth} from '../../utils/transactionUtils';
 import {TransactionData} from '../../types/transaction';
 import {COLORS} from '../../constants';
 import {Picker} from '@react-native-picker/picker';
+import Button from '../../components/Button/Button';
+import {useDetailNavigation} from '../../hooks/useDetailNavigation'; // ✅ ADD THIS
 
 const TransactionReport = () => {
+  const currentYear = new Date().getFullYear();
   const [monthlyData, setMonthlyData] = useState<
     {month: string; income: number; expense: number; year: number}[]
   >([]);
-  const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const {handlePressDetail} = useDetailNavigation();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,11 +91,11 @@ const TransactionReport = () => {
                   </CustomText>
                 </View>
                 <View style={[styles.cell, styles.colAksi]}>
-                  <TouchableOpacity style={styles.detailButton}>
-                    <CustomText variant="caption" color={COLORS.white}>
-                      Detail
-                    </CustomText>
-                  </TouchableOpacity>
+                  <Button
+                    title="Detail"
+                    customStyle={styles.detailButton}
+                    onPress={() => handlePressDetail(item.month, item.year)}
+                  />
                 </View>
               </View>
             ))}
@@ -171,6 +174,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 6,
     borderRadius: 6,
+    marginLeft: 8,
   },
 });
 
