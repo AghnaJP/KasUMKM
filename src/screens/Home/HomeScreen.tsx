@@ -6,16 +6,21 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import CustomText from '../../components/Text/CustomText';
-import {AuthContext} from '../../context/AuthContext';
 import ProfitCard from '../../components/Card/ProfitCard';
 import TransactionItem from '../../components/TransactionList/TransactionItem';
+import {AuthContext} from '../../context/AuthContext';
 import {useTransactionList} from '../../hooks/useTransactionList';
 import {getAllTransactions} from '../../database/transactions/transactionQueries';
-import type {TransactionData} from '../../types/transaction';
 import {MONTHS} from '../../constants/months';
+import {RootStackParamList} from '../../types/navigation';
+import type {TransactionData} from '../../types/transaction';
 
 const HomeScreen = () => {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {userName} = useContext(AuthContext);
   const [_, setLoaded] = useState<TransactionData[]>([]);
 
@@ -40,8 +45,16 @@ const HomeScreen = () => {
       <ProfitCard />
 
       <View style={styles.transactionHeader}>
-        <CustomText variant="subtitle">Transaksi Hari Ini</CustomText>
-        <TouchableOpacity>
+        <CustomText variant="subtitle">Transaksi Terkini</CustomText>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('App', {
+              screen: 'AppTabs',
+              params: {
+                screen: 'Wallet',
+              },
+            })
+          }>
           <CustomText variant="caption" color="#007bff" uppercase>
             Lihat Semua
           </CustomText>

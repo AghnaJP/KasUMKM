@@ -24,4 +24,5 @@ export type AppStackParamList = {
   AddTransaction: undefined;
   EditProfile: undefined;
   TransactionReport: undefined;
+  DetailReport: undefined;
 };
