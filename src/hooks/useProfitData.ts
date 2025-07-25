@@ -2,8 +2,8 @@ import {useEffect, useState} from 'react';
 import {useIsFocused} from '@react-navigation/native';
 import {MenuItem} from '../types/menu';
 import {IncomeData, ExpenseData} from '../types/transaction';
-import {IncomeListService} from '../database/Incomes/incomeDBList';
-import {ExpenseQueries} from '../database/Expense/expenseDBList';
+import {getExpenseDetails} from '../database/Expense/expenseQueries';
+import {getIncomeDetails} from '../database/Incomes/incomeQueries';
 
 export const useProfitData = () => {
   const [menuList, _setMenuList] = useState<MenuItem[]>([]);
@@ -19,8 +19,8 @@ export const useProfitData = () => {
       setLoading(true);
       try {
         const [incomes, expenses] = await Promise.all([
-          IncomeListService.getIncomeDetails(),
-          ExpenseQueries.getExpenseDetails(),
+          getIncomeDetails(),
+          getExpenseDetails(),
         ]);
 
         if (isMounted) {

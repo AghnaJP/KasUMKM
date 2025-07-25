@@ -55,17 +55,21 @@ const MenuList = () => {
     setEditVisible(true);
   };
 
-  const handleSaveEdit = async (updated: {name: string; price: string}) => {
+  const handleSaveEdit = async (updated: {
+    description: string;
+    price: string;
+    quantity: string;
+    date: string;
+  }) => {
     if (!selectedMenu) {
       return;
     }
 
-    const row = rowMapRef.current[selectedMenu.id];
-    if (row) {
-      row.closeRow();
-    }
-
     const count = await getIncomeCountByMenuId(selectedMenu.id);
+
+    const name = updated.description;
+
+    const price = Number(updated.price);
 
     if (count > 0) {
       Alert.alert(
@@ -77,11 +81,7 @@ const MenuList = () => {
             text: 'Lanjut Edit',
             style: 'default',
             onPress: async () => {
-              await updateMenuById(
-                selectedMenu.id,
-                updated.name,
-                Number(updated.price),
-              );
+              await updateMenuById(selectedMenu.id, name, price);
               fetchMenus();
               setEditVisible(false);
               setSelectedMenu(null);
@@ -91,11 +91,7 @@ const MenuList = () => {
         ],
       );
     } else {
-      await updateMenuById(
-        selectedMenu.id,
-        updated.name,
-        Number(updated.price),
-      );
+      await updateMenuById(selectedMenu.id, name, price);
       fetchMenus();
       setEditVisible(false);
       setSelectedMenu(null);
@@ -192,7 +188,16 @@ const MenuList = () => {
           setEditVisible(false);
           setSelectedMenu(null);
         }}
-        transactionData={selectedMenu}
+        transactionData={
+          selectedMenu
+            ? {
+                description: selectedMenu.name,
+                price: selectedMenu.price,
+                quantity: 1,
+                date: new Date().toISOString().split('T')[0],
+              }
+            : null
+        }
         onSave={handleSaveEdit}
       />
 

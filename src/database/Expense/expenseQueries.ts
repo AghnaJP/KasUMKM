@@ -1,6 +1,30 @@
 import {ExpenseItem} from '../../types/menu';
+import {ExpenseData} from '../../types/transaction';
 import {getDBConnection} from '../db';
 import {SQLiteDatabase, Transaction} from 'react-native-sqlite-storage';
+
+export const getAllExpenses = async (): Promise<ExpenseItem[]> => {
+  const db = await getDBConnection();
+  return new Promise((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        'SELECT * FROM expenses',
+        [],
+        (_, result) => {
+          const items: ExpenseItem[] = [];
+          for (let i = 0; i < result.rows.length; i++) {
+            items.push(result.rows.item(i));
+          }
+          resolve(items);
+        },
+        (_, error) => {
+          reject(error);
+          return false;
+        },
+      );
+    });
+  });
+};
 
 export const insertExpense = async (
   description: string,
@@ -25,20 +49,85 @@ export const insertExpense = async (
   });
 };
 
-export const getAllExpenses = async (): Promise<ExpenseItem[]> => {
-  const db = await getDBConnection();
+export const getExpenseDetails = async (): Promise<ExpenseData[]> => {
+  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
-    db.transaction(tx => {
+    database.transaction(tx => {
+      const query = `
+        SELECT
+          id,
+          COALESCE(custom_description, description) AS description,
+          COALESCE(custom_price, price) AS price,
+          COALESCE(custom_quantity, quantity) AS quantity,
+          (COALESCE(custom_price, price) * COALESCE(custom_quantity, quantity)) AS amount,
+          COALESCE(custom_created_at, created_at) AS date
+        FROM expenses
+        ORDER BY id DESC;
+      `;
       tx.executeSql(
-        'SELECT * FROM expenses',
+        query,
         [],
-        (_, result) => {
-          const items: ExpenseItem[] = [];
-          for (let i = 0; i < result.rows.length; i++) {
-            items.push(result.rows.item(i));
+        (_, results) => {
+          const data: ExpenseData[] = [];
+          for (let i = 0; i < results.rows.length; i++) {
+            data.push(results.rows.item(i));
           }
-          resolve(items);
+          resolve(data);
         },
+        (_, error) => {
+          reject(error);
+          return false;
+        },
+      );
+    });
+  });
+};
+
+export const deleteExpensesByIds = async (ids: number[]): Promise<void> => {
+  if (ids.length === 0) {
+    return Promise.resolve();
+  }
+  const database: SQLiteDatabase = await getDBConnection();
+  return new Promise((resolve, reject) => {
+    database.transaction(tx => {
+      const placeholders = ids.map(() => '?').join(', ');
+      const query = `DELETE FROM expenses WHERE id IN (${placeholders})`;
+      tx.executeSql(
+        query,
+        ids,
+        () => resolve(),
+        (_, error) => {
+          reject(error);
+          return false;
+        },
+      );
+    });
+  });
+};
+
+export const updateExpenseDetails = async (
+  id: number,
+  newDescription: string,
+  newPrice: number,
+  newQuantity: number,
+  newDate: string,
+): Promise<void> => {
+  const database: SQLiteDatabase = await getDBConnection();
+  return new Promise((resolve, reject) => {
+    database.transaction(tx => {
+      const query = `
+        UPDATE expenses
+        SET
+          custom_description = ?,
+          custom_price = ?,
+          custom_quantity = ?,
+          custom_created_at = ?
+        WHERE id = ?;
+      `;
+      tx.executeSql(
+        query,
+        [newDescription, newPrice, newQuantity, newDate, id],
+        () => resolve(),
         (_, error) => {
           reject(error);
           return false;

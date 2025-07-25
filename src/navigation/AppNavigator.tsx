@@ -2,13 +2,13 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/Home/HomeScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
-import TransactionListScreen from '../screens/Wallet/WalletScreen';
 import DocumentsScreen from '../screens/Documents/DocumentsScreen';
 import AddScreen from '../screens/Add/AddScreen';
 import MainLayout from '../components/MainLayout';
 import BottomNav from '../components/BottomNav';
 import {AppTabParamList} from '../types/navigation';
 import {BottomTabBarProps} from '@react-navigation/bottom-tabs';
+import WalletScreen from '../screens/Wallet/WalletScreen';
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
@@ -32,7 +32,7 @@ const AppNavigator = () => {
         options={{title: 'Transaksi Keuangan'}}
         children={() => (
           <MainLayout>
-            <TransactionListScreen />
+            <WalletScreen />
           </MainLayout>
         )}
       />

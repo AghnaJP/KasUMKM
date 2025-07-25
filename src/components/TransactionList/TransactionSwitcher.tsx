@@ -5,10 +5,10 @@ import {Dropdown} from 'react-native-element-dropdown';
 import CustomText from '../Text/CustomText';
 import IncomeList from '../../screens/Wallet/IncomeList';
 import ExpenseList from '../../screens/Wallet/ExpenseList';
-import {IncomeListService} from '../../database/Incomes/incomeDBList';
-import {ExpenseQueries} from '../../database/Expense/expenseDBList';
 import {IncomeData, ExpenseData} from '../../types/transaction';
 import {MONTHS} from '../../constants/months';
+import {getExpenseDetails} from '../../database/Expense/expenseQueries';
+import {getIncomeDetails} from '../../database/Incomes/incomeQueries';
 
 const getCurrentDateInfo = () => {
   const today = new Date();
@@ -57,8 +57,8 @@ const TransactionSwitcher = ({
       }
 
       try {
-        const allIncomes = await IncomeListService.getIncomeDetails();
-        const allExpenses = await ExpenseQueries.getExpenseDetails();
+        const allIncomes = await getIncomeDetails();
+        const allExpenses = await getExpenseDetails();
         const allTransactions = [...allIncomes, ...allExpenses];
 
         let startYear = currentYear;

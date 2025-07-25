@@ -1,9 +1,9 @@
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
-import {IncomeListService} from '../database/Incomes/incomeDBList';
-import {ExpenseQueries} from '../database/Expense/expenseDBList';
+import {getExpenseDetails} from '../database/Expense/expenseQueries';
 import {MONTHS} from '../constants/months';
+import {getIncomeDetails} from '../database/Incomes/incomeQueries';
 
 const getMonthIndex = (monthName: string): number => {
   return MONTHS.indexOf(monthName);
@@ -15,8 +15,8 @@ export const useDetailNavigation = () => {
 
   const handlePressDetail = async (month: string, year: number) => {
     const [incomeRaw, expenseRaw] = await Promise.all([
-      IncomeListService.getIncomeDetails(),
-      ExpenseQueries.getExpenseDetails(),
+      getIncomeDetails(),
+      getExpenseDetails(),
     ]);
 
     const monthIndex = getMonthIndex(month);

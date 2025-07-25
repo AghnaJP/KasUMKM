@@ -3,11 +3,19 @@ import {StyleSheet, SafeAreaView, View, Alert} from 'react-native';
 import TransactionHeader from '../../components/TransactionList/TransactionHeader';
 import TransactionSwitcher from '../../components/TransactionList/TransactionSwitcher';
 import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
-import {IncomeListService} from '../../database/Incomes/incomeDBList';
-import {ExpenseQueries} from '../../database/Expense/expenseDBList';
 import {IncomeData, ExpenseData} from '../../types/transaction';
+import {
+  deleteExpensesByIds,
+  getExpenseDetails,
+  updateExpenseDetails,
+} from '../../database/Expense/expenseQueries';
+import {
+  deleteIncomesByIds,
+  getIncomeDetails,
+  updateIncomeDetails,
+} from '../../database/Incomes/incomeQueries';
 
-const TransactionListScreen = () => {
+const WalletScreen = () => {
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
   const [isEditModalVisible, setEditModalVisible] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<
@@ -16,11 +24,11 @@ const TransactionListScreen = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const getIncomes = useCallback(() => {
-    return IncomeListService.getIncomeDetails();
+    return getIncomeDetails();
   }, []);
 
   const getExpenses = useCallback(() => {
-    return ExpenseQueries.getExpenseDetails();
+    return getExpenseDetails();
   }, []);
 
   const handleEdit = (item: IncomeData | ExpenseData) => {
@@ -31,9 +39,9 @@ const TransactionListScreen = () => {
   const handleDelete = async (id: number) => {
     try {
       if (activeTab === 'income') {
-        await IncomeListService.deleteIncomesByIds([id]);
+        await deleteIncomesByIds([id]);
       } else {
-        await ExpenseQueries.deleteExpensesByIds([id]);
+        await deleteExpensesByIds([id]);
       }
       Alert.alert('Sukses', 'Transaksi berhasil dihapus.');
       setRefreshKey(prev => prev + 1);
@@ -57,7 +65,7 @@ const TransactionListScreen = () => {
       const date = updatedData.date;
 
       if ('menu_id' in transactionToEdit) {
-        await IncomeListService.updateIncomeDetails(
+        await updateIncomeDetails(
           transactionToEdit.id,
           updatedData.description,
           price,
@@ -65,7 +73,7 @@ const TransactionListScreen = () => {
           date,
         );
       } else {
-        await ExpenseQueries.updateExpenseDetails(
+        await updateExpenseDetails(
           transactionToEdit.id,
           updatedData.description,
           price,
@@ -136,4 +144,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TransactionListScreen;
+export default WalletScreen;
