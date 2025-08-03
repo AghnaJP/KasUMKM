@@ -1,4 +1,4 @@
-import React, {useContext, useState} from 'react';
+import React, {useContext, useState, useEffect} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -20,6 +20,7 @@ import {MONTHS} from '../../constants/months';
 import {RootStackParamList} from '../../types/navigation';
 import type {TransactionData} from '../../types/transaction';
 import TransactionChart from '../../components/Chart/TransactionChart';
+import {checkTransactions} from '../../utils/notification';
 
 const HomeScreen = () => {
   const navigation =
@@ -45,6 +46,10 @@ const HomeScreen = () => {
       setRefreshKey(prev => prev + 1);
     }, []),
   );
+
+  useEffect(() => {
+    checkTransactions();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
