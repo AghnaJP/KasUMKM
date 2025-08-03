@@ -1,7 +1,7 @@
 import {Platform, PermissionsAndroid, Alert, Linking} from 'react-native';
 import PushNotification from 'react-native-push-notification';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {checkTodayTransactions} from '../database/transactions/transactionQueries';
 
 async function requestAlarmPermissions() {
@@ -77,17 +77,17 @@ export function scheduleReminder(message: string) {
     importance: 'high',
     priority: 'high',
     vibrate: true,
-    // repeatType: 'day',
+    repeatType: 'day',
   });
 }
 
 export async function checkTransactions() {
   try {
-    // const todayKey = new Date().toDateString();
-    // const lastNotify = await AsyncStorage.getItem('lastNotificationDate');
-    // if (lastNotify === todayKey) {
-    //   return;
-    // }
+    const todayKey = new Date().toDateString();
+    const lastNotify = await AsyncStorage.getItem('lastNotificationDate');
+    if (lastNotify === todayKey) {
+      return;
+    }
 
     const {hasIncome, hasExpense} = await checkTodayTransactions();
     let msg = null;
@@ -101,7 +101,7 @@ export async function checkTransactions() {
 
     if (msg) {
       scheduleReminder(msg);
-      //   await AsyncStorage.setItem('lastNotificationDate', todayKey);
+      await AsyncStorage.setItem('lastNotificationDate', todayKey);
     }
   } catch (err) {
     console.error('checkTransactions error:', err);
