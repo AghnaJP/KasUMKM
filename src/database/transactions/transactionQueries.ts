@@ -50,3 +50,59 @@ export async function getAllTransactions(): Promise<TransactionData[]> {
     });
   });
 }
+
+export const checkTodayTransactions = async (): Promise<{
+  hasIncome: boolean;
+  hasExpense: boolean;
+}> => {
+  // const database = await getDBConnection();
+  // const today = new Date();
+  // const startOfDay = new Date(
+  //   today.getFullYear(),
+  //   today.getMonth(),
+  //   today.getDate(),
+  // ).getTime();
+  // const endOfDay = new Date(
+  //   today.getFullYear(),
+  //   today.getMonth(),
+  //   today.getDate(),
+  //   23,
+  //   59,
+  //   59,
+  // ).getTime();
+
+  // return new Promise((resolve, reject) => {
+  //   database.transaction(tx => {
+  //     tx.executeSql(
+  //       'SELECT COUNT(*) as count FROM incomes WHERE created_at BETWEEN ? AND ?',
+  //       [startOfDay, endOfDay],
+  //       (_, incomeResults) => {
+  //         const incomeCount = incomeResults.rows.item(0).count;
+
+  //         tx.executeSql(
+  //           'SELECT COUNT(*) as count FROM expenses WHERE created_at BETWEEN ? AND ?',
+  //           [startOfDay, endOfDay],
+  //           (__, expenseResults) => {
+  //             const expenseCount = expenseResults.rows.item(0).count;
+  //             resolve({
+  //               hasIncome: incomeCount > 0,
+  //               hasExpense: expenseCount > 0,
+  //             });
+  //           },
+  //           (__, error) => {
+  //             console.error('Error checking expenses:', error);
+  //             reject(error || new Error('Failed to check expenses'));
+  //             return false;
+  //           },
+  //         );
+  //       },
+  //       (_, error) => {
+  //         console.error('Error checking incomes:', error);
+  //         reject(error || new Error('Failed to check incomes'));
+  //         return false;
+  //       },
+  //     );
+  //   });
+  // });
+  return Promise.resolve({hasIncome: false, hasExpense: false});
+};

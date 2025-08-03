@@ -106,6 +106,14 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    configurations.all {
+        resolutionStrategy {
+            force "androidx.core:core:1.13.1"
+            exclude group: 'com.android.support', module: 'support-compat'
+            exclude group: 'com.google.firebase', module: 'firebase-core'
+            exclude group: 'com.google.firebase', module: 'firebase-messaging'  
+        }
+    }
 }
 
 dependencies {
