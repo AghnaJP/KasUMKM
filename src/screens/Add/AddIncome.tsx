@@ -43,7 +43,7 @@ const AddIncome = () => {
       const now = selectedDate.toISOString();
       for (const {item, quantity} of selectedMenus) {
         await insertIncome(item.id, quantity, now, now);
-        Alert.alert('Berhasil', 'Menu berhasil disimpan');
+        Alert.alert('Berhasil', 'Pemasukan berhasil disimpan');
         setSelectedMenus([]);
       }
     } catch (e) {

@@ -157,15 +157,19 @@ const EditProfile = () => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: COLORS.white,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: 24,
-    marginVertical: 70,
-    marginHorizontal: 15,
-    borderWidth: 0.8,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
+    padding: 30,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   avatar: {
     width: 150,

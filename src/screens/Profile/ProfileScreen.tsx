@@ -60,7 +60,7 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#fff',
     justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 24,

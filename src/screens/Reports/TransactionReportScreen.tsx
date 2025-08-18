@@ -264,8 +264,6 @@ const TransactionReport = () => {
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
-        <CustomText variant="title">Laporan Keuangan</CustomText>
-
         <View style={styles.headerRow}>
           <View
             style={[

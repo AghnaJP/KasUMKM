@@ -113,11 +113,12 @@ const AddMenu: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     padding: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#fff',
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     gap: 12,
