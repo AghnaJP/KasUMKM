@@ -158,7 +158,7 @@ const AddExpense = () => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+   backgroundColor: '#fff',
   },
   container: {
     flexGrow: 1,

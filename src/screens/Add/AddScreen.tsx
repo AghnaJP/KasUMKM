@@ -34,13 +34,20 @@ const AddScreen = () => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#fff',
     marginVertical: 40,
   },
   container: {
     backgroundColor: '#fff',
-    borderRadius: 10,
     padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
     flexGrow: 1,
   },
 });
