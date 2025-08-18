@@ -2,7 +2,7 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/Home/HomeScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
-import DocumentsScreen from '../screens/Documents/DocumentsScreen';
+import DocumentsScreen from '../screens/Menus/DocumentsScreen';
 import AddScreen from '../screens/Add/AddScreen';
 import MainLayout from '../components/MainLayout';
 import BottomNav from '../components/BottomNav';
@@ -18,7 +18,12 @@ function renderTabBar(props: BottomTabBarProps) {
 
 const AppNavigator = () => {
   return (
-    <Tab.Navigator screenOptions={{headerShown: true}} tabBar={renderTabBar}>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: true,
+        tabBarStyle: {backgroundColor: '#fff'},
+      }}
+      tabBar={renderTabBar}>
       <Tab.Screen
         name="Home"
         children={() => (

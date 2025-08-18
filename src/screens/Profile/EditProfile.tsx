@@ -157,10 +157,11 @@ const EditProfile = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: COLORS.white,
     justifyContent: 'flex-start',
     alignItems: 'center',
+    marginVertical: 50,
+    marginHorizontal: 24,
     padding: 30,
     borderRadius: 12,
     borderWidth: 1,

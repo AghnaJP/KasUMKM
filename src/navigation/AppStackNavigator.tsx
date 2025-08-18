@@ -1,8 +1,8 @@
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import AppNavigator from './AppNavigator';
-import AddMenu from '../screens/Documents/AddMenu';
-import MenuList from '../screens/Documents/MenuList';
+import AddMenu from '../screens/Menus/AddMenu';
+import MenuList from '../screens/Menus/MenuList';
 import EditProfile from '../screens/Profile/EditProfile';
 import TransactionReport from '../screens/Reports/TransactionReportScreen';
 import BackButton from '../components/Button/BackButton';
@@ -13,7 +13,10 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 const renderBackButton = () => <BackButton />;
 
 const AppStackNavigator = () => (
-  <Stack.Navigator>
+  <Stack.Navigator
+    screenOptions={{
+      contentStyle: {backgroundColor: '#fff'},
+    }}>
     <Stack.Screen
       name="AppTabs"
       component={AppNavigator}
