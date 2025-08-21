@@ -62,13 +62,12 @@ export async function configureNotifications() {
 export function scheduleReminder(message: string) {
   const now = new Date();
   const nextReminder = new Date();
-  nextReminder.setHours(16, 14, 0, 0);
+  nextReminder.setHours(18, 0, 0, 0);
   if (now >= nextReminder) {
     nextReminder.setDate(nextReminder.getDate() + 1);
   }
 
-  console.log('Menjadwalkan notifikasi untuk:', nextReminder);
-
+  PushNotification.cancelAllLocalNotifications();
   PushNotification.localNotificationSchedule({
     channelId: 'transaction-reminder',
     message,

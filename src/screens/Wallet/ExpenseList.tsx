@@ -36,7 +36,7 @@ const ExpenseList = ({
     <TransactionList
       data={expenses}
       totalAmount={totalExpense}
-      totalLabel="Total Pengeluaran"
+      totalLabel="Total Pengeluaran: "
       onEdit={onEdit}
       onDelete={onDelete}
       refreshKey={refreshKey}

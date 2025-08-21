@@ -170,11 +170,12 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingVertical: 16,
     backgroundColor: '#fff',
     borderColor: '#EEEEEE',
     paddingHorizontal: 12,
+    flexWrap: 'wrap',
   },
   footerText: {
     fontSize: 17,

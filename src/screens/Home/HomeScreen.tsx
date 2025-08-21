@@ -15,12 +15,18 @@ import ProfitCard from '../../components/Card/ProfitCard';
 import TransactionItem from '../../components/TransactionList/TransactionItem';
 import {AuthContext} from '../../context/AuthContext';
 import {useTransactionList} from '../../hooks/useTransactionList';
-import {getAllTransactions} from '../../database/transactions/transactionQueries';
+import {
+  getAllTransactions,
+  checkTodayTransactions,
+} from '../../database/transactions/transactionQueries';
 import {MONTHS} from '../../constants/months';
 import {RootStackParamList} from '../../types/navigation';
 import type {TransactionData} from '../../types/transaction';
 import TransactionChart from '../../components/Chart/TransactionChart';
 import {checkTransactions} from '../../utils/notification';
+import Toast, {ErrorToast} from 'react-native-toast-message';
+import {COLORS} from '../../constants';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const HomeScreen = () => {
   const navigation =
@@ -41,6 +47,42 @@ const HomeScreen = () => {
     setLoaded,
   );
 
+  const InfoToast = (props: any) => (
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 16,
+        width: 350,
+        shadowColor: '#000',
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        elevation: 4,
+        position: 'absolute',
+        zIndex: 9999,
+        borderLeftWidth: 4,
+        borderLeftColor: '#3498DB',
+      }}>
+      <Ionicons
+        name="information-circle-outline"
+        size={24}
+        color="#3498DB"
+        style={{marginRight: 8}}
+      />
+      <View style={{flex: 1}}>
+        <CustomText variant="body" color={COLORS.darkBlue}>
+          {props.text1}
+        </CustomText>
+      </View>
+      <TouchableOpacity onPress={() => Toast.hide()} style={{marginLeft: 8}}>
+        <Ionicons name="close" size={20} color="#888" />
+      </TouchableOpacity>
+    </View>
+  );
+
   useFocusEffect(
     useCallback(() => {
       setRefreshKey(prev => prev + 1);
@@ -51,6 +93,47 @@ const HomeScreen = () => {
     checkTransactions();
   }, []);
 
+  useEffect(() => {
+    async function showTransactionToast() {
+      try {
+        const {hasIncome, hasExpense} = await checkTodayTransactions();
+        console.log('hasIncome:', hasIncome, 'hasExpense:', hasExpense);
+
+        if (!hasIncome && !hasExpense) {
+          Toast.show({
+            type: 'infoCustom',
+            text1: 'Belum ada transaksi hari ini',
+            autoHide: false,
+            position: 'top',
+          });
+        } else if (!hasIncome) {
+          Toast.show({
+            type: 'infoCustom',
+            text1: 'Belum ada pemasukan hari ini',
+            autoHide: false,
+            position: 'top',
+          });
+        } else if (!hasExpense) {
+          Toast.show({
+            type: 'infoCustom',
+            text1: 'Belum ada pengeluaran hari ini',
+            autoHide: false,
+            position: 'top',
+          });
+        } else {
+          Toast.hide();
+        }
+      } catch (err) {
+        Toast.show({
+          type: 'error',
+          text1: 'Gagal cek transaksi hari ini',
+        });
+      }
+    }
+
+    showTransactionToast();
+  }, [transactions]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -58,7 +141,7 @@ const HomeScreen = () => {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}>
         <CustomText variant="subtitle" style={styles.title}>
-          Selamat Sore,
+          Selamat Datang,
         </CustomText>
         <CustomText variant="title">{userName}</CustomText>
 
@@ -106,6 +189,12 @@ const HomeScreen = () => {
           </ScrollView>
         </View>
       </ScrollView>
+      <Toast
+        config={{
+          infoCustom: InfoToast,
+          error: ErrorToast,
+        }}
+      />
     </SafeAreaView>
   );
 };

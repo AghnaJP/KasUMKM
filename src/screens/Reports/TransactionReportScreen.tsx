@@ -264,8 +264,6 @@ const TransactionReport = () => {
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
-        <CustomText variant="title">Laporan Keuangan</CustomText>
-
         <View style={styles.headerRow}>
           <View
             style={[
@@ -406,12 +404,12 @@ const styles = StyleSheet.create({
   },
   colBulan: {
     flex: 1.2,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   colNominal: {
     flex: 1.5,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   colAksi: {
     flex: 1.2,
@@ -422,7 +420,7 @@ const styles = StyleSheet.create({
   downloadButton: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#208717ff',
+    backgroundColor: COLORS.darkBlue,
     borderRadius: 6,
     width: 45,
     height: 40,

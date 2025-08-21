@@ -16,7 +16,7 @@ const MenuManagementCard = ({onAddMenu, onViewAllMenu}: Props) => {
       </CustomText>
 
       <CustomText variant="subtitle" style={styles.subtitle}>
-        Manage your restaurant menu items
+        Kelola daftar menu makanan dan minuman Anda
       </CustomText>
 
       <View style={styles.buttonGroup}>

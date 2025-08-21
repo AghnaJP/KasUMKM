@@ -37,7 +37,7 @@
     "react-native-sqlite-storage": "^6.0.1",
     "react-native-svg": "^15.12.1",
     "react-native-swipe-list-view": "^3.2.9",
-    "react-native-toast-message": "^2.3.2",
+    "react-native-toast-message": "^2.3.3",
     "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {

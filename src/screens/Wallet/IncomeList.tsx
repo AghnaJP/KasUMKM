@@ -36,7 +36,7 @@ const IncomeList = ({
     <TransactionList
       data={incomes}
       totalAmount={totalIncome}
-      totalLabel="Total Pendapatan"
+      totalLabel="Total Pendapatan: "
       onEdit={onEdit as (item: any) => void}
       onDelete={onDelete}
       refreshKey={refreshKey}

@@ -131,10 +131,11 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#fff',
+    marginVertical: 30,
+    marginHorizontal: 14,
   },
   container: {
     flex: 1,
-    padding: 24,
     width: '100%',
     backgroundColor: '#fff',
   },
