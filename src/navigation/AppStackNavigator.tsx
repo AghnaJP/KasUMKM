@@ -7,7 +7,6 @@ import EditProfile from '../screens/Profile/EditProfile';
 import TransactionReport from '../screens/Reports/TransactionReportScreen';
 import BackButton from '../components/Button/BackButton';
 import {AppStackParamList} from '../types/navigation';
-import DetailReport from '../screens/Reports/DetailReportScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const renderBackButton = () => <BackButton />;
@@ -54,15 +53,6 @@ const AppStackNavigator = () => (
       component={TransactionReport}
       options={{
         title: 'Laporan Keuangan',
-        headerTitleAlign: 'center',
-        headerLeft: renderBackButton,
-      }}
-    />
-    <Stack.Screen
-      name="DetailReport"
-      component={DetailReport}
-      options={{
-        title: 'Detail Laporan',
         headerTitleAlign: 'center',
         headerLeft: renderBackButton,
       }}
