@@ -12,13 +12,13 @@ const App = (): React.JSX.Element => {
       try {
         await initAllTables();
         console.log('User table initialized');
+        await configureNotifications();
       } catch (error) {
         console.error('App setup failed', error);
       }
     };
 
     setupApp();
-    configureNotifications();
   }, []);
 
   return (

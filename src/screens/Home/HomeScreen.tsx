@@ -1,4 +1,4 @@
-import React, {useContext, useState, useEffect} from 'react';
+import React, {useContext, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -89,50 +89,54 @@ const HomeScreen = () => {
     }, []),
   );
 
-  useEffect(() => {
-    checkTransactions();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      checkTransactions();
+    }, []),
+  );
 
-  useEffect(() => {
-    async function showTransactionToast() {
-      try {
-        const {hasIncome, hasExpense} = await checkTodayTransactions();
-        console.log('hasIncome:', hasIncome, 'hasExpense:', hasExpense);
+  useFocusEffect(
+    useCallback(() => {
+      async function showTransactionToast() {
+        try {
+          const {hasIncome, hasExpense} = await checkTodayTransactions();
+          console.log('hasIncome:', hasIncome, 'hasExpense:', hasExpense);
 
-        if (!hasIncome && !hasExpense) {
+          if (!hasIncome && !hasExpense) {
+            Toast.show({
+              type: 'infoCustom',
+              text1: 'Belum ada transaksi hari ini',
+              autoHide: false,
+              position: 'top',
+            });
+          } else if (!hasIncome) {
+            Toast.show({
+              type: 'infoCustom',
+              text1: 'Belum ada pemasukan hari ini',
+              autoHide: false,
+              position: 'top',
+            });
+          } else if (!hasExpense) {
+            Toast.show({
+              type: 'infoCustom',
+              text1: 'Belum ada pengeluaran hari ini',
+              autoHide: false,
+              position: 'top',
+            });
+          } else {
+            Toast.hide();
+          }
+        } catch (err) {
           Toast.show({
-            type: 'infoCustom',
-            text1: 'Belum ada transaksi hari ini',
-            autoHide: false,
-            position: 'top',
+            type: 'error',
+            text1: 'Gagal cek transaksi hari ini',
           });
-        } else if (!hasIncome) {
-          Toast.show({
-            type: 'infoCustom',
-            text1: 'Belum ada pemasukan hari ini',
-            autoHide: false,
-            position: 'top',
-          });
-        } else if (!hasExpense) {
-          Toast.show({
-            type: 'infoCustom',
-            text1: 'Belum ada pengeluaran hari ini',
-            autoHide: false,
-            position: 'top',
-          });
-        } else {
-          Toast.hide();
         }
-      } catch (err) {
-        Toast.show({
-          type: 'error',
-          text1: 'Gagal cek transaksi hari ini',
-        });
       }
-    }
 
-    showTransactionToast();
-  }, [transactions]);
+      showTransactionToast();
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>

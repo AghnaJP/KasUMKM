@@ -1,6 +1,10 @@
 import {Platform, PermissionsAndroid, Alert, Linking} from 'react-native';
-import PushNotification from 'react-native-push-notification';
-import PushNotificationIOS from '@react-native-community/push-notification-ios';
+import notifee, {
+  AndroidImportance,
+  TimestampTrigger,
+  TriggerType,
+  RepeatFrequency,
+} from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {checkTodayTransactions} from '../database/transactions/transactionQueries';
 
@@ -35,31 +39,22 @@ async function requestAlarmPermissions() {
 export async function configureNotifications() {
   await requestAlarmPermissions();
 
-  PushNotification.configure({
-    onRegister: token => console.log('Push token:', token),
-    onNotification: notification => {
-      if (Platform.OS === 'ios') {
-        notification.finish(PushNotificationIOS.FetchResult.NoData);
-      }
-    },
-    popInitialNotification: true,
-    requestPermissions: false,
-  });
-
-  PushNotification.createChannel(
-    {
-      channelId: 'transaction-reminder',
-      channelName: 'Pengingat Transaksi Harian',
-      channelDescription:
+  if (Platform.OS === 'android') {
+    await notifee.createChannel({
+      id: 'transaction-reminder',
+      name: 'Pengingat Transaksi Harian',
+      description:
         'Pengingat untuk mencatat pemasukan & pengeluaran setiap hari',
-      importance: 4,
-      vibrate: true,
-    },
-    created => console.log('Channel created:', created),
-  );
+      importance: AndroidImportance.HIGH,
+      vibration: true,
+    });
+    console.log('Channel created');
+  }
 }
 
-export function scheduleReminder(message: string) {
+async function scheduleReminder(message: string) {
+  await notifee.cancelNotification('daily-transaction-reminder');
+
   const now = new Date();
   const nextReminder = new Date();
   nextReminder.setHours(18, 0, 0, 0);
@@ -67,17 +62,31 @@ export function scheduleReminder(message: string) {
     nextReminder.setDate(nextReminder.getDate() + 1);
   }
 
-  PushNotification.cancelAllLocalNotifications();
-  PushNotification.localNotificationSchedule({
-    channelId: 'transaction-reminder',
-    message,
-    date: nextReminder,
-    allowWhileIdle: true,
-    importance: 'high',
-    priority: 'high',
-    vibrate: true,
-    repeatType: 'day',
-  });
+  const trigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: nextReminder.getTime(),
+    repeatFrequency: RepeatFrequency.DAILY,
+  };
+
+  await notifee.createTriggerNotification(
+    {
+      id: 'daily-transaction-reminder',
+      title: 'Pengingat Transaksi',
+      body: message,
+      android: {
+        channelId: 'transaction-reminder',
+        importance: AndroidImportance.HIGH,
+        pressAction: {
+          id: 'default',
+        },
+      },
+    },
+    trigger,
+  );
+  console.log(
+    'Test notification scheduled for:',
+    nextReminder.toLocaleTimeString(),
+  );
 }
 
 export async function checkTransactions() {
@@ -99,7 +108,7 @@ export async function checkTransactions() {
     }
 
     if (msg) {
-      scheduleReminder(msg);
+      await scheduleReminder(msg);
       await AsyncStorage.setItem('lastNotificationDate', todayKey);
     }
   } catch (err) {
