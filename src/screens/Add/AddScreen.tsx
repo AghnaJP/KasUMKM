@@ -7,24 +7,24 @@ import MainLayout from '../../components/MainLayout';
 
 const AddScreen = () => {
   const [selectedOption, setSelectedOption] = useState<
-    'Pemasukan' | 'Pengeluaran'
-  >('Pemasukan');
+    'Pendapatan' | 'Pengeluaran'
+  >('Pendapatan');
 
   return (
     <MainLayout>
       <View style={styles.wrapper}>
         <View style={styles.container}>
           <SwitchBar
-            options={['Pemasukan', 'Pengeluaran']}
+            options={['Pendapatan', 'Pengeluaran']}
             selected={selectedOption}
             onChange={(value: string) =>
               setSelectedOption(
-                value === 'Pemasukan' ? 'Pemasukan' : 'Pengeluaran',
+                value === 'Pendapatan' ? 'Pendapatan' : 'Pengeluaran',
               )
             }
           />
 
-          {selectedOption === 'Pemasukan' ? <AddIncome /> : <AddExpense />}
+          {selectedOption === 'Pendapatan' ? <AddIncome /> : <AddExpense />}
         </View>
       </View>
     </MainLayout>

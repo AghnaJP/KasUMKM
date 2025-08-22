@@ -112,7 +112,7 @@ const HomeScreen = () => {
           } else if (!hasIncome) {
             Toast.show({
               type: 'infoCustom',
-              text1: 'Belum ada pemasukan hari ini',
+              text1: 'Belum ada pendapatan hari ini',
               autoHide: false,
               position: 'top',
             });
@@ -135,7 +135,7 @@ const HomeScreen = () => {
       }
 
       showTransactionToast();
-    }, [])
+    }, []),
   );
 
   return (
@@ -177,19 +177,25 @@ const HomeScreen = () => {
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled
             style={{maxHeight: 300}}>
-            {transactions.map(item => (
-              <TransactionItem
-                key={`${item.type}-${item.id}`}
-                name={item.name}
-                date={new Date(item.date).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-                amount={item.amount}
-                type={item.type}
-              />
-            ))}
+            {transactions.length > 0 ? (
+              transactions.map(item => (
+                <TransactionItem
+                  key={`${item.type}-${item.id}`}
+                  name={item.name}
+                  date={new Date(item.date).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                  amount={item.amount}
+                  type={item.type}
+                />
+              ))
+            ) : (
+              <CustomText style={styles.emptyText}>
+                Belum ada transaksi
+              </CustomText>
+            )}
           </ScrollView>
         </View>
       </ScrollView>
@@ -234,6 +240,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+
+  emptyText: {
+    color: '#888',
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
 

@@ -43,12 +43,12 @@ const AddIncome = () => {
       const now = selectedDate.toISOString();
       for (const {item, quantity} of selectedMenus) {
         await insertIncome(item.id, quantity, now, now);
-        Alert.alert('Berhasil', 'Pemasukan berhasil disimpan');
+        Alert.alert('Berhasil', 'Pendapatan berhasil disimpan');
         setSelectedMenus([]);
       }
     } catch (e) {
       console.error('Insert income error:', e);
-      Alert.alert('Error', 'Gagal menyimpan pemasukan');
+      Alert.alert('Error', 'Gagal menyimpan pendapatan');
     }
   };
 

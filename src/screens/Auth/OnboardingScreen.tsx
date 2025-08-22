@@ -34,8 +34,7 @@ const OnboardingScreen = () => {
         color="#9ca3af"
         align="center"
         style={styles.subtitleSpacing}>
-        Catat pemasukan dan pengeluaran secara praktis, lengkap dengan kategori
-        dan laporan usaha
+        Catat pendapatan dan pengeluaran secara praktis, lengkap dengan kategori dan laporan usaha
       </CustomText>
 
       <Button

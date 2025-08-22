@@ -6,7 +6,8 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
-  Linking,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import CustomText from '../../components/Text/CustomText';
 import {getAllTransactions} from '../../database/transactions/transactionQueries';
@@ -16,6 +17,7 @@ import {COLORS} from '../../constants';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import Pdf from 'react-native-pdf';
 
 const TransactionReport = () => {
   const currentYear = new Date().getFullYear();
@@ -26,6 +28,8 @@ const TransactionReport = () => {
   const [selectedYear, setSelectedYear] = useState<string>(String(currentYear));
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [allTransactions, setAllTransactions] = useState<TransactionData[]>([]);
+  const [pdfPath, setPdfPath] = useState<string | null>(null);
+  const [isPdfVisible, setIsPdfVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,7 +115,15 @@ const TransactionReport = () => {
 
   const getTotalsAndRows = (txs: TransactionData[]) => {
     let total = 0;
-    const rows = txs
+
+    // Sort transactions by date before generating rows
+    const sortedTxs = [...txs].sort((a, b) => {
+      const dateA = new Date(a.date || a.date || a.date || 0);
+      const dateB = new Date(b.date || b.date || b.date || 0);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    const rows = sortedTxs
       .map(t => {
         const qty = safeNumber((t as any).quantity, 1);
         const price = safeNumber(
@@ -121,14 +133,14 @@ const TransactionReport = () => {
         const totalRow = qty * price;
         total += totalRow;
         return `
-        <tr>
-          <td>${formatDate((t as any).date || new Date())}</td>
-          <td>${escapeHtml((t as any).name || (t as any).title || '-')}</td>
-          <td style="text-align:right">${formatCurrency(qty)}</td>
-          <td style="text-align:right">${formatCurrency(price)}</td>
-          <td style="text-align:right">${formatCurrency(totalRow)}</td>
-        </tr>
-      `;
+      <tr>
+        <td>${formatDate((t as any).date || new Date())}</td>
+        <td>${escapeHtml((t as any).name || (t as any).title || '-')}</td>
+        <td style="text-align:right">${formatCurrency(qty)}</td>
+        <td style="text-align:right">${formatCurrency(price)}</td>
+        <td style="text-align:right">${formatCurrency(totalRow)}</td>
+      </tr>
+    `;
       })
       .join('');
     return {rows, total};
@@ -165,7 +177,7 @@ const TransactionReport = () => {
 <body>
   <h1>Laporan - ${escapeHtml(monthLabel)} ${yearNum}</h1>
   <div class="section">
-    <h2>Pemasukan</h2>
+    <h2>Pendapatan</h2>
     <table>
       <thead>
         <tr>
@@ -179,12 +191,12 @@ const TransactionReport = () => {
       <tbody>
         ${
           incomeRows ||
-          '<tr><td colspan="5" class="muted">Tidak ada data pemasukan</td></tr>'
+          '<tr><td colspan="5" class="muted">Tidak ada data pendapatan</td></tr>'
         }
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="4" style="text-align:right">Total Pemasukan</td>
+          <td colspan="4" style="text-align:right">Total Pendapatan</td>
           <td style="text-align:right">${formatCurrency(incomeTotal)}</td>
         </tr>
       </tfoot>
@@ -221,44 +233,95 @@ const TransactionReport = () => {
     `;
   };
 
-  const generatePdf = async (monthLabel: string, yearNum: number) => {
+  const askPermissionAndCreatePdf = async (
+    monthLabel: string,
+    yearNum: number,
+  ) => {
     try {
       const monthIdx = indoMonthToIndex(monthLabel);
       const monthTx = allTransactions.filter((t: any) => {
         const d = new Date(t.date || t.createdAt || t.updatedAt || Date.now());
         return d.getMonth() === monthIdx && d.getFullYear() === yearNum;
       });
-      const incomeTx = monthTx.filter(
-        (t: any) =>
-          t.type?.toLowerCase?.() === 'income' ||
-          safeNumber(t.price ?? t.amount, 0) >= 0,
-      );
-      const expenseTx = monthTx.filter(
-        (t: any) =>
-          t.type?.toLowerCase?.() === 'expense' ||
-          safeNumber(t.price ?? t.amount, 0) < 0,
-      );
+
+      const incomeTx = monthTx.filter((t: any) => {
+        if (t.type?.toLowerCase?.() === 'income') {
+          return true;
+        }
+        if (t.type?.toLowerCase?.() === 'expense') {
+          return false;
+        }
+        return safeNumber(t.price ?? t.amount, 0) > 0;
+      });
+
+      const expenseTx = monthTx.filter((t: any) => {
+        if (t.type?.toLowerCase?.() === 'expense') {
+          return true;
+        }
+        if (t.type?.toLowerCase?.() === 'income') {
+          return false;
+        }
+        return safeNumber(t.price ?? t.amount, 0) < 0;
+      });
+
       const html = buildHtml(monthLabel, yearNum, incomeTx, expenseTx);
+
       const file = await RNHTMLtoPDF.convert({
         html,
         fileName: `Laporan_${monthLabel}_${yearNum}`.replace(/\s+/g, '_'),
         directory: 'Documents',
         base64: false,
       });
-      const filePath = file.filePath;
-      if (!filePath) {
-        Alert.alert('Gagal', 'Tidak dapat membuat file PDF.');
-        return;
+
+      if (file.filePath) {
+        const path =
+          Platform.OS === 'ios' ? file.filePath : `file://${file.filePath}`;
+        setPdfPath(path);
+        setIsPdfVisible(true);
       }
-      try {
-        await Linking.openURL('file://' + filePath);
-      } catch {
-        Alert.alert('Tersimpan', `PDF tersimpan di:\n${filePath}`);
-      }
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
+      console.error('PDF creation error:', err);
       Alert.alert('Gagal', 'Terjadi kesalahan saat membuat PDF.');
     }
+  };
+
+  const renderPdfModal = () => {
+    if (!pdfPath) {
+      return null;
+    }
+
+    return (
+      <Modal
+        visible={isPdfVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setIsPdfVisible(false)}>
+        <View style={styles.pdfContainer}>
+          <View style={styles.pdfHeader}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setIsPdfVisible(false)}>
+              <Icon name="close" size={24} color="#000" />
+            </TouchableOpacity>
+            <CustomText style={styles.pdfTitle}>Laporan PDF</CustomText>
+          </View>
+          <Pdf
+            source={{uri: pdfPath}}
+            onLoadComplete={(numberOfPages) => {
+              console.log(`PDF loaded with ${numberOfPages} pages`);
+            }}
+            onPageChanged={(page) => {
+              console.log(`Current page: ${page}`);
+            }}
+            onError={error => {
+              console.log('PDF error:', error);
+              Alert.alert('Error', 'Gagal membuka PDF.');
+            }}
+            style={styles.pdf}
+          />
+        </View>
+      </Modal>
+    );
   };
 
   return (
@@ -339,7 +402,9 @@ const TransactionReport = () => {
                 <View style={[styles.cell, styles.colAksi]}>
                   <TouchableOpacity
                     style={styles.downloadButton}
-                    onPress={() => generatePdf(item.month, item.year)}
+                    onPress={() =>
+                      askPermissionAndCreatePdf(item.month, item.year)
+                    }
                     activeOpacity={0.8}>
                     <Icon name="download-outline" size={20} color="#fff" />
                   </TouchableOpacity>
@@ -348,6 +413,7 @@ const TransactionReport = () => {
             ))}
         </View>
       </View>
+      {renderPdfModal()}
     </ScrollView>
   );
 };
@@ -424,6 +490,32 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     width: 45,
     height: 40,
+  },
+  pdfContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  pdf: {
+    flex: 1,
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
+  },
+  pdfHeader: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    paddingHorizontal: 16,
+  },
+  pdfTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+  },
+  closeButton: {
+    padding: 8,
   },
 });
 
