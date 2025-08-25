@@ -18,8 +18,15 @@ buildscript {
     }
 }
 
-apply plugin: "com.facebook.react.rootproject"
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://jitpack.io" }
+    }
+}
 
+apply plugin: "com.facebook.react.rootproject"
 
 configurations.all {
     resolutionStrategy {

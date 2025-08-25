@@ -25,8 +25,12 @@ const formatRelativeDate = (inputDate: string): string => {
     d1.getMonth() === d2.getMonth() &&
     d1.getFullYear() === d2.getFullYear();
 
-  if (isSameDay(date, today)) return 'Hari ini';
-  if (isSameDay(date, yesterday)) return 'Kemarin';
+  if (isSameDay(date, today)) {
+    return 'Hari ini';
+  }
+  if (isSameDay(date, yesterday)) {
+    return 'Kemarin';
+  }
 
   return date.toLocaleDateString('id-ID', {
     day: 'numeric',

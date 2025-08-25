@@ -32,7 +32,7 @@ const ProfitCard = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <CustomText variant="subtitle" color={COLORS.white}>
-          Keuntungan
+          {profit < 0 ? 'Kerugian' : 'Keuntungan'}
         </CustomText>
         <CustomText variant="title" color={COLORS.white}>
           Rp {profit.toLocaleString('id-ID') + ',00'}
@@ -46,7 +46,7 @@ const ProfitCard = () => {
           </View>
           <View style={styles.textBox}>
             <CustomText variant="caption" color={COLORS.white}>
-              Pemasukan
+              Pendapatan
             </CustomText>
             <CustomText variant="caption" color={COLORS.white}>
               Rp {totalIncome.toLocaleString('id-ID')}
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0065D8',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 2,
   },
   loadingWrapper: {
     padding: 20,

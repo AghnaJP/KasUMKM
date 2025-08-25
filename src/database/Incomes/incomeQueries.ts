@@ -84,7 +84,7 @@ export const getIncomeDetails = async (): Promise<IncomeData[]> => {
             COALESCE(i.custom_created_at, i.created_at) AS date,
             COALESCE(i.custom_quantity, i.quantity) AS quantity
           FROM incomes i
-          JOIN menus m ON i.menu_id = m.id
+          LEFT JOIN menus m ON i.menu_id = m.id
           ORDER BY i.id DESC;
         `;
 
@@ -139,6 +139,7 @@ export const updateIncomeDetails = async (
   newDate: string,
 ): Promise<void> => {
   const db = await getDBConnection();
+  const formattedDate = new Date(newDate).toISOString();
   return new Promise((resolve, reject) => {
     db.transaction(tx => {
       const query = `
@@ -152,7 +153,7 @@ export const updateIncomeDetails = async (
         `;
       tx.executeSql(
         query,
-        [newDescription, newPrice, newQuantity, newDate, incomeId],
+        [newDescription, newPrice, newQuantity, formattedDate, incomeId],
         () => resolve(),
         (_, error) => {
           reject(error);

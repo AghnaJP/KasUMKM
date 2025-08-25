@@ -44,7 +44,7 @@ export async function configureNotifications() {
       id: 'transaction-reminder',
       name: 'Pengingat Transaksi Harian',
       description:
-        'Pengingat untuk mencatat pemasukan & pengeluaran setiap hari',
+        'Pengingat untuk mencatat pendapatan & pengeluaran setiap hari',
       importance: AndroidImportance.HIGH,
       vibration: true,
     });
@@ -100,9 +100,9 @@ export async function checkTransactions() {
     const {hasIncome, hasExpense} = await checkTodayTransactions();
     let msg = null;
     if (!hasIncome && !hasExpense) {
-      msg = 'Anda belum mencatat pemasukan & pengeluaran hari ini';
+      msg = 'Anda belum mencatat pendapatan & pengeluaran hari ini';
     } else if (!hasIncome) {
-      msg = 'Anda belum mencatat pemasukan hari ini';
+      msg = 'Anda belum mencatat pendapatan hari ini';
     } else if (!hasExpense) {
       msg = 'Anda belum mencatat pengeluaran hari ini';
     }

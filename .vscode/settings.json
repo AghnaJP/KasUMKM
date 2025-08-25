@@ -8,5 +8,5 @@
   "java.configuration.runtimes": [],
   "java.project.importOnFirstTimeStartup": "disabled",
   "java.project.importHint.enabled": false,
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "disabled"
 }
