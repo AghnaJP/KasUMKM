@@ -13,14 +13,14 @@ const HiddenMenuActions: React.FC<Props> = ({item, onEdit, onDelete}) => {
   return (
     <View style={styles.hiddenRow}>
       <Button
-        title="Edit"
+        title="Ubah"
         onPress={() => onEdit(item)}
         variant="edit"
         fullWidth={false}
         customStyle={styles.actionBtn}
       />
       <Button
-        title="Delete"
+        title="Hapus"
         onPress={() => onDelete(item.id)}
         variant="delete"
         fullWidth={false}
