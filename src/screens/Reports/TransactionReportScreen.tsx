@@ -19,6 +19,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import Pdf from 'react-native-pdf';
 
+
 const TransactionReport = () => {
   const currentYear = new Date().getFullYear();
 
@@ -268,7 +269,7 @@ const TransactionReport = () => {
 
       const file = await RNHTMLtoPDF.convert({
         html,
-        fileName: `Laporan_${monthLabel}_${yearNum}`.replace(/\s+/g, '_'),
+        fileName: baseName,
         directory: 'Documents',
         base64: false,
       });
