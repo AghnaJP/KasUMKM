@@ -8,6 +8,8 @@ import {
   Alert,
   Modal,
   Dimensions,
+  Share,
+  PermissionsAndroid,
 } from 'react-native';
 import CustomText from '../../components/Text/CustomText';
 import {getAllTransactions} from '../../database/transactions/transactionQueries';
@@ -18,7 +20,7 @@ import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import Pdf from 'react-native-pdf';
-
+import ReactNativeBlobUtil from 'react-native-blob-util';
 
 const TransactionReport = () => {
   const currentYear = new Date().getFullYear();
@@ -31,6 +33,7 @@ const TransactionReport = () => {
   const [allTransactions, setAllTransactions] = useState<TransactionData[]>([]);
   const [pdfPath, setPdfPath] = useState<string | null>(null);
   const [isPdfVisible, setIsPdfVisible] = useState(false);
+  const [pdfName, setPdfName] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -117,12 +120,12 @@ const TransactionReport = () => {
   const getTotalsAndRows = (txs: TransactionData[]) => {
     let total = 0;
 
-    // Sort transactions by date before generating rows
-    const sortedTxs = [...txs].sort((a, b) => {
-      const dateA = new Date(a.date || a.date || a.date || 0);
-      const dateB = new Date(b.date || b.date || b.date || 0);
-      return dateA.getTime() - dateB.getTime();
-    });
+    const getDate = (x: any) =>
+      new Date(x.date ?? x.createdAt ?? x.updatedAt ?? 0);
+
+    const sortedTxs = [...txs].sort(
+      (a, b) => getDate(a).getTime() - getDate(b).getTime(),
+    );
 
     const rows = sortedTxs
       .map(t => {
@@ -144,6 +147,7 @@ const TransactionReport = () => {
     `;
       })
       .join('');
+
     return {rows, total};
   };
 
@@ -254,7 +258,6 @@ const TransactionReport = () => {
         }
         return safeNumber(t.price ?? t.amount, 0) > 0;
       });
-
       const expenseTx = monthTx.filter((t: any) => {
         if (t.type?.toLowerCase?.() === 'expense') {
           return true;
@@ -266,6 +269,8 @@ const TransactionReport = () => {
       });
 
       const html = buildHtml(monthLabel, yearNum, incomeTx, expenseTx);
+      const baseName = `Laporan_${monthLabel}_${yearNum}`.replace(/\s+/g, '_');
+      setPdfName(`${baseName}.pdf`);
 
       const file = await RNHTMLtoPDF.convert({
         html,
@@ -279,10 +284,54 @@ const TransactionReport = () => {
           Platform.OS === 'ios' ? file.filePath : `file://${file.filePath}`;
         setPdfPath(path);
         setIsPdfVisible(true);
+      } else {
+        Alert.alert('Gagal', 'Tidak dapat membuat file PDF.');
       }
     } catch (err) {
       console.error('PDF creation error:', err);
       Alert.alert('Gagal', 'Terjadi kesalahan saat membuat PDF.');
+    }
+  };
+
+  const downloadCurrentPdf = async () => {
+    if (!pdfPath || !pdfName) {
+      Alert.alert('No file', 'Open a PDF first, then try downloading.');
+      return;
+    }
+
+    try {
+      if (Platform.OS === 'android') {
+        const src = pdfPath.replace(/^file:\/\//, '');
+
+        if (Platform.Version < 29) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert('Permission denied', 'Storage permission is required.');
+            return;
+          }
+          const dest = `${ReactNativeBlobUtil.fs.dirs.DownloadDir}/${pdfName}`;
+          await ReactNativeBlobUtil.fs.cp(src, dest);
+          Alert.alert('Saved', `PDF saved to Downloads:\n${dest}`);
+        } else {
+          await ReactNativeBlobUtil.MediaCollection.copyToMediaStore(
+            {
+              name: pdfName,
+              mimeType: 'application/pdf',
+              parentFolder: '',
+            },
+            'Download',
+            src,
+          );
+          Alert.alert('Saved', 'PDF saved to your Downloads folder.');
+        }
+      } else {
+        await Share.share({url: pdfPath, message: 'Laporan PDF'});
+      }
+    } catch (e) {
+      console.error('Download error:', e);
+      Alert.alert('Failed', 'Could not save the PDF.');
     }
   };
 
@@ -304,14 +353,21 @@ const TransactionReport = () => {
               onPress={() => setIsPdfVisible(false)}>
               <Icon name="close" size={24} color="#000" />
             </TouchableOpacity>
+
             <CustomText style={styles.pdfTitle}>Laporan PDF</CustomText>
+
+            <TouchableOpacity
+              style={styles.headerDownloadBtn}
+              onPress={downloadCurrentPdf}>
+              <Icon name="download-outline" size={24} color="#000" />
+            </TouchableOpacity>
           </View>
           <Pdf
             source={{uri: pdfPath}}
-            onLoadComplete={(numberOfPages) => {
+            onLoadComplete={numberOfPages => {
               console.log(`PDF loaded with ${numberOfPages} pages`);
             }}
-            onPageChanged={(page) => {
+            onPageChanged={page => {
               console.log(`Current page: ${page}`);
             }}
             onError={error => {
@@ -518,6 +574,7 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 8,
   },
+  headerDownloadBtn: {padding: 8},
 });
 
 export default TransactionReport;
