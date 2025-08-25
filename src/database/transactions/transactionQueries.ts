@@ -13,6 +13,8 @@ export async function getAllTransactions(): Promise<TransactionData[]> {
           COALESCE(i.custom_description, m.name) AS name,
           (COALESCE(i.custom_quantity, i.quantity) * COALESCE(i.custom_price, m.price)) AS amount,
           COALESCE(i.custom_created_at, i.created_at) AS date,
+          COALESCE(i.custom_quantity, i.quantity) AS quantity,
+          COALESCE(i.custom_price, m.price) AS price,
           'income' AS type
         FROM incomes i
         JOIN menus m ON i.menu_id = m.id
@@ -24,6 +26,8 @@ export async function getAllTransactions(): Promise<TransactionData[]> {
           COALESCE(e.custom_description, e.description) AS name,
           (COALESCE(e.custom_quantity, e.quantity) * COALESCE(e.custom_price, e.price)) AS amount,
           COALESCE(e.custom_created_at, e.created_at) AS date,
+          COALESCE(e.custom_quantity, e.quantity) AS quantity,
+          COALESCE(e.custom_price, e.price) AS price,
           'expense' AS type
         FROM expenses e
 

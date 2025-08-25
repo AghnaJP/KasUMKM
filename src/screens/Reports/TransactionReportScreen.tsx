@@ -21,6 +21,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import Pdf from 'react-native-pdf';
 import ReactNativeBlobUtil from 'react-native-blob-util';
+import Button from '../../components/Button/Button';
 
 const TransactionReport = () => {
   const currentYear = new Date().getFullYear();
@@ -92,6 +93,15 @@ const TransactionReport = () => {
     return idx >= 0 ? idx : new Date().getMonth();
   };
 
+  const getMonthTextStyle = (month: string) => {
+    if (month.length >= 8) {
+      return styles.smallText;
+    } else if (month.length >= 7) {
+      return styles.mediumText;
+    }
+    return null;
+  };
+
   const formatCurrency = (n: number) =>
     (n ?? 0).toLocaleString('id-ID', {minimumFractionDigits: 0});
 
@@ -101,6 +111,13 @@ const TransactionReport = () => {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const yyyy = date.getFullYear();
     return `${dd}/${mm}/${yyyy}`;
+  };
+
+  const formatTime = (d: any) => {
+    const date = d instanceof Date ? d : new Date(d);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
   const safeNumber = (x: any, fallback = 0): number =>
@@ -129,7 +146,10 @@ const TransactionReport = () => {
 
     const rows = sortedTxs
       .map(t => {
-        const qty = safeNumber((t as any).quantity, 1);
+        const qty = safeNumber(
+          (t as any).quantity ?? (t as any).qty ?? (t as any).count,
+          0,
+        );
         const price = safeNumber(
           (t as any).price ?? (t as any).unitPrice ?? (t as any).amount,
           0,
@@ -139,6 +159,7 @@ const TransactionReport = () => {
         return `
       <tr>
         <td>${formatDate((t as any).date || new Date())}</td>
+        <td>${formatTime((t as any).date || new Date())}</td>
         <td>${escapeHtml((t as any).name || (t as any).title || '-')}</td>
         <td style="text-align:right">${formatCurrency(qty)}</td>
         <td style="text-align:right">${formatCurrency(price)}</td>
@@ -187,6 +208,7 @@ const TransactionReport = () => {
       <thead>
         <tr>
           <th>Tanggal</th>
+          <th>Jam</th>
           <th>Nama</th>
           <th style="text-align:right">Jumlah</th>
           <th style="text-align:right">Harga Satuan</th>
@@ -196,12 +218,12 @@ const TransactionReport = () => {
       <tbody>
         ${
           incomeRows ||
-          '<tr><td colspan="5" class="muted">Tidak ada data pendapatan</td></tr>'
+          '<tr><td colspan="6" style="text-align:center" class="muted">Tidak ada data pendapatan</td></tr>'
         }
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="4" style="text-align:right">Total Pendapatan</td>
+          <td colspan="5" style="text-align:right">Total Pendapatan</td>
           <td style="text-align:right">${formatCurrency(incomeTotal)}</td>
         </tr>
       </tfoot>
@@ -213,6 +235,7 @@ const TransactionReport = () => {
       <thead>
         <tr>
           <th>Tanggal</th>
+          <th>Jam</th>
           <th>Nama</th>
           <th style="text-align:right">Jumlah</th>
           <th style="text-align:right">Harga Satuan</th>
@@ -222,12 +245,12 @@ const TransactionReport = () => {
       <tbody>
         ${
           expenseRows ||
-          '<tr><td colspan="5" class="muted">Tidak ada data pengeluaran</td></tr>'
+          '<tr><td colspan="6" style="text-align:center" class="muted">Tidak ada data pengeluaran</td></tr>'
         }
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="4" style="text-align:right">Total Pengeluaran</td>
+          <td colspan="5" style="text-align:right">Total Pengeluaran</td>
           <td style="text-align:right">${formatCurrency(expenseTotal)}</td>
         </tr>
       </tfoot>
@@ -238,10 +261,7 @@ const TransactionReport = () => {
     `;
   };
 
-  const askPermissionAndCreatePdf = async (
-    monthLabel: string,
-    yearNum: number,
-  ) => {
+  const createPdf = async (monthLabel: string, yearNum: number) => {
     try {
       const monthIdx = indoMonthToIndex(monthLabel);
       const monthTx = allTransactions.filter((t: any) => {
@@ -349,7 +369,7 @@ const TransactionReport = () => {
         <View style={styles.pdfContainer}>
           <View style={styles.pdfHeader}>
             <TouchableOpacity
-              style={styles.closeButton}
+              style={styles.pdfButton}
               onPress={() => setIsPdfVisible(false)}>
               <Icon name="close" size={24} color="#000" />
             </TouchableOpacity>
@@ -357,7 +377,7 @@ const TransactionReport = () => {
             <CustomText style={styles.pdfTitle}>Laporan PDF</CustomText>
 
             <TouchableOpacity
-              style={styles.headerDownloadBtn}
+              style={styles.pdfButton}
               onPress={downloadCurrentPdf}>
               <Icon name="download-outline" size={24} color="#000" />
             </TouchableOpacity>
@@ -446,25 +466,35 @@ const TransactionReport = () => {
                   },
                 ]}>
                 <View style={[styles.cell, styles.colBulan]}>
-                  <CustomText>{item.month}</CustomText>
+                  <CustomText
+                    style={[styles.cellText, getMonthTextStyle(item.month)]}>
+                    {item.month}
+                  </CustomText>
                 </View>
                 <View style={[styles.cell, styles.colNominal]}>
-                  <CustomText>{item.income.toLocaleString('id-ID')}</CustomText>
+                  <CustomText style={[styles.cellText]}>
+                    {item.income.toLocaleString('id-ID')}
+                  </CustomText>
                 </View>
                 <View style={[styles.cell, styles.colNominal]}>
-                  <CustomText>
+                  <CustomText style={[styles.cellText]}>
                     {item.expense.toLocaleString('id-ID')}
                   </CustomText>
                 </View>
                 <View style={[styles.cell, styles.colAksi]}>
-                  <TouchableOpacity
-                    style={styles.downloadButton}
-                    onPress={() =>
-                      askPermissionAndCreatePdf(item.month, item.year)
-                    }
-                    activeOpacity={0.8}>
-                    <Icon name="download-outline" size={20} color="#fff" />
-                  </TouchableOpacity>
+                  <Button
+                    title="Lihat"
+                    customStyle={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 8,
+                      marginVertical: 0,
+                      alignSelf: 'center',
+                      width: 'auto',
+                      minWidth: 60,
+                      borderRadius: 6,
+                    }}
+                    onPress={() => createPdf(item.month, item.year)}
+                  />
                 </View>
               </View>
             ))}
@@ -525,9 +555,20 @@ const styles = StyleSheet.create({
   cell: {
     paddingHorizontal: 4,
   },
+  smallText: {
+    fontSize: 10.5,
+  },
+  mediumText: {
+    fontSize: 14,
+  },
+  cellText: {
+    textAlignVertical: 'center',
+    paddingHorizontal: 4,
+  },
   colBulan: {
     flex: 1.2,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   colNominal: {
     flex: 1.5,
@@ -538,15 +579,7 @@ const styles = StyleSheet.create({
     flex: 1.2,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
-  },
-  downloadButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.darkBlue,
-    borderRadius: 6,
-    width: 45,
-    height: 40,
+    padding: 4,
   },
   pdfContainer: {
     flex: 1,
@@ -558,7 +591,7 @@ const styles = StyleSheet.create({
     height: Dimensions.get('window').height,
   },
   pdfHeader: {
-    height: 56,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -571,10 +604,9 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  closeButton: {
+  pdfButton: {
     padding: 8,
   },
-  headerDownloadBtn: {padding: 8},
 });
 
 export default TransactionReport;
