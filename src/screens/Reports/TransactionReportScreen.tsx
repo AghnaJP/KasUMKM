@@ -16,6 +16,7 @@ import {COLORS} from '../../constants';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 
 const TransactionReport = () => {
   const currentYear = new Date().getFullYear();
@@ -221,6 +222,34 @@ const TransactionReport = () => {
     `;
   };
 
+  const saveToDownloads = async (srcPath: string, rawName: string) => {
+    const name = rawName.toLowerCase().endsWith('.pdf')
+      ? rawName
+      : `${rawName}.pdf`;
+    const cleanSrc = srcPath.replace(/^file:\/\//, '');
+
+    if (Platform.OS !== 'android') {
+      return `file://${cleanSrc}`;
+    }
+
+    try {
+      if (Platform.Version >= 29) {
+        const uri = await ReactNativeBlobUtil.MediaCollection.copyToMediaStore(
+          {name, mimeType: 'application/pdf'},
+          'Download',
+          cleanSrc,
+        );
+        return uri;
+      } else {
+        const dest = `${ReactNativeBlobUtil.fs.dirs.DownloadDir}/${name}`;
+        await ReactNativeBlobUtil.fs.cp(cleanSrc, dest);
+        return `file://${dest}`;
+      }
+    } catch (e) {
+      return `file://${cleanSrc}`;
+    }
+  };
+
   const generatePdf = async (monthLabel: string, yearNum: number) => {
     try {
       const monthIdx = indoMonthToIndex(monthLabel);
@@ -238,26 +267,40 @@ const TransactionReport = () => {
           t.type?.toLowerCase?.() === 'expense' ||
           safeNumber(t.price ?? t.amount, 0) < 0,
       );
+
       const html = buildHtml(monthLabel, yearNum, incomeTx, expenseTx);
+      const baseName = `Laporan_${monthLabel}_${yearNum}`.replace(/\s+/g, '_');
+
       const file = await RNHTMLtoPDF.convert({
         html,
-        fileName: `Laporan_${monthLabel}_${yearNum}`.replace(/\s+/g, '_'),
+        fileName: baseName,
         directory: 'Documents',
         base64: false,
       });
       const filePath = file.filePath;
       if (!filePath) {
-        Alert.alert('Gagal', 'Tidak dapat membuat file PDF.');
+        Alert.alert('Failed', 'Could not create PDF.');
         return;
       }
+
+      const finalUri =
+        Platform.OS === 'android'
+          ? await saveToDownloads(filePath, `${baseName}.pdf`)
+          : `file://${filePath}`;
+
       try {
-        await Linking.openURL('file://' + filePath);
+        await Linking.openURL(finalUri);
       } catch {
-        Alert.alert('Tersimpan', `PDF tersimpan di:\n${filePath}`);
+        Alert.alert(
+          'Saved',
+          Platform.OS === 'android'
+            ? 'PDF saved to your Downloads folder.'
+            : `PDF saved at:\n${filePath}`,
+        );
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      Alert.alert('Gagal', 'Terjadi kesalahan saat membuat PDF.');
+      Alert.alert('Failed', 'An error occurred while creating the PDF.');
     }
   };
 
