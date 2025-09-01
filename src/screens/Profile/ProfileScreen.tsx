@@ -1,5 +1,5 @@
 import React, {useContext, useEffect, useState} from 'react';
-import {View, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import {COLORS} from '../../constants';
 import {AuthContext} from '../../context/AuthContext';
 import {getUserByPhone} from '../../database/users/userQueries';
@@ -9,6 +9,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../types/navigation';
+import InitialAvatar from '../../components/Avatar/InitialAvatar';
 
 const ProfileScreen = () => {
   const {userPhone, userName} = useContext(AuthContext);
@@ -30,10 +31,10 @@ const ProfileScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profile}>
-        <Image
-          source={require('../../assets/images/profile.png')}
-          style={styles.avatar}
-        />
+        {/* sebelum:
+  <Image source={require('../../assets/images/profile.png')} style={styles.avatar} />
+  */}
+        <InitialAvatar name={userName} style={styles.avatar} />
         <CustomText variant="title">{userName || '-'}</CustomText>
         <CustomText variant="body">{userPhone || '-'}</CustomText>
       </View>
@@ -82,7 +83,8 @@ const styles = StyleSheet.create({
   avatar: {
     width: 200,
     height: 200,
-    borderRadius: 60,
+    borderRadius: 100,
+    marginBottom: 20,
   },
   name: {
     fontSize: 22,

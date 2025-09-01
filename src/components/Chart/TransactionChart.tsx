@@ -35,8 +35,11 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
   }, [period]);
 
   const {labels, data: rawDataset} = useChartData(period, type, refreshKey);
-  const dataset = rawDataset.map(d => (d >= 1000 ? d : 0));
+
+  const dataset = rawDataset;
+
   const isEmpty = dataset.length === 0 || dataset.every(d => d === 0);
+
   const chartWidth = Math.max(screenWidth, labels.length * 40);
 
   const chartData = {
@@ -78,6 +81,44 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
     }
     return x - 10;
   };
+
+  const LABEL_PIXEL_WIDTH = 40;
+  const SIDE_PADDING = 16;
+  const prevDatasetRef = useRef<number[] | null>(null);
+  const prevLabelsRef = useRef<string[] | null>(null);
+
+  useEffect(() => {
+    const prev = prevDatasetRef.current;
+    const prevLabels = prevLabelsRef.current;
+
+    if (
+      prev &&
+      prev.length === dataset.length &&
+      prevLabels &&
+      prevLabels.join('|') === labels.join('|')
+    ) {
+      const changed: number[] = [];
+      for (let i = 0; i < dataset.length; i++) {
+        if (dataset[i] !== prev[i]) {
+          changed.push(i);
+        }
+      }
+
+      if (changed.length > 0) {
+        const focusIndex = changed[changed.length - 1];
+        const approxX = focusIndex * LABEL_PIXEL_WIDTH + SIDE_PADDING;
+        const targetCenterX = approxX - screenWidth / 2 + LABEL_PIXEL_WIDTH / 2;
+        const maxScroll = Math.max(0, chartWidth + 50 - screenWidth);
+        const targetX = Math.max(0, Math.min(maxScroll, targetCenterX));
+
+        setTooltipPos(prevPos => ({...prevPos, visible: false}));
+        scrollViewRef.current?.scrollTo({x: targetX, animated: true});
+      }
+    }
+
+    prevDatasetRef.current = dataset.slice();
+    prevLabelsRef.current = labels.slice();
+  }, [dataset, labels, screenWidth, chartWidth]);
 
   return (
     <View>

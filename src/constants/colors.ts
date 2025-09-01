@@ -21,3 +21,18 @@ export const BUTTON_COLORS = {
   edit: {bg: '#e2f4e8', text: '#1e5631'},
   delete: {bg: '#fde7e9', text: '#d32f2f'}, // kuning peringatan
 };
+
+export const AVATAR_COLORS = [
+  '#49a0cbff',
+  '#32b93bff',
+  '#7e46c2ff',
+  '#708fb4ff',
+  '#d35e91ff',
+  '#00bea8ff',
+  '#a66955ff',
+  '#4eb753ff',
+  '#3f51d8ff',
+  '#b867cfff',
+  '#dc9883ff',
+  '#6ecfffff',
+];
