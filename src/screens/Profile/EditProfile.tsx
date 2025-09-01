@@ -1,12 +1,5 @@
 import React, {useContext, useEffect, useState} from 'react';
-import {
-  View,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Alert,
-  Text,
-} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Alert, Text} from 'react-native';
 import {COLORS} from '../../constants';
 import {AuthContext} from '../../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +15,7 @@ import FormField from '../../components/Form/FormField';
 import CustomText from '../../components/Text/CustomText';
 import EditProfileModal from '../../components/Modal/EditProfileModal';
 import EditPasswordModal from '../../components/Modal/EditPasswordModal';
+import InitialAvatar from '../../components/Avatar/InitialAvatar';
 
 const EditProfile = () => {
   const {userName, userPhone, logout} = useContext(AuthContext);
@@ -108,10 +102,11 @@ const EditProfile = () => {
 
   return (
     <View style={styles.container}>
-      <Image
+      {/*<Image
         source={require('../../assets/images/profile.png')}
         style={styles.avatar}
-      />
+      />*/}
+      <InitialAvatar name={userName} style={styles.avatar} />
       <View style={styles.profile}>
         <FormField
           label="Nama Pengguna"
