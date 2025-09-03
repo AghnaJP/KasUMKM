@@ -10,7 +10,7 @@ const monthToNumber = (month: string): string => {
 export function useTransactionList<T>(
   getDataFn: () => Promise<T[]>,
   selectedMonth: string,
-  selectedYear: string,
+  selectedYear: number,
   onDataLoaded: (data: T[]) => void,
   refreshKey?: number,
 ) {
@@ -23,7 +23,7 @@ export function useTransactionList<T>(
       const filtered = result.filter((item: any) => {
         const date = new Date(item.date);
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear().toString();
+        const year = date.getFullYear();
         return month === monthToNumber(selectedMonth) && year === selectedYear;
       });
 

@@ -38,7 +38,7 @@ const HomeScreen = () => {
 
   const currentDate = new Date();
   const selectedMonth = MONTHS[currentDate.getMonth()];
-  const selectedYear = currentDate.getFullYear().toString();
+  const selectedYear = currentDate.getFullYear();
 
   const transactions = useTransactionList<TransactionData>(
     getAllTransactions,

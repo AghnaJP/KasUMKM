@@ -11,7 +11,7 @@ export type AuthStackParamList = {
 
 export type AppTabParamList = {
   Home: undefined;
-  Wallet: undefined;
+  Wallet: {initialTab?: 'income' | 'expense'} | undefined;
   Add: undefined;
   Documents: undefined;
   Profile: undefined;

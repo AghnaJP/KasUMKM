@@ -17,8 +17,13 @@ import Button from '../../components/Button/Button';
 import {insertExpense} from '../../database/Expense/expenseQueries';
 import DatePickerField from '../../components/Form/DatePickerField';
 import {useIsFocused} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
+import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
+import type {AppTabParamList} from '../../types/navigation';
 
 const AddExpense = () => {
+  const navigation =
+    useNavigation<BottomTabNavigationProp<AppTabParamList, 'Add'>>();
   const [showFormModal, setShowFormModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [description, setDescription] = useState('');
@@ -77,6 +82,7 @@ const AddExpense = () => {
       }
       Alert.alert('Berhasil', 'Pengeluaran berhasil disimpan');
       setExpenses([]);
+      navigation.navigate('Wallet', {initialTab: 'expense'});
     } catch (e) {
       console.error('Insert expense error:', e);
       Alert.alert('Error', 'Gagal menyimpan pengeluaran');
@@ -158,7 +164,7 @@ const AddExpense = () => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-   backgroundColor: '#fff',
+    backgroundColor: '#fff',
   },
   container: {
     flexGrow: 1,
