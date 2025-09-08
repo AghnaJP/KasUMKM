@@ -17,8 +17,13 @@ import SelectedMenuItem from '../../components/AddTransaction/SelectedMenuItem';
 import {insertIncome} from '../../database/Incomes/incomeQueries';
 import DatePickerField from '../../components/Form/DatePickerField';
 import {useIsFocused} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
+import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
+import type {AppTabParamList} from '../../types/navigation';
 
 const AddIncome = () => {
+  const navigation =
+      useNavigation<BottomTabNavigationProp<AppTabParamList, 'Add'>>();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [selectedMenus, setSelectedMenus] = useState<
@@ -46,6 +51,7 @@ const AddIncome = () => {
         Alert.alert('Berhasil', 'Pendapatan berhasil disimpan');
         setSelectedMenus([]);
       }
+      navigation.navigate('Wallet', {initialTab: 'income'});
     } catch (e) {
       console.error('Insert income error:', e);
       Alert.alert('Error', 'Gagal menyimpan pendapatan');

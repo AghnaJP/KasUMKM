@@ -1,9 +1,12 @@
 import React, {useState, useCallback} from 'react';
 import {StyleSheet, SafeAreaView, View, Alert} from 'react-native';
+import {useRoute} from '@react-navigation/native';
 import TransactionHeader from '../../components/TransactionList/TransactionHeader';
 import TransactionSwitcher from '../../components/TransactionList/TransactionSwitcher';
 import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
 import {IncomeData, ExpenseData} from '../../types/transaction';
+import type {RouteProp} from '@react-navigation/native';
+import type {AppTabParamList} from '../../types/navigation';
 import {
   deleteExpensesByIds,
   getExpenseDetails,
@@ -16,12 +19,20 @@ import {
 } from '../../database/Incomes/incomeQueries';
 
 const WalletScreen = () => {
+  const route = useRoute<RouteProp<AppTabParamList, 'Wallet'>>();
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
   const [isEditModalVisible, setEditModalVisible] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<
     IncomeData | ExpenseData | null
   >(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  React.useEffect(() => {
+    const tab = route.params?.initialTab;
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [route.params?.initialTab, activeTab]);
 
   const getIncomes = useCallback(() => {
     return getIncomeDetails();

@@ -31,9 +31,6 @@ const ProfileScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.profile}>
-        {/* sebelum:
-  <Image source={require('../../assets/images/profile.png')} style={styles.avatar} />
-  */}
         <InitialAvatar name={userName} style={styles.avatar} />
         <CustomText variant="title">{userName || '-'}</CustomText>
         <CustomText variant="body">{userPhone || '-'}</CustomText>
@@ -81,8 +78,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   avatar: {
-    width: 200,
-    height: 200,
+    width: 150,
+    height: 150,
     borderRadius: 100,
     marginBottom: 20,
   },

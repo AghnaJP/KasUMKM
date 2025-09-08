@@ -5,7 +5,7 @@ import {IncomeData} from '../../types/transaction';
 
 interface Props {
   selectedMonth: string;
-  selectedYear: string;
+  selectedYear: number;
   getDataFn: () => Promise<IncomeData[]>;
   onDataLoaded: (data: IncomeData[]) => void;
   onEdit: (item: IncomeData) => void;

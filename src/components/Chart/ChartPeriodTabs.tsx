@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {View, TouchableOpacity, StyleSheet} from 'react-native';
 import CustomText from '../Text/CustomText';
 
@@ -9,28 +9,28 @@ interface Props {
   onSelect: (period: PeriodOption) => void;
 }
 
-const ChartPeriodTabs: React.FC<Props> = ({selected, onSelect}) => {
-  const options: PeriodOption[] = ['Hari', 'Minggu', 'Bulan', 'Tahun'];
+const OPTIONS: PeriodOption[] = ['Hari', 'Minggu', 'Bulan', 'Tahun'];
 
-  return (
-    <View style={styles.container}>
-      {options.map(option => {
-        const isActive = selected === option;
-        return (
-          <TouchableOpacity
-            key={option}
-            onPress={() => onSelect(option)}
-            style={[styles.tab, isActive && styles.activeTab]}>
-            <CustomText
-              variant="caption"
-              style={[styles.text, isActive && styles.activeText]}>
-              {option}
-            </CustomText>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
+const ChartPeriodTabs: React.FC<Props> = ({selected, onSelect}) => {
+  const renderOptions = useMemo(() => {
+    return OPTIONS.map(option => {
+      const isActive = selected === option;
+      return (
+        <TouchableOpacity
+          key={option}
+          onPress={() => onSelect(option)}
+          style={[styles.tab, isActive && styles.activeTab]}>
+          <CustomText
+            variant="caption"
+            style={[styles.text, isActive && styles.activeText]}>
+            {option}
+          </CustomText>
+        </TouchableOpacity>
+      );
+    });
+  }, [selected, onSelect]);
+
+  return <View style={styles.container}>{renderOptions}</View>;
 };
 
 const styles = StyleSheet.create({
@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 6,
+    marginBottom: 15,
   },
   activeTab: {
     backgroundColor: '#C9E7F1',
@@ -58,4 +59,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChartPeriodTabs;
+export default React.memo(ChartPeriodTabs);

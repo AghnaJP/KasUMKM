@@ -12,6 +12,16 @@ import ChartPeriodTabs from './ChartPeriodTabs';
 import CustomText from '../Text/CustomText';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useChartData} from '../../hooks/useChartData';
+import DateFilterRow from '../DateFilterRow';
+import {MONTHS} from '../../constants/months';
+
+const getCurrentDateInfo = () => {
+  const today = new Date();
+  return {
+    currentMonth: MONTHS[today.getMonth()],
+    currentYear: today.getFullYear(),
+  };
+};
 
 const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
   const [period, setPeriod] = useState<'Hari' | 'Minggu' | 'Bulan' | 'Tahun'>(
@@ -26,15 +36,30 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
     visible: false,
   });
 
+  const {currentMonth, currentYear} = getCurrentDateInfo();
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonth);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+
   const scrollViewRef = useRef<ScrollView | null>(null);
   const {width: screenWidth} = useWindowDimensions();
+
+  const pendingDotRef = useRef<{
+    x: number;
+    y: number;
+    index: number;
+    value: number;
+  } | null>(null);
 
   useEffect(() => {
     scrollViewRef.current?.scrollTo({x: 0, animated: false});
     setTooltipPos(prev => ({...prev, visible: false}));
-  }, [period]);
+  }, [period, selectedMonth, selectedYear]);
 
-  const {labels, data: rawDataset} = useChartData(period, type, refreshKey);
+  const {labels, data: rawDataset} = useChartData(period, type, refreshKey, {
+    month: selectedMonth,
+    year: selectedYear,
+  });
 
   const dataset = rawDataset;
 
@@ -42,10 +67,27 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
 
   const chartWidth = Math.max(screenWidth, labels.length * 40);
 
-  const chartData = {
-    labels,
-    datasets: [{data: dataset}],
-  };
+  const chartData = React.useMemo(
+    () => ({
+      labels,
+      datasets: [{data: dataset}],
+    }),
+    [labels, dataset],
+  );
+
+  useEffect(() => {
+    if (pendingDotRef.current) {
+      const {x, y, index, value} = pendingDotRef.current;
+      setTooltipPos({
+        x,
+        y,
+        value,
+        index,
+        visible: true,
+      });
+      pendingDotRef.current = null;
+    }
+  }, [dataset]);
 
   const chartConfig = {
     backgroundGradientFrom: '#fff',
@@ -57,8 +99,8 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
     labelColor: () => '#888',
     strokeWidth: 3,
     propsForDots: {
-      r: '4',
-      strokeWidth: '0',
+      r: '8',
+      strokeWidth: '2',
       stroke: 'rgba(0,0,0,0)',
       fill: 'rgba(0,0,0,0)',
     },
@@ -82,10 +124,62 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
     return x - 10;
   };
 
+  const handleMonthChange = React.useCallback((month: string) => {
+    setTooltipPos(prev => ({...prev, visible: false}));
+    setSelectedMonth(month);
+  }, []);
+
+  const handleYearChange = React.useCallback((year: number) => {
+    setTooltipPos(prev => ({...prev, visible: false}));
+    setSelectedYear(year);
+  }, []);
+
   const LABEL_PIXEL_WIDTH = 40;
   const SIDE_PADDING = 16;
   const prevDatasetRef = useRef<number[] | null>(null);
   const prevLabelsRef = useRef<string[] | null>(null);
+
+  const showLastDataTooltip = React.useCallback(() => {
+    if (isEmpty || dataset.length === 0) {
+      return;
+    }
+
+    let lastDataIndex = -1;
+    for (let i = dataset.length - 1; i >= 0; i--) {
+      if (dataset[i] > 0) {
+        lastDataIndex = i;
+        break;
+      }
+    }
+
+    if (lastDataIndex >= 0) {
+      setTooltipPos(prev => ({
+        ...prev,
+        value: dataset[lastDataIndex],
+        index: lastDataIndex,
+        visible: true,
+      }));
+
+      const approxX = lastDataIndex * LABEL_PIXEL_WIDTH + SIDE_PADDING;
+      const targetCenterX = approxX - screenWidth / 2 + LABEL_PIXEL_WIDTH / 2;
+      const maxScroll = Math.max(0, chartWidth + 50 - screenWidth);
+      const targetX = Math.max(0, Math.min(maxScroll, targetCenterX));
+
+      scrollViewRef.current?.scrollTo({x: targetX, animated: true});
+    } else {
+      setTooltipPos(prev => ({...prev, visible: false}));
+    }
+  }, [isEmpty, dataset, chartWidth, screenWidth]);
+
+  useEffect(() => {
+    if (!isEmpty && dataset.length > 0) {
+      const timer = setTimeout(() => {
+        showLastDataTooltip();
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
+  }, [dataset, period, type, isEmpty, showLastDataTooltip]);
 
   useEffect(() => {
     const prev = prevDatasetRef.current;
@@ -124,6 +218,15 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
     <View>
       <ChartPeriodTabs selected={period} onSelect={setPeriod} />
 
+      <DateFilterRow
+        selectedMonth={selectedMonth.toString()}
+        selectedYear={selectedYear}
+        onMonthChange={month => handleMonthChange(month)}
+        onYearChange={year => handleYearChange(Number(year))}
+        showMonth={period === 'Hari'}
+        showYear={period === 'Bulan' || period === 'Hari'}
+      />
+
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -160,22 +263,67 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
                   setTooltipPos({x, y, value, index, visible: true});
                 }}
                 renderDotContent={({x, y, index}) => {
+                  let lastDataIndex = -1;
+                  for (let i = dataset.length - 1; i >= 0; i--) {
+                    if (dataset[i] > 0) {
+                      lastDataIndex = i;
+                      break;
+                    }
+                  }
+
+                  const isLastDataPoint = index === lastDataIndex;
                   const isActive =
                     tooltipPos.visible && tooltipPos.index === index;
-                  if (!isActive || dataset[index] <= 0) {
-                    return null;
+
+                  if (
+                    isLastDataPoint &&
+                    dataset[index] > 0 &&
+                    !tooltipPos.visible
+                  ) {
+                    pendingDotRef.current = {
+                      x,
+                      y,
+                      index,
+                      value: dataset[index],
+                    };
                   }
-                  return (
-                    <View
-                      key={`dot-${index}`}
-                      style={[
-                        type === 'income'
-                          ? styles.activeDotIncome
-                          : styles.activeDotExpense,
-                        {top: y - 7, left: x - 7},
-                      ]}
-                    />
-                  );
+
+                  if (dataset[index] > 0) {
+                    return (
+                      <TouchableOpacity
+                        key={`touch-dot-${index}`}
+                        style={{
+                          position: 'absolute',
+                          left: x - 20,
+                          top: y - 20,
+                          width: 40,
+                          height: 40,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                        onPress={() => {
+                          setTooltipPos({
+                            x,
+                            y,
+                            value: dataset[index],
+                            index,
+                            visible: true,
+                          });
+                        }}>
+                        {isActive && (
+                          <View
+                            style={[
+                              type === 'income'
+                                ? styles.activeDotIncome
+                                : styles.activeDotExpense,
+                            ]}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  }
+
+                  return null;
                 }}
               />
             )}
@@ -277,18 +425,18 @@ const styles = StyleSheet.create({
   },
   activeDotIncome: {
     position: 'absolute',
-    width: 10,
-    height: 10,
+    width: 12,
+    height: 12,
     borderRadius: 6,
     backgroundColor: '#0E3345',
   },
   activeDotExpense: {
     position: 'absolute',
-    width: 10,
-    height: 10,
+    width: 12,
+    height: 12,
     borderRadius: 6,
     backgroundColor: '#a6090c',
   },
 });
 
-export default TransactionChart;
+export default React.memo(TransactionChart);

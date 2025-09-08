@@ -1,29 +1,11 @@
-import React, {useState, useCallback, useEffect} from 'react';
+import React, {useState, useCallback} from 'react';
 import {View, StyleSheet, TouchableOpacity, Text} from 'react-native';
-import {useIsFocused} from '@react-navigation/native';
-import {Dropdown} from 'react-native-element-dropdown';
 import CustomText from '../Text/CustomText';
 import IncomeList from '../../screens/Wallet/IncomeList';
 import ExpenseList from '../../screens/Wallet/ExpenseList';
 import {IncomeData, ExpenseData} from '../../types/transaction';
+import DateFilterRow from '../DateFilterRow';
 import {MONTHS} from '../../constants/months';
-import {getExpenseDetails} from '../../database/Expense/expenseQueries';
-import {getIncomeDetails} from '../../database/Incomes/incomeQueries';
-
-const getCurrentDateInfo = () => {
-  const today = new Date();
-  return {
-    currentMonthName: MONTHS[today.getMonth()],
-    currentYear: today.getFullYear(),
-  };
-};
-
-const monthData = MONTHS.map(month => ({label: month, value: month}));
-
-interface DropdownItem {
-  label: string;
-  value: string;
-}
 
 interface TransactionSwitcherProps {
   activeTab: 'income' | 'expense';
@@ -35,6 +17,14 @@ interface TransactionSwitcherProps {
   refreshKey: number;
 }
 
+const getCurrentDateInfo = () => {
+  const today = new Date();
+  return {
+    currentMonthName: MONTHS[today.getMonth()],
+    currentYear: today.getFullYear(),
+  };
+};
+
 const TransactionSwitcher = ({
   activeTab,
   onTabChange,
@@ -45,49 +35,9 @@ const TransactionSwitcher = ({
   refreshKey,
 }: TransactionSwitcherProps) => {
   const {currentMonthName, currentYear} = getCurrentDateInfo();
-  const [selectedMonth, setSelectedMonth] = useState(currentMonthName);
-  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
-  const [yearData, setYearData] = useState<DropdownItem[]>([]);
-  const isFocused = useIsFocused();
 
-  useEffect(() => {
-    const generateYearList = async () => {
-      if (!isFocused) {
-        return;
-      }
-
-      try {
-        const allIncomes = await getIncomeDetails();
-        const allExpenses = await getExpenseDetails();
-        const allTransactions = [...allIncomes, ...allExpenses];
-
-        let startYear = currentYear;
-        if (allTransactions.length > 0) {
-          const firstYear = new Date(
-            Math.min(...allTransactions.map(t => new Date(t.date).getTime())),
-          ).getFullYear();
-          startYear = firstYear;
-        }
-
-        const endYear = currentYear + 1;
-        const years: DropdownItem[] = [];
-        for (let i = startYear; i <= endYear; i++) {
-          years.push({label: i.toString(), value: i.toString()});
-        }
-        setYearData(years);
-      } catch {
-        setYearData([
-          {label: currentYear.toString(), value: currentYear.toString()},
-          {
-            label: (currentYear + 1).toString(),
-            value: (currentYear + 1).toString(),
-          },
-        ]);
-      }
-    };
-
-    generateYearList();
-  }, [isFocused, currentYear]);
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthName);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
   const handleTabPress = useCallback(
     (tab: 'income' | 'expense') => {
@@ -95,14 +45,6 @@ const TransactionSwitcher = ({
     },
     [onTabChange],
   );
-
-  const handleMonthChange = useCallback((item: DropdownItem) => {
-    setSelectedMonth(item.value);
-  }, []);
-
-  const handleYearChange = useCallback((item: DropdownItem) => {
-    setSelectedYear(item.value);
-  }, []);
 
   const listComponent =
     activeTab === 'income' ? (
@@ -165,30 +107,14 @@ const TransactionSwitcher = ({
         />
       </View>
 
-      <View style={styles.filterRow}>
-        <Dropdown
-          style={styles.dropdown}
-          placeholderStyle={styles.placeholderStyle}
-          selectedTextStyle={styles.selectedTextStyle}
-          data={monthData}
-          maxHeight={300}
-          labelField="label"
-          valueField="value"
-          value={selectedMonth}
-          onChange={handleMonthChange}
-        />
-        <Dropdown
-          style={styles.dropdown}
-          placeholderStyle={styles.placeholderStyle}
-          selectedTextStyle={styles.selectedTextStyle}
-          data={yearData}
-          maxHeight={300}
-          labelField="label"
-          valueField="value"
-          value={selectedYear}
-          onChange={handleYearChange}
-        />
-      </View>
+      <DateFilterRow
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        onMonthChange={setSelectedMonth}
+        onYearChange={setSelectedYear}
+        showMonth={true}
+        showYear={true}
+      />
 
       <View style={styles.listContainer}>{listComponent}</View>
     </View>
@@ -247,20 +173,6 @@ const styles = StyleSheet.create({
   },
   rightUnderline: {
     right: 0,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  dropdown: {
-    flex: 1,
-    height: 40,
-    borderColor: '#DDDDDD',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
   },
   placeholderStyle: {
     fontSize: 15,

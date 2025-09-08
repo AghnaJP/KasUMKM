@@ -255,7 +255,20 @@ const TransactionReport = () => {
         </tr>
       </tfoot>
     </table>
-  </div>
+    </div>
+    <div class="summary" style="display: flex; justify-content: center; margin-top: 40px;">
+      ${
+        incomeTotal > expenseTotal
+          ? `<h3 class="profit">Total Keuntungan = ${formatCurrency(
+              incomeTotal - expenseTotal,
+            )}</h3>`
+          : incomeTotal < expenseTotal
+          ? `<h3 class="loss">Total Kerugian = ${formatCurrency(
+              expenseTotal - incomeTotal,
+            )}</h3>`
+          : '<h3>Total seimbang (tidak untung/rugi)</h3>'
+      }
+    </div>
 </body>
 </html>
     `;
