@@ -58,7 +58,8 @@ react {
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
+
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -101,6 +102,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
+            shrinkResources true
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -127,8 +129,4 @@ dependencies {
     }
 
     implementation("com.google.android.material:material:1.11.0")
-
-    // Add these lines for PDF support
-    implementation project(':react-native-pdf')
-    implementation project(':react-native-blob-util')
 }
