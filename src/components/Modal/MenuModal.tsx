@@ -16,7 +16,7 @@ import EmptyListMessage from '../../components/EmptyListMessage';
 import {getAllMenus} from '../../database/menus/menuQueries';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import type {RootStackParamList} from '../../types/navigation';
+import type {AppTabParamList} from '../../types/navigation';
 
 interface MenuModalProps {
   visible: boolean;
@@ -26,7 +26,7 @@ interface MenuModalProps {
 
 const MenuModal: React.FC<MenuModalProps> = ({visible, onClose, onSelect}) => {
   const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    useNavigation<NativeStackNavigationProp<AppTabParamList>>();
   const [menus, setMenus] = useState<MenuItem[]>([]);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ const MenuModal: React.FC<MenuModalProps> = ({visible, onClose, onSelect}) => {
             style={styles.addItemContainer}
             onPress={() => {
               onClose();
-              navigation.navigate('App', {screen: 'AddMenu'});
+              navigation.navigate({name: 'Documents', params: undefined});
             }}>
             <View style={styles.addMenu}>
               <CustomText variant="body">Tambah Menu</CustomText>

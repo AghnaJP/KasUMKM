@@ -328,7 +328,10 @@ const TransactionReport = () => {
 
   const downloadCurrentPdf = async () => {
     if (!pdfPath || !pdfName) {
-      Alert.alert('No file', 'Open a PDF first, then try downloading.');
+      Alert.alert(
+        'Tidak ada file',
+        'Buka PDF terlebih dahulu, lalu coba unduh.',
+      );
       return;
     }
 
@@ -341,12 +344,12 @@ const TransactionReport = () => {
             PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
           );
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            Alert.alert('Permission denied', 'Storage permission is required.');
+            Alert.alert('Izin ditolak', 'Izin penyimpanan diperlukan.');
             return;
           }
           const dest = `${ReactNativeBlobUtil.fs.dirs.DownloadDir}/${pdfName}`;
           await ReactNativeBlobUtil.fs.cp(src, dest);
-          Alert.alert('Saved', `PDF saved to Downloads:\n${dest}`);
+          Alert.alert('Tersimpan', `PDF tersimpan di Downloads:\n${dest}`);
         } else {
           await ReactNativeBlobUtil.MediaCollection.copyToMediaStore(
             {
@@ -357,14 +360,14 @@ const TransactionReport = () => {
             'Download',
             src,
           );
-          Alert.alert('Saved', 'PDF saved to your Downloads folder.');
+          Alert.alert('Tersimpan', 'PDF tersimpan di folder Downloads.');
         }
       } else {
         await Share.share({url: pdfPath, message: 'Laporan PDF'});
       }
     } catch (e) {
       console.error('Download error:', e);
-      Alert.alert('Failed', 'Could not save the PDF.');
+      Alert.alert('Gagal', 'Tidak dapat menyimpan file PDF.');
     }
   };
 
