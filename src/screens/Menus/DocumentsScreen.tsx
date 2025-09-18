@@ -214,13 +214,8 @@ const DocumentsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.wrapper}>
-      <TouchableOpacity
-        onPress={() => setAddVisible(true)}
-        activeOpacity={0.9}
-        style={styles.addCornerBtn}
-        accessibilityLabel="Tambah Menu">
-        <Icon name="add" size={20} color="#fff" />
-      </TouchableOpacity>
+
+      <Button title="Tambah Menu" onPress={()=>setAddVisible(true)} customStyle={styles.addCornerBtn} variant="primary"/>
 
       <View style={styles.topRow}>
         <SwitchBar
@@ -365,7 +360,6 @@ const DocumentsScreen: React.FC = () => {
 };
 
 const BTN_SIZE = 40;
-const OFFSET_TOP = 8;
 const OFFSET_RIGHT = 16;
 
 const styles = StyleSheet.create({
@@ -377,25 +371,17 @@ const styles = StyleSheet.create({
 
   addCornerBtn: {
     position: 'absolute',
-    top: OFFSET_TOP,
     right: OFFSET_RIGHT,
-    width: BTN_SIZE,
-    height: BTN_SIZE,
-    borderRadius: BTN_SIZE / 2,
-    backgroundColor: COLORS.darkBlue,
+    width: 130,
+    height: 45,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: {width: 0, height: 2},
-    shadowRadius: 3,
   },
 
   topRow: {
     paddingHorizontal: 16,
-    paddingTop: OFFSET_TOP + BTN_SIZE + 8,
+    paddingTop: BTN_SIZE + 8,
   },
 
   cardWrapper: {
