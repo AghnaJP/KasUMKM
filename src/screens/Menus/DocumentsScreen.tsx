@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  Text,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
@@ -216,10 +217,11 @@ const DocumentsScreen: React.FC = () => {
     <SafeAreaView style={styles.wrapper}>
       <TouchableOpacity
         onPress={() => setAddVisible(true)}
-        activeOpacity={0.9}
+        activeOpacity={0.8}
         style={styles.addCornerBtn}
         accessibilityLabel="Tambah Menu">
         <Icon name="add" size={20} color="#fff" />
+        <Text style={styles.addBtnText}>Tambah Menu</Text>
       </TouchableOpacity>
 
       <View style={styles.topRow}>
@@ -379,10 +381,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: OFFSET_TOP,
     right: OFFSET_RIGHT,
-    width: BTN_SIZE,
+    paddingHorizontal: 12,
     height: BTN_SIZE,
     borderRadius: BTN_SIZE / 2,
     backgroundColor: COLORS.darkBlue,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -391,6 +394,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowOffset: {width: 0, height: 2},
     shadowRadius: 3,
+  },
+
+  addBtnText: {
+    color: '#fff',
+    marginLeft: 6,
+    fontFamily: 'Montserrat-SemiBold',
   },
 
   topRow: {
