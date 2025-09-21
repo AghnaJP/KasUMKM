@@ -19,6 +19,23 @@ interface Props extends TextProps {
   children: React.ReactNode;
 }
 
+function safeStringify(obj: any): string {
+  const seen = new WeakSet();
+  try {
+    return JSON.stringify(obj, function (_key, value) {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return '[Circular]';
+        }
+        seen.add(value);
+      }
+      return value;
+    });
+  } catch (e) {
+    return '[Unserializable]';
+  }
+}
+
 const CustomText: React.FC<Props> = ({
   variant = 'body',
   color = COLORS.darkBlue,
@@ -31,15 +48,29 @@ const CustomText: React.FC<Props> = ({
   ellipsizeMode,
   ...rest
 }) => {
+  // Defensive children mapping to avoid "Objects are not valid as React child" crash
+  const safeChildren = React.Children.toArray(children).map(child => {
+    if (typeof child === 'string' || typeof child === 'number') {
+      // If uppercase is true and child is string, uppercase it here
+      if (uppercase && typeof child === 'string') {
+        return child.toUpperCase();
+      }
+      return child;
+    }
+    // For objects or other types:
+    if (__DEV__) {
+      return safeStringify(child);
+    }
+    return ''; // silently ignore in prod
+  });
+
   const content = (
     <Text
       style={[baseStyles[variant], {color, textAlign: align}, style]}
       numberOfLines={numberOfLines}
       ellipsizeMode={ellipsizeMode}
       {...rest}>
-      {uppercase && typeof children === 'string'
-        ? children.toUpperCase()
-        : children}
+      {safeChildren}
     </Text>
   );
 

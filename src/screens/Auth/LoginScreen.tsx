@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useContext} from 'react';
 import {
   StyleSheet,
   TouchableWithoutFeedback,
@@ -16,13 +16,23 @@ import FormField from '../../components/Form/FormField';
 import Button from '../../components/Button/Button';
 import {COLORS, STRINGS} from '../../constants';
 
-import {getUserByPhone} from '../../database/users/userQueries';
-import {hashText} from '../../utils/crypto';
-
-import {User} from '../../types/user';
-import {useContext} from 'react';
+// Context & Utils
 import {AuthContext} from '../../context/AuthContext';
 import {normalizePhone} from '../../utils/phone';
+import {API_BASE} from '../../constants/api';
+
+// 🔒 Non-Expo secure storage
+import EncryptedStorage from 'react-native-encrypted-storage';
+
+type LoginResponse = {
+  session_token: string;
+  company_id?: string | number;
+  role?: string;
+  name?: string;
+  phone?: string;
+  message?: string; // optional backend error message
+  [key: string]: any;
+};
 
 const LoginScreen = () => {
   const navigation =
@@ -38,6 +48,7 @@ const LoginScreen = () => {
   const {login} = useContext(AuthContext);
 
   const handleLogin = async () => {
+    // reset error & set loading
     setFormError('');
     setPhoneError('');
     setPasswordError('');
@@ -46,12 +57,12 @@ const LoginScreen = () => {
     const normalizedPhone = normalizePhone(phone.trim());
     const trimmedPassword = password.trim();
 
+    // Validasi dasar
     if (!normalizedPhone) {
       setPhoneError('Nomor handphone wajib diisi');
       setIsLoading(false);
       return;
     }
-
     if (!trimmedPassword) {
       setPasswordError('Password tidak boleh kosong');
       setIsLoading(false);
@@ -59,26 +70,64 @@ const LoginScreen = () => {
     }
 
     try {
-      const user: User | null = await getUserByPhone(normalizedPhone);
+      // Call API
+      const r = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          phone: normalizedPhone,
+          password: trimmedPassword,
+        }),
+      });
 
-      if (!user) {
-        setPhoneError(STRINGS.login.errorPhoneNotFound);
-        setIsLoading(false);
+      const data: LoginResponse = await r.json();
+
+      if (!r.ok) {
+        const msg = data?.message || 'Nomor HP atau password salah';
+        if (r.status === 404) setPhoneError('Nomor handphone tidak terdaftar');
+        else if (r.status === 401) setPasswordError('Password salah');
+        else setFormError(msg);
         return;
       }
 
-      const hashedInputPassword = await hashText(trimmedPassword);
-
-      if (user.password !== hashedInputPassword) {
-        setPasswordError(STRINGS.login.errorPasswordWrong);
-        setIsLoading(false);
+      if (!data?.session_token) {
+        setFormError('Respon server tidak valid (token kosong).');
         return;
       }
 
-      login(user.name, user.phone);
+      // 🔒 Simpan ke secure storage
+      try {
+        await EncryptedStorage.setItem(
+          'session_token',
+          String(data.session_token),
+        );
+        if (data.company_id != null) {
+          await EncryptedStorage.setItem('company_id', String(data.company_id));
+        } else {
+          await EncryptedStorage.removeItem('company_id');
+        }
+        if (data.role != null) {
+          await EncryptedStorage.setItem('role', String(data.role));
+        } else {
+          await EncryptedStorage.removeItem('role');
+        }
+      } catch (e) {
+        console.warn('Failed to persist secure data:', e);
+      }
+
+      // 🔐 Update context pakai FORMAT OBJECT
+      await (login as any)({
+        token: data.session_token,
+        companyId: (data.company_id as string) ?? null,
+        role: (data.role as string) ?? null,
+        profile: {name: data.name ?? normalizedPhone, phone: normalizedPhone},
+      });
+
+      // (opsional) navigate ke home
+      // navigation.replace('Home');
     } catch (error) {
       console.error('Login failed:', error);
-      setFormError('Terjadi kesalahan. Coba lagi nanti.');
+      setFormError('Gagal terhubung ke server. Coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -141,15 +190,9 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-  },
-  screenTitle: {
-    marginBottom: 8,
-  },
-  screenSubtitle: {
-    marginBottom: 24,
-  },
+  container: {padding: 24},
+  screenTitle: {marginBottom: 8},
+  screenSubtitle: {marginBottom: 24},
   loginRow: {
     marginTop: 16,
     flexDirection: 'row',
@@ -161,11 +204,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
-  formError: {
-    color: 'red',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
+  formError: {color: 'red', textAlign: 'center', marginBottom: 12},
 });
 
 export default LoginScreen;

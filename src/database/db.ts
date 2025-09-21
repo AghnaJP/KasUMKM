@@ -12,3 +12,9 @@ export const getDBConnection = async () => {
 
   return db;
 };
+
+export async function executeSql(sql: string, params: any[] = []) {
+  const db = await getDBConnection();
+  const [result] = await db.executeSql(sql, params);
+  return result;
+}
