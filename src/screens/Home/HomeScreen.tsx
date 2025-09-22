@@ -21,7 +21,6 @@ import {useTransactionList} from '../../hooks/useTransactionList';
 // 🔁 Sumber data unified (sinkron)
 import {getAllTransactionsUnified} from '../../database/transactions/transactionQueriesUnified';
 import {checkTodayTransactionsUnified as checkTodayTransactions} from '../../database/transactions/checkUnified';
-import {createTransactionsTable} from '../../database/transactions/transactionUnified'; // ← perbaiki path (pakai 'transactions')
 import {useSync} from '../../hooks/useSync';
 
 import {MONTHS} from '../../constants/months';
@@ -37,6 +36,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import {API_BASE} from '../../constants/api';
 import Button from '../../components/Button/Button';
+
+// DEV: insert langsung ke tabel unified (SQLite) // atau 'transactionUnified' sesuai nama file kamu
+
+// DEV: cek DB & tabel (optional, untuk diagnosa)
 
 const HomeScreen = () => {
   const navigation =
@@ -68,19 +71,6 @@ const HomeScreen = () => {
     selectedYear,
     setLoaded,
   );
-
-  // Init tabel unified (TANPA auto sync)
-  useEffect(() => {
-    (async () => {
-      try {
-        await createTransactionsTable();
-        // jika kamu punya migrasi data lama: panggil di sini sebelum sync manual
-        // await migrateLegacyToUnified();
-      } catch (e) {
-        console.log('init table error', e);
-      }
-    })();
-  }, []);
 
   // (opsional) tes /me
   useEffect(() => {
@@ -171,6 +161,26 @@ const HomeScreen = () => {
       });
     }
   }, [isOwner, companyId, getAuthHeaders]);
+
+  // const addDummyUnified = useCallback(async () => {
+  //   try {
+  //     // insert 1 baris ke SQLite unified
+  //     const id = await addTransaction({
+  //       name: 'Tes dari unified',
+  //       type: 'INCOME', // atau 'EXPENSE'
+  //       amount: 12000,
+  //       occurred_at: new Date().toISOString(),
+  //     });
+
+  //     // segarkan UI supaya kebaca di chart/list (kalau masuk bulan berjalan)
+  //     setRefreshKey(prev => prev + 1);
+
+  //     Toast.show({type: 'infoCustom', text1: `Dummy dibuat: ${id}`});
+  //   } catch (e) {
+  //     console.log('addDummyUnified error', e);
+  //     Toast.show({type: 'error', text1: 'Gagal membuat dummy unified tx'});
+  //   }
+  // }, []);
 
   // ======= toast helper =======
   const InfoToast = (props: any) => (
@@ -263,6 +273,26 @@ const HomeScreen = () => {
               variant="primary"
               onPress={handleCreateInvite}
             />
+          </View>
+        )}
+
+        {isOwner && (
+          <View style={{marginTop: 12}}>
+            <Button
+              title="Buat Kode Kasir"
+              variant="primary"
+              onPress={handleCreateInvite}
+            />
+
+            {/* 🔹 Tombol dev: insert langsung ke unified */}
+            {/* <View style={{marginTop: 8}}>
+              <Button
+                title="Add Dummy Unified Tx"
+                variant="secondary"
+                onPress={addDummyUnified}
+                disabled={isSyncing}
+              />
+            </View> */}
           </View>
         )}
 

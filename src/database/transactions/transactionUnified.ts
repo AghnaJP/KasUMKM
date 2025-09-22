@@ -1,5 +1,5 @@
 // src/database/transactions/transactionsUnified.ts
-import {executeSql} from '../db'; // pakai helper kamu untuk run SQL
+import {executeSql, rowsToArray} from '../db';
 import {newId} from '../../utils/id';
 
 export type TxType = 'INCOME' | 'EXPENSE';
@@ -16,37 +16,14 @@ export type TxRow = {
   dirty: number;
 };
 
-export async function createTransactionsTable() {
-  await executeSql(`
-    CREATE TABLE IF NOT EXISTS transactions (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      type TEXT NOT NULL CHECK(type IN ('INCOME','EXPENSE')),
-      amount INTEGER NOT NULL,
-      occurred_at TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      deleted_at TEXT,
-      dirty INTEGER NOT NULL DEFAULT 1
-    );
-  `);
-  await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_tx_updated ON transactions(updated_at);`,
-  );
-  await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_tx_deleted ON transactions(deleted_at);`,
-  );
-  await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_tx_type_date ON transactions(type, occurred_at);`,
-  );
-}
+// ❌ HAPUS createTransactionsTable() di sini.
+// Tabel dibuat lewat migrasi saja agar tidak ada perbedaan koneksi.
 
-// CREATE
 export async function addTransaction(input: {
   name: string;
   type: TxType;
   amount: number;
-  occurred_at?: string; // default now
+  occurred_at?: string;
 }): Promise<string> {
   const id = newId();
   const now = new Date().toISOString();
@@ -59,7 +36,6 @@ export async function addTransaction(input: {
   return id;
 }
 
-// UPDATE
 export async function updateTransaction(
   id: string,
   patch: Partial<Pick<TxRow, 'name' | 'type' | 'amount' | 'occurred_at'>>,
@@ -83,6 +59,8 @@ export async function updateTransaction(
     sets.push('occurred_at=?');
     vals.push(patch.occurred_at);
   }
+
+  // tandai kotor + update timestamp
   sets.push('updated_at=?');
   vals.push(now);
   sets.push('dirty=1');
@@ -93,7 +71,6 @@ export async function updateTransaction(
   ]);
 }
 
-// SOFT DELETE
 export async function softDeleteTransaction(id: string) {
   const now = new Date().toISOString();
   await executeSql(
@@ -102,30 +79,25 @@ export async function softDeleteTransaction(id: string) {
   );
 }
 
-// LIST untuk UI (tanpa yang deleted)
 export async function getTransactionsInMonth(year: number, month0: number) {
-  // month0 = 0..11
   const start = new Date(Date.UTC(year, month0, 1, 0, 0, 0)).toISOString();
   const end = new Date(Date.UTC(year, month0 + 1, 1, 0, 0, 0)).toISOString();
-  const res = await executeSql(
+  const rs = await executeSql(
     `SELECT id, name, type, amount, occurred_at, created_at, updated_at, deleted_at, dirty
-     FROM transactions
-     WHERE deleted_at IS NULL AND occurred_at >= ? AND occurred_at < ?
-     ORDER BY occurred_at DESC`,
+       FROM transactions
+      WHERE deleted_at IS NULL AND occurred_at >= ? AND occurred_at < ?
+      ORDER BY occurred_at DESC`,
     [start, end],
   );
-  return res.rows._array as TxRow[];
+  return rowsToArray(rs) as TxRow[];
 }
 
-// === SYNC HELPERS ===
 export async function getDirtyTransactions(): Promise<TxRow[]> {
   const rs = await executeSql(
     `SELECT id, name, type, amount, occurred_at, created_at, updated_at, deleted_at, dirty
-     FROM transactions WHERE dirty=1`,
+       FROM transactions WHERE dirty=1`,
   );
-  // guard agar tidak pernah undefined
-  const arr = rs?.rows?._array;
-  return Array.isArray(arr) ? (arr as TxRow[]) : [];
+  return rowsToArray(rs) as TxRow[];
 }
 
 export async function markTransactionsSynced(
@@ -154,7 +126,6 @@ export async function applyPulledTransactions(
   await executeSql('BEGIN');
   try {
     for (const r of rows) {
-      // Upsert (butuh SQLite 3.24+ untuk ON CONFLICT DO UPDATE)
       await executeSql(
         `INSERT INTO transactions (id, name, type, amount, occurred_at, created_at, updated_at, deleted_at, dirty)
          VALUES (?,?,?,?,?, datetime('now'), ?, ?, 0)

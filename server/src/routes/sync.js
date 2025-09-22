@@ -1,6 +1,6 @@
 import {Router} from 'express';
 import pool from '../db.js';
-
+import {isoToMySQL} from '../utils/dateTime.js';
 const router = Router();
 
 /**
@@ -50,6 +50,8 @@ router.get('/pull', async (req, res) => {
  * }
  * Upsert ke MySQL by id.
  */
+// server/src/routes/sync.js
+
 router.post('/push', async (req, res) => {
   console.log('🔁 Received PUSH:', req.body);
   try {
@@ -57,10 +59,10 @@ router.post('/push', async (req, res) => {
     if (!company_id)
       return res.status(400).json({error: 'company_id_required'});
 
-    const txs = changes?.transactions;
-    if (!Array.isArray(txs) || txs.length === 0) {
-      return res.json({ok: true, pushed: 0});
-    }
+    const txs = Array.isArray(changes?.transactions)
+      ? changes.transactions
+      : [];
+    if (!txs.length) return res.json({ok: true, pushed: 0});
 
     const sql = `
       INSERT INTO transactions
@@ -79,21 +81,27 @@ router.post('/push', async (req, res) => {
     try {
       await conn.beginTransaction();
       for (const r of txs) {
-        await conn.query(sql, [
-          r.id,
-          company_id,
-          r.name,
-          r.type, // 'INCOME' | 'EXPENSE'
-          r.amount,
-          r.occurred_at, // ISO
-          r.updated_at, // ISO
-          r.deleted_at ?? null,
-        ]);
+        try {
+          await conn.query(sql, [
+            r.id,
+            company_id,
+            r.name,
+            r.type, // 'INCOME' | 'EXPENSE'
+            r.amount,
+            isoToMySQL(r.occurred_at), // ← convert ISO → 'YYYY-MM-DD HH:MM:SS.mmm'
+            isoToMySQL(r.updated_at),
+            r.deleted_at ? isoToMySQL(r.deleted_at) : null,
+          ]);
+        } catch (e) {
+          console.error('❌ INSERT ONE FAILED id=', r.id, e?.sqlMessage || e);
+          throw e;
+        }
       }
       await conn.commit();
     } catch (e) {
       await conn.rollback();
-      throw e;
+      console.error('❌ TRANSACTION ROLLBACK', e?.sqlMessage || e);
+      return res.status(500).json({ok: false, error: 'insert_failed'});
     } finally {
       conn.release();
     }

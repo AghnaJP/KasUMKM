@@ -20,10 +20,11 @@ import {useIsFocused} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {AppTabParamList} from '../../types/navigation';
+import {addTransaction} from '../../database/transactions/transactionUnified';
 
 const AddIncome = () => {
   const navigation =
-      useNavigation<BottomTabNavigationProp<AppTabParamList, 'Add'>>();
+    useNavigation<BottomTabNavigationProp<AppTabParamList, 'Add'>>();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [selectedMenus, setSelectedMenus] = useState<
@@ -46,11 +47,22 @@ const AddIncome = () => {
   const handleSubmit = async () => {
     try {
       const now = selectedDate.toISOString();
+
       for (const {item, quantity} of selectedMenus) {
+        // 1) simpan detail ke tabel incomes (yang lama)
         await insertIncome(item.id, quantity, now, now);
-        Alert.alert('Berhasil', 'Pendapatan berhasil disimpan');
-        setSelectedMenus([]);
+
+        // 2) simpan ringkasannya ke tabel unified -> untuk sinkronisasi
+        await addTransaction({
+          name: item.name ?? `Menu #${item.id}`,
+          type: 'INCOME',
+          amount: item.price * quantity,
+          occurred_at: now,
+        });
       }
+
+      Alert.alert('Berhasil', 'Pendapatan berhasil disimpan');
+      setSelectedMenus([]);
       navigation.navigate('Wallet', {initialTab: 'income'});
     } catch (e) {
       console.error('Insert income error:', e);

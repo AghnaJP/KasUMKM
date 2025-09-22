@@ -20,6 +20,7 @@ export function useSync() {
 
     // === PUSH ===
     const dirtyRaw = await getDirtyTransactions();
+    console.log('SYNC dirty count =', dirtyRaw.length, dirtyRaw.slice(0, 2));
     const dirty = Array.isArray(dirtyRaw) ? dirtyRaw : []; // <-- guard
     if (dirty.length > 0) {
       const body = JSON.stringify({

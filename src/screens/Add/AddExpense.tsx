@@ -20,6 +20,7 @@ import {useIsFocused} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {AppTabParamList} from '../../types/navigation';
+import {addTransaction} from '../../database/transactions/transactionUnified';
 
 const AddExpense = () => {
   const navigation =
@@ -71,7 +72,9 @@ const AddExpense = () => {
   const handleSubmit = async () => {
     try {
       const now = selectedDate.toISOString();
+
       for (const item of expenses) {
+        // 1) simpan detail ke tabel expenses (yang lama)
         await insertExpense(
           item.description,
           item.price,
@@ -79,7 +82,16 @@ const AddExpense = () => {
           now,
           now,
         );
+
+        // 2) simpan ringkasannya ke unified -> untuk sinkronisasi
+        await addTransaction({
+          name: item.description,
+          type: 'EXPENSE',
+          amount: item.price * item.quantity,
+          occurred_at: now,
+        });
       }
+
       Alert.alert('Berhasil', 'Pengeluaran berhasil disimpan');
       setExpenses([]);
       navigation.navigate('Wallet', {initialTab: 'expense'});

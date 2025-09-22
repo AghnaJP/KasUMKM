@@ -1,5 +1,5 @@
 // src/database/transactions/transactionQueriesUnified.ts
-import {executeSql} from '../db';
+import {executeSql, rowsToArray} from '../db';
 import {MONTHS} from '../../constants/months';
 import type {TransactionData} from '../../types/transaction';
 
@@ -18,7 +18,7 @@ export async function getAllTransactionsByMonth(
   // NOTE:
   // - `rowid AS id` -> numeric id untuk kompatibilitas tipe lama
   // - CAST type ke lowercase 'income'/'expense' agar cocok UI lama
-  const res = await executeSql(
+  const rs = await executeSql(
     `SELECT 
         rowid AS id,
         name,
@@ -33,7 +33,7 @@ export async function getAllTransactionsByMonth(
   );
 
   // rows sudah sesuai shape TransactionData lama
-  return res.rows._array as TransactionData[];
+  return rowsToArray(rs) as TransactionData[];
 }
 
 /**
