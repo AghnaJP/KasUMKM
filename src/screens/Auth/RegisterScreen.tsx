@@ -111,7 +111,6 @@ const RegisterScreen = () => {
         return;
       }
 
-      // 🔒 Simpan ke EncryptedStorage
       try {
         await EncryptedStorage.setItem(
           'session_token',
@@ -135,7 +134,6 @@ const RegisterScreen = () => {
       console.log('company_id:', await EncryptedStorage.getItem('company_id'));
       console.log('role:', await EncryptedStorage.getItem('role'));
 
-      // 🔐 Update context: FORMAT OBJECT (wajib)
       await (login as any)({
         token: data.session_token,
         companyId: (data.company_id as string) ?? null,
@@ -143,17 +141,12 @@ const RegisterScreen = () => {
         profile: {name: trimmedName, phone: normalized},
       });
 
-      // ✅ UX: Auto-login ke Home (disarankan)
       navigation.replace('App', {
         screen: 'AppTabs',
         params: {
           screen: 'Home',
         },
       });
-
-      // --- ALTERNATIF FLOW (pakai modal & ke Login):
-      // setShowModal(true);
-      // navigation.replace('Auth', { screen: 'Login' });
     } catch (error) {
       console.error('Registration failed:', error);
       setFormError('Gagal terhubung ke server. Coba lagi.');
@@ -244,7 +237,6 @@ const RegisterScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Modal ini hanya dipakai kalau kamu pilih flow modal */}
       <SuccessModal
         visible={showModal}
         title={STRINGS.register.successTitle}
