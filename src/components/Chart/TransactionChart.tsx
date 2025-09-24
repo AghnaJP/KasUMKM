@@ -215,7 +215,7 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
   }, [dataset, labels, screenWidth, chartWidth]);
 
   return (
-    <View>
+    <View pointerEvents="box-none">
       <ChartPeriodTabs selected={period} onSelect={setPeriod} />
 
       <DateFilterRow
@@ -230,7 +230,8 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
       <ScrollView
         ref={scrollViewRef}
         horizontal
-        showsHorizontalScrollIndicator={false}>
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{flexGrow: 1}}>
         <TouchableWithoutFeedback
           onPress={() => setTooltipPos(prev => ({...prev, visible: false}))}>
           <View
@@ -238,7 +239,8 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
               styles.chartScrollArea,
               isEmpty && styles.emptyChartContainer,
               {width: chartWidth + 50},
-            ]}>
+            ]}
+            pointerEvents="box-none">
             {isEmpty ? (
               <CustomText style={styles.emptyText}>
                 Belum ada data untuk ditampilkan
@@ -290,36 +292,48 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
 
                   if (dataset[index] > 0) {
                     return (
-                      <TouchableOpacity
-                        key={`touch-dot-${index}`}
+                      <View
+                        key={`touch-dot-wrap-${index}`}
+                        pointerEvents="box-none"
                         style={{
                           position: 'absolute',
                           left: x - 20,
                           top: y - 20,
                           width: 40,
                           height: 40,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                        onPress={() => {
-                          setTooltipPos({
-                            x,
-                            y,
-                            value: dataset[index],
-                            index,
-                            visible: true,
-                          });
+                          zIndex: 20,
                         }}>
-                        {isActive && (
-                          <View
-                            style={[
-                              type === 'income'
-                                ? styles.activeDotIncome
-                                : styles.activeDotExpense,
-                            ]}
-                          />
-                        )}
-                      </TouchableOpacity>
+                        <TouchableOpacity
+                          key={`touch-dot-${index}`}
+                          style={{
+                            width: 40,
+                            height: 40,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderRadius: 20,
+                            zIndex: 30,
+                          }}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            setTooltipPos({
+                              x,
+                              y,
+                              value: dataset[index],
+                              index,
+                              visible: true,
+                            });
+                          }}>
+                          {isActive && (
+                            <View
+                              style={[
+                                type === 'income'
+                                  ? styles.activeDotIncome
+                                  : styles.activeDotExpense,
+                              ]}
+                            />
+                          )}
+                        </TouchableOpacity>
+                      </View>
                     );
                   }
 
@@ -330,6 +344,7 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
 
             {tooltipPos.visible && (
               <View
+                pointerEvents="box-none"
                 style={[
                   styles.tooltip,
                   {
