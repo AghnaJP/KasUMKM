@@ -9,7 +9,7 @@ const router = Router();
 router.post('/register', async (req, res) => {
   const {name, phone, password, invite_code} = req.body || {};
   if (!name || !phone || !password)
-    return res.status(400).json({error: 'missing_fields'});
+    {return res.status(400).json({error: 'missing_fields'});}
 
   const conn = await pool.getConnection();
   try {

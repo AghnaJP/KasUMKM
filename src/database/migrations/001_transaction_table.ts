@@ -2,7 +2,7 @@
 import {executeSql, debugDatabaseList, tableExists} from '../db';
 
 export async function migrateCreateTransactionsTable() {
-  await debugDatabaseList('MIGRATION');
+  await debugDatabaseList('MIGRATION_TRANSACTION');
 
   await executeSql(`
     CREATE TABLE IF NOT EXISTS transactions (

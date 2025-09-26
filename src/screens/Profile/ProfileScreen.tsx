@@ -14,7 +14,8 @@ const ProfileScreen = () => {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // ✅ ambil dari AuthContext baru
-  const {profile, role, companyId} = useAuth();
+  const {companyId, role, profile} = useAuth();
+  const isOwner = role === 'OWNER';
   const displayName = profile?.name || '-';
   const displayPhone = profile?.phone || '-';
 
@@ -52,14 +53,16 @@ const ProfileScreen = () => {
         <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.menu}
-        onPress={() =>
-          navigation.navigate('App', {screen: 'TransactionReport'})
-        }>
-        <CustomText variant="body">Laporan keuangan</CustomText>
-        <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
-      </TouchableOpacity>
+      {isOwner && (
+        <TouchableOpacity
+          style={styles.menu}
+          onPress={() =>
+            navigation.navigate('App', {screen: 'TransactionReport'})
+          }>
+          <CustomText variant="body">Laporan keuangan</CustomText>
+          <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

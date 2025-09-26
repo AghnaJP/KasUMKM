@@ -65,10 +65,10 @@ def enableProguardInReleaseBuilds = true
  * The preferred build flavor of JavaScriptCore (JSC)
  *
  * For example, to use the international variant, you can use:
- * `def jscFlavor = io.github.react-native-community:jsc-android-intl:2026004.+`
+ * def jscFlavor = io.github.react-native-community:jsc-android-intl:2026004.+
  *
  * The international variant includes ICU i18n library and necessary data
- * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
+ * allowing to use e.g. Date.toLocaleString and String.localeCompare that
  * give correct results when using with locales other than en-US. Note that
  * this variant is about 6MiB larger per architecture than default.
  */
@@ -80,6 +80,7 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.kasumkm"
+
     defaultConfig {
         applicationId "com.kasumkm"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -87,6 +88,26 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    // ✅ Tambahkan flavorDimensions (WAJIB jika pakai productFlavors)
+    flavorDimensions "role"
+
+    // ✅ Definisikan dua flavor: owner & cashier
+    productFlavors {
+        owner {
+            dimension "role"
+            applicationIdSuffix ".owner"
+            versionNameSuffix "-owner"
+            resValue "string", "app_name", "KasUMKM Owner"
+        }
+        cashier {
+            dimension "role"
+            applicationIdSuffix ".cashier"
+            versionNameSuffix "-cashier"
+            resValue "string", "app_name", "KasUMKM Cashier"
+        }
+    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -95,25 +116,25 @@ android {
             keyPassword 'android'
         }
     }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
             shrinkResources true
             signingConfig signingConfigs.debug
-            minifyEnabled enableProguardInReleaseBuilds
+            minifyEnabled true
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+
     configurations.all {
         resolutionStrategy {
             force "androidx.core:core:1.13.1"
             exclude group: 'com.android.support', module: 'support-compat'
             exclude group: 'com.google.firebase', module: 'firebase-core'
-            exclude group: 'com.google.firebase', module: 'firebase-messaging'  
+            exclude group: 'com.google.firebase', module: 'firebase-messaging'
         }
     }
 }

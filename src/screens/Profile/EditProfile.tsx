@@ -16,22 +16,23 @@ import CustomText from '../../components/Text/CustomText';
 import EditProfileModal from '../../components/Modal/EditProfileModal';
 import EditPasswordModal from '../../components/Modal/EditPasswordModal';
 import InitialAvatar from '../../components/Avatar/InitialAvatar';
+import {useAuth} from '../../context/AuthContext';
 
 const EditProfile = () => {
-  const {userName, userPhone, logout} = useContext(AuthContext);
+  const {profile, logout} = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (userPhone) {
-        const userData = await getUserByPhone(userPhone);
+      if (profile.phone) {
+        const userData = await getUserByPhone(profile.phone);
         setUser(userData);
       }
     };
     fetchUser();
-  }, [userPhone]);
+  }, [profile.phone]);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Yakin ingin keluar dari akun?', [
@@ -106,17 +107,17 @@ const EditProfile = () => {
         source={require('../../assets/images/profile.png')}
         style={styles.avatar}
       />*/}
-      <InitialAvatar name={userName} style={styles.avatar} />
+      <InitialAvatar name={profile.name} style={styles.avatar} />
       <View style={styles.profile}>
         <FormField
           label="Nama Pengguna"
-          value={userName}
+          value={profile.name}
           touchableOnly
           onPress={() => setShowEditProfileModal(true)}
           rightIcon={<Icon name="edit" size={16} color={COLORS.darkBlue} />}
         />
 
-        <FormField label="Nomor Telepon" value={userPhone} touchableOnly />
+        <FormField label="Nomor Telepon" value={profile.phone} touchableOnly />
 
         <TouchableOpacity
           style={styles.password}

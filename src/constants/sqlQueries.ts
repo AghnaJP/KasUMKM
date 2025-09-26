@@ -9,12 +9,15 @@ export const CREATE_USERS_TABLE = `
 
 export const CREATE_MENUS_TABLE = `
   CREATE TABLE IF NOT EXISTS menus (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    category TEXT NOT NULL,
-    price INTEGER NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
+    price REAL NOT NULL,
+    category TEXT NOT NULL CHECK(category IN ('food', 'drink')),
+    occurred_at TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT,
+    dirty INTEGER NOT NULL DEFAULT 1
   );
 `;
 

@@ -1,5 +1,6 @@
 import {Category, MenuItem} from '../../types/menu';
 import {getDBConnection} from '../db';
+import {addMenu} from './menuUnified';
 import {
   Transaction,
   ResultSet,
@@ -47,24 +48,28 @@ export const getAllMenus = async (): Promise<MenuItem[]> => {
   });
 };
 
-export const insertMenu = async (
+export async function insertMenu(
   name: string,
   category: string,
   price: number,
-): Promise<void> => {
-  const database: SQLiteDatabase = await getDBConnection();
-  const now = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    database.transaction((tx: Transaction) => {
-      tx.executeSql(
-        'INSERT INTO menus (name, category, price, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-        [name, category, price, now, now],
-        () => resolve(),
-        (_, error) => reject(error),
-      );
+  occurred_at?: string,
+): Promise<number> {
+  try {
+    // Tambahkan ke unified system untuk sync
+    const menuId = await addMenu({
+      name,
+      category: category as 'food' | 'drink',
+      price,
+      occurred_at,
     });
-  });
-};
+
+    console.log(`Menu berhasil ditambahkan dengan ID: ${menuId}`);
+    return 1; // Return ID numerik untuk kompatibilitas
+  } catch (error) {
+    console.error('Error inserting menu:', error);
+    throw error;
+  }
+}
 
 export const updateMenuById = async (
   id: number,

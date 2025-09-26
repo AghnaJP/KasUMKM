@@ -276,13 +276,13 @@ const HomeScreen = () => {
           </View>
         )}
 
-        {isOwner && (
+        {/* {isOwner && (
           <View style={{marginTop: 12}}>
             <Button
               title="Buat Kode Kasir"
               variant="primary"
               onPress={handleCreateInvite}
-            />
+            /> */}
 
             {/* 🔹 Tombol dev: insert langsung ke unified */}
             {/* <View style={{marginTop: 8}}>
@@ -293,13 +293,13 @@ const HomeScreen = () => {
                 disabled={isSyncing}
               />
             </View> */}
-          </View>
-        )}
+          {/* </View>
+        )} */}
 
         {/* === TOMBOL SYNC NOW (untuk semua role) === */}
         <View style={{marginTop: 12}}>
           <Button
-            title={isSyncing ? 'Menyinkronkan...' : 'Sync Now'}
+            title={isSyncing ? 'Menyinkronkan...' : 'Sinkronasi Sekarang'}
             variant="secondary"
             onPress={handleSyncNow}
             disabled={isSyncing}
@@ -311,11 +311,14 @@ const HomeScreen = () => {
           )}
         </View>
 
-        <ProfitCard />
-
-        <View style={styles.chartWrapper}>
-          <TransactionChart refreshKey={refreshKey} />
-        </View>
+        {isOwner && (
+          <>
+            <ProfitCard />
+            <View style={styles.chartWrapper}>
+              <TransactionChart refreshKey={refreshKey} />
+            </View>
+          </>
+        )}
 
         <View style={styles.transactionHeader}>
           <CustomText variant="subtitle">Transaksi Terkini</CustomText>
