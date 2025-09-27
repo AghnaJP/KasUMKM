@@ -70,6 +70,7 @@ const HomeScreen = () => {
     selectedMonth,
     selectedYear,
     setLoaded,
+    refreshKey,
   );
 
   // (opsional) tes /me
@@ -284,8 +285,8 @@ const HomeScreen = () => {
               onPress={handleCreateInvite}
             /> */}
 
-            {/* 🔹 Tombol dev: insert langsung ke unified */}
-            {/* <View style={{marginTop: 8}}>
+        {/* 🔹 Tombol dev: insert langsung ke unified */}
+        {/* <View style={{marginTop: 8}}>
               <Button
                 title="Add Dummy Unified Tx"
                 variant="secondary"
@@ -293,7 +294,7 @@ const HomeScreen = () => {
                 disabled={isSyncing}
               />
             </View> */}
-          {/* </View>
+        {/* </View>
         )} */}
 
         {/* === TOMBOL SYNC NOW (untuk semua role) === */}
@@ -313,7 +314,7 @@ const HomeScreen = () => {
 
         {isOwner && (
           <>
-            <ProfitCard />
+            <ProfitCard refreshKey={refreshKey} />
             <View style={styles.chartWrapper}>
               <TransactionChart refreshKey={refreshKey} />
             </View>

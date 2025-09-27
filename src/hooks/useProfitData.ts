@@ -1,47 +1,38 @@
 import {useEffect, useState} from 'react';
 import {useIsFocused} from '@react-navigation/native';
-import {MenuItem} from '../types/menu';
-import {IncomeData, ExpenseData} from '../types/transaction';
-import {getExpenseDetails} from '../database/Expense/expenseQueries';
-import {getIncomeDetails} from '../database/Incomes/incomeQueries';
+import {MONTHS} from '../constants/months';
+import {getMonthlyTotalsUnified} from '../database/transactions/transactionQueriesUnified';
 
-export const useProfitData = () => {
-  const [menuList, _setMenuList] = useState<MenuItem[]>([]);
-  const [incomeList, setIncomeList] = useState<IncomeData[]>([]);
-  const [expenseList, setExpenseList] = useState<ExpenseData[]>([]);
-  const [loading, setLoading] = useState(true);
+export const useProfitData = (refreshKey: number = 0) => {
   const isFocused = useIsFocused();
+  const [loading, setLoading] = useState(true);
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalExpense, setTotalExpense] = useState(0);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
+    let mounted = true;
+    (async () => {
       setLoading(true);
-      try {
-        const [incomes, expenses] = await Promise.all([
-          getIncomeDetails(),
-          getExpenseDetails(),
-        ]);
+      const now = new Date();
+      const monthName = MONTHS[now.getMonth()];
+      const year = now.getFullYear();
 
-        if (isMounted) {
-          setIncomeList(incomes);
-          setExpenseList(expenses);
-        }
-      } catch (error) {
-        console.error('Fetch error in useProfitData:', error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      const t = await getMonthlyTotalsUnified(monthName, year);
+      if (mounted) {
+        setTotalIncome(t.income);
+        setTotalExpense(t.expense);
+        setLoading(false);
       }
-    };
-
-    fetchData();
-
+    })();
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [isFocused]);
+  }, [isFocused, refreshKey]);
 
-  return {menuList, incomeList, expenseList, loading};
+  return {
+    loading,
+    totalIncome,
+    totalExpense,
+    profit: totalIncome - totalExpense,
+  };
 };
