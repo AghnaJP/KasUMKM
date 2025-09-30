@@ -20,15 +20,18 @@ import {useIsFocused} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {AppTabParamList} from '../../types/navigation';
+import {BukuEntry} from '../../utils/parser';
+import TransactionScanner from '../../components/AddTransaction/TransactionScanner';
 
 const AddIncome = () => {
   const navigation =
-      useNavigation<BottomTabNavigationProp<AppTabParamList, 'Add'>>();
+    useNavigation<BottomTabNavigationProp<AppTabParamList, 'Add'>>();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [selectedMenus, setSelectedMenus] = useState<
     {item: MenuItem; quantity: number}[]
   >([]);
+  const [showScanner, setShowScanner] = useState(false);
 
   const totalPrice = selectedMenus.reduce(
     (acc, curr) => acc + curr.item.price * curr.quantity,
@@ -58,6 +61,22 @@ const AddIncome = () => {
     }
   };
 
+  const handleScannerResult = (entries: BukuEntry[]) => {
+    // Convert entries ke format MenuItem jika memungkinkan
+    const scannedMenus = entries.map(entry => ({
+      item: {
+        name: entry.keterangan,
+        price: entry.pemasukan,
+        category: 'food', // default or map from entry if available
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as MenuItem,
+      quantity: 1,
+    }));
+    setSelectedMenus(prev => [...prev, ...scannedMenus]);
+    setShowScanner(false);
+  };
+
   return (
     <SafeAreaView style={styles.wrapper}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -70,11 +89,24 @@ const AddIncome = () => {
             <CustomText>Pilih Menu</CustomText>
             <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
           </TouchableOpacity>
+          <Button
+            title="Scan Pendapatan"
+            variant="secondary"
+            onPress={() => setShowScanner(true)}
+          />
         </View>
 
-        {selectedMenus.map(({item, quantity}) => (
+        {showScanner && (
+          <TransactionScanner
+            mode="income"
+            onResultDetected={handleScannerResult}
+            onClose={() => setShowScanner(false)}
+          />
+        )}
+
+        {selectedMenus.map(({item, quantity}, index) => (
           <SelectedMenuItem
-            key={item.id}
+            key={`${item.id}-${index}`} // gabungan id + index untuk unik
             item={item}
             quantity={quantity}
             onIncrease={() =>

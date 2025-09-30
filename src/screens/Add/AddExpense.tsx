@@ -20,6 +20,8 @@ import {useIsFocused} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {AppTabParamList} from '../../types/navigation';
+import {BukuEntry} from '../../utils/parser';
+import TransactionScanner from '../../components/AddTransaction/TransactionScanner';
 
 const AddExpense = () => {
   const navigation =
@@ -30,6 +32,7 @@ const AddExpense = () => {
   const [amount, setAmount] = useState('');
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const isFocused = useIsFocused();
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     if (isFocused) {
@@ -94,6 +97,20 @@ const AddExpense = () => {
     0,
   );
 
+  const handleScannerResult = (entries: BukuEntry[]) => {
+    setExpenses(prev => [
+      ...prev,
+      ...entries.map((entry, idx) => ({
+        id: prev.length > 0 ? prev[prev.length - 1].id + idx + 1 : idx + 1,
+        description: entry.keterangan,
+        price: entry.pengeluaran,
+        quantity: 1,
+        created_at: entry.tanggal,
+      })),
+    ]);
+    setShowScanner(false);
+  };
+
   return (
     <SafeAreaView style={styles.wrapper}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -106,7 +123,20 @@ const AddExpense = () => {
             <CustomText>Masukkan Pengeluaran</CustomText>
             <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
           </TouchableOpacity>
+          <Button
+            title="Scan Pengeluaran"
+            variant="secondary"
+            onPress={() => setShowScanner(true)}
+          />
         </View>
+
+        {showScanner && (
+          <TransactionScanner
+            mode="expense"
+            onResultDetected={handleScannerResult}
+            onClose={() => setShowScanner(false)}
+          />
+        )}
 
         {expenses.map((item, index) => (
           <SelectedMenuItem
