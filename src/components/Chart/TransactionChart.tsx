@@ -27,6 +27,13 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
   const [period, setPeriod] = useState<'Hari' | 'Minggu' | 'Bulan' | 'Tahun'>(
     'Hari',
   );
+
+  const monthToNumber = (month: string): string => {
+    const index = MONTHS.indexOf(month);
+    const idx = index >= 0 ? index : new Date().getMonth();
+    return (idx + 1).toString().padStart(2, '0');
+  };
+
   const [type, setType] = useState<'income' | 'expense'>('income');
   const [tooltipPos, setTooltipPos] = useState({
     x: 0,
@@ -57,7 +64,7 @@ const TransactionChart = ({refreshKey}: {refreshKey: number}) => {
   }, [period, selectedMonth, selectedYear]);
 
   const {labels, data: rawDataset} = useChartData(period, type, refreshKey, {
-    month: selectedMonth,
+    month: monthToNumber(selectedMonth),
     year: selectedYear,
   });
 
