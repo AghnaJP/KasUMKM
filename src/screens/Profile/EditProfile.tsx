@@ -1,15 +1,13 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Alert, Text} from 'react-native';
 import {COLORS} from '../../constants';
 import {AuthContext} from '../../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  getUserByPhone,
   editUsername,
   updateUserPassword,
   deleteUser,
 } from '../../database/users/userQueries';
-import type {User} from '../../types/user';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FormField from '../../components/Form/FormField';
 import CustomText from '../../components/Text/CustomText';
@@ -20,19 +18,8 @@ import {useAuth} from '../../context/AuthContext';
 
 const EditProfile = () => {
   const {profile, logout} = useAuth();
-  const [user, setUser] = useState<User | null>(null);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (profile.phone) {
-        const userData = await getUserByPhone(profile.phone);
-        setUser(userData);
-      }
-    };
-    fetchUser();
-  }, [profile.phone]);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Yakin ingin keluar dari akun?', [
@@ -49,9 +36,6 @@ const EditProfile = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (!user) {
-      return;
-    }
     Alert.alert(
       'Hapus Akun',
       'Apakah Anda yakin ingin menghapus akun ini? Tindakan ini tidak dapat dibatalkan.',
@@ -62,7 +46,7 @@ const EditProfile = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteUser(user.phone);
+              await deleteUser(profile.phone);
               await AsyncStorage.removeItem('isLoggedIn');
               logout();
               Alert.alert('Akun berhasil dihapus');
@@ -78,12 +62,8 @@ const EditProfile = () => {
   const {updateUserName} = useContext(AuthContext);
 
   const handleSaveName = async ({name}: {name: string}) => {
-    if (!user) {
-      return;
-    }
     try {
-      await editUsername(name, user.phone);
-      setUser({...user, name});
+      await editUsername(name, profile.phone);
       updateUserName(name);
       setShowEditProfileModal(false);
       Alert.alert('Berhasil', 'Nama berhasil diperbarui');
@@ -93,10 +73,7 @@ const EditProfile = () => {
   };
 
   const handleSavePassword = async ({password}: {password: string}) => {
-    if (!user) {
-      return;
-    }
-    await updateUserPassword(user.phone, password);
+    await updateUserPassword(profile.phone, password);
     setShowEditPasswordModal(false);
     Alert.alert('Berhasil', 'Kata sandi berhasil diperbarui');
   };
@@ -140,12 +117,13 @@ const EditProfile = () => {
         visible={showEditProfileModal}
         onClose={() => setShowEditProfileModal(false)}
         onSave={handleSaveName}
-        profileData={user ? {name: user.name} : null}
+        profileData={profile ? {name: profile.name} : null}
       />
       <EditPasswordModal
         visible={showEditPasswordModal}
         onClose={() => setShowEditPasswordModal(false)}
         onSave={handleSavePassword}
+        profileData={profile ? {phone: profile.phone} : null}
       />
     </View>
   );

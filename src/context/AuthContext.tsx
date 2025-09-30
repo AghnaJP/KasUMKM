@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {editUsername} from '../database/users/userQueries';
 
 type Role = 'OWNER' | 'CASHIER' | string | null;
 
@@ -65,7 +66,6 @@ const K = {
   TOKEN: 'session_token',
   COMPANY: 'company_id',
   ROLE: 'role',
-  NAME: 'profile_name',
   PHONE: 'profile_phone',
 };
 
@@ -89,8 +89,8 @@ export function AuthProvider({children}: PropsWithChildren) {
     if (s.role != null) await EncryptedStorage.setItem(K.ROLE, String(s.role));
     else await EncryptedStorage.removeItem(K.ROLE);
 
-    await EncryptedStorage.setItem(K.NAME, s.profile.name ?? '');
     await EncryptedStorage.setItem(K.PHONE, s.profile.phone ?? '');
+    await EncryptedStorage.setItem('profile_name', s.profile.name ?? '');
 
     // 🧹 kill legacy keys so old code can't write/read them
     try {
@@ -101,12 +101,12 @@ export function AuthProvider({children}: PropsWithChildren) {
 
   const restore = useCallback(async () => {
     try {
-      const [token, companyId, role, name, phone] = await Promise.all([
+      const [token, companyId, role, phone, name] = await Promise.all([
         EncryptedStorage.getItem(K.TOKEN),
         EncryptedStorage.getItem(K.COMPANY),
         EncryptedStorage.getItem(K.ROLE),
-        EncryptedStorage.getItem(K.NAME),
         EncryptedStorage.getItem(K.PHONE),
+        EncryptedStorage.getItem('profile_name'),
       ]);
 
       setState({
@@ -114,7 +114,10 @@ export function AuthProvider({children}: PropsWithChildren) {
         token: token ?? null,
         companyId: companyId ?? null,
         role: (role as Role) ?? null,
-        profile: {name: name ?? '', phone: phone ?? ''},
+        profile: {
+          name: name ?? '',
+          phone: phone ?? '-',
+        },
       });
 
       try {
@@ -132,44 +135,39 @@ export function AuthProvider({children}: PropsWithChildren) {
 
   const login = useCallback(
     async (a: any, b?: any) => {
+      let next: AuthState;
+
       if (typeof a === 'object') {
         const obj = a as LoginObject;
-        const next: AuthState = {
+        let userName = obj.profile?.name ?? '';
+        let phone = obj.profile?.phone ?? state.profile.phone ?? '';
+
+        next = {
           isLoggedIn: true,
           token: obj.token,
           companyId: obj.companyId ?? null,
           role: obj.role ?? null,
-          profile: {
-            name: obj.profile?.name ?? state.profile.name ?? '',
-            phone: obj.profile?.phone ?? state.profile.phone ?? '',
-          },
+          profile: {name: userName ?? '', phone},
         };
-        setState(next);
-        await persist(next);
-        return;
+      } else {
+        // back-compat: login(name, phone)
+        const name = String(a ?? '');
+        const phone = String(b ?? '');
+
+        next = {
+          isLoggedIn: true,
+          token: state.token,
+          companyId: state.companyId,
+          role: state.role,
+          profile: {name: name ?? '', phone},
+        };
       }
-      // back-compat: login(name, phone)
-      const name = String(a ?? '');
-      const phone = String(b ?? '');
-      const next: AuthState = {
-        isLoggedIn: true,
-        token: state.token,
-        companyId: state.companyId,
-        role: state.role,
-        profile: {name, phone},
-      };
+
       setState(next);
       await persist(next);
     },
-    [
-      persist,
-      state.companyId,
-      state.role,
-      state.token,
-      state.profile.name,
-      state.profile.phone,
-    ],
-  ) as AuthContextType['login'];
+    [persist, state.companyId, state.role, state.token, state.profile.phone],
+  );
 
   const logout = useCallback(async () => {
     setState({
@@ -183,17 +181,22 @@ export function AuthProvider({children}: PropsWithChildren) {
       EncryptedStorage.removeItem(K.TOKEN),
       EncryptedStorage.removeItem(K.COMPANY),
       EncryptedStorage.removeItem(K.ROLE),
-      EncryptedStorage.removeItem(K.NAME),
       EncryptedStorage.removeItem(K.PHONE),
       AsyncStorage.removeItem('userPhone'),
       AsyncStorage.removeItem('userName'),
     ]);
   }, []);
 
-  const updateUserName = useCallback(async (name: string) => {
-    setState(s => ({...s, profile: {...s.profile, name}}));
-    await EncryptedStorage.setItem(K.NAME, name ?? '');
-  }, []);
+  const updateUserName = useCallback(
+    async (name: string) => {
+      if (!state.profile.phone) return;
+
+      await editUsername(name, state.profile.phone);
+
+      setState(s => ({...s, profile: {...s.profile, name}}));
+    },
+    [state.profile.phone],
+  );
 
   const getAuthHeaders = useCallback(async (): Promise<
     Record<string, string>

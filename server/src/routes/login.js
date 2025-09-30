@@ -13,7 +13,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      'SELECT id, password_hash FROM users WHERE phone=?',
+      'SELECT id, name, password_hash FROM users WHERE phone=?',
       [phone],
     );
     if (!rows.length)
@@ -39,6 +39,7 @@ router.post('/login', async (req, res) => {
     res.json({
       session_token: token,
       user_id: rows[0].id,
+      name: rows[0].name,
       company_id: m[0]?.company_id ?? null,
       role: m[0]?.role ?? null,
       expires_at: expires.toISOString(),

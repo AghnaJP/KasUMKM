@@ -32,7 +32,8 @@ const WalletScreen = () => {
   React.useEffect(() => {
     const tab = route.params?.initialTab;
     if (tab && tab !== activeTab) setActiveTab(tab);
-  }, [route.params?.initialTab, activeTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.params?.initialTab]);
 
   const getIncomes = useCallback(() => getUnifiedIncomeDetails(), []);
   const getExpenses = useCallback(() => getUnifiedExpenseDetails(), []);

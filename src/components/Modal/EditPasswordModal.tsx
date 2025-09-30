@@ -22,12 +22,14 @@ interface EditPasswordModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (updatedData: {password: string}) => void;
+  profileData: {phone: string} | null;
 }
 
 const EditPasswordModal = ({
   visible,
   onClose,
   onSave,
+  profileData,
 }: EditPasswordModalProps) => {
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -36,7 +38,7 @@ const EditPasswordModal = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const {userPhone} = useContext(AuthContext);
+  const {} = useContext(AuthContext);
 
   useEffect(() => {
     if (!visible) {
@@ -64,8 +66,8 @@ const EditPasswordModal = ({
       hasError = true;
     }
 
-    if (userPhone && password) {
-      const user = await getUserByPhone(userPhone);
+    if (profileData?.phone && password) {
+      const user = await getUserByPhone(profileData.phone);
       const hashedInputPassword = await hashText(password);
       if (!user || user.password !== hashedInputPassword) {
         setPasswordError(VALIDATION_MESSAGES.oldPasswordInvalid);

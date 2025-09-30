@@ -8,8 +8,9 @@ const router = Router();
 // POST /register { name, phone, password, invite_code? }
 router.post('/register', async (req, res) => {
   const {name, phone, password, invite_code} = req.body || {};
-  if (!name || !phone || !password)
-    {return res.status(400).json({error: 'missing_fields'});}
+  if (!name || !phone || !password) {
+    return res.status(400).json({error: 'missing_fields'});
+  }
 
   const conn = await pool.getConnection();
   try {
@@ -26,8 +27,8 @@ router.post('/register', async (req, res) => {
     const userId = uuidv4();
     const passHash = await bcrypt.hash(password, 10);
     await conn.query(
-      'INSERT INTO users(id, phone, password_hash) VALUES (?,?,?)',
-      [userId, phone, passHash],
+      'INSERT INTO users(id, name, phone, password_hash) VALUES (?,?,?,?)',
+      [userId, name, phone, passHash],
     );
 
     let companyId, role;
@@ -80,6 +81,7 @@ router.post('/register', async (req, res) => {
     res.json({
       session_token: token,
       user_id: userId,
+      name: name,
       company_id: companyId,
       role,
       expires_at: expires.toISOString(),
