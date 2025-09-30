@@ -55,7 +55,6 @@ export async function insertMenu(
   occurred_at?: string,
 ): Promise<number> {
   try {
-    // Tambahkan ke unified system untuk sync
     const menuId = await addMenu({
       name,
       category: category as 'food' | 'drink',
@@ -64,7 +63,7 @@ export async function insertMenu(
     });
 
     console.log(`Menu berhasil ditambahkan dengan ID: ${menuId}`);
-    return 1; // Return ID numerik untuk kompatibilitas
+    return 1;
   } catch (error) {
     console.error('Error inserting menu:', error);
     throw error;
@@ -72,17 +71,17 @@ export async function insertMenu(
 }
 
 export const updateMenuById = async (
-  id: number,
+  id: number | string,
   name: string,
   price: number,
 ): Promise<void> => {
-  const database: SQLiteDatabase = await getDBConnection();
+  const database = await getDBConnection();
   const now = new Date().toISOString();
   return new Promise((resolve, reject) => {
-    database.transaction((tx: Transaction) => {
+    database.transaction(tx => {
       tx.executeSql(
-        'UPDATE menus SET name = ?, price = ?, updated_at = ? WHERE id = ?',
-        [name, price, now, id],
+        'UPDATE menus SET name = ?, price = ?, updated_at = ?, dirty = 1 WHERE id = ?',
+        [name, price, now, String(id)],
         () => resolve(),
         (_, error) => reject(error),
       );

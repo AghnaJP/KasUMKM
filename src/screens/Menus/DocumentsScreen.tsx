@@ -24,7 +24,7 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import SwitchBar from '../../components/AddTransaction/SwitchBar';
 import MenuItemRow from '../../components/Menu/MenuItemRow';
 import HiddenMenuActions from '../../components/Menu/HiddenMenuAction';
-import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
+import EditMenuModal from '../../components/Modal/EditmenuModal';
 import CustomText from '../../components/Text/CustomText';
 import Button from '../../components/Button/Button';
 import DropdownField from '../../components/Form/DropDownField';
@@ -146,20 +146,22 @@ const DocumentsScreen: React.FC = () => {
     setEditVisible(true);
   };
 
-  const handleSaveEdit = async (updated: {
-    description: string;
-    price: string;
-    quantity: string;
-    date: string;
-  }) => {
-    if (!selectedMenu) {
+  const handleSaveEdit = async (updated: {name: string; price: string}) => {
+    if (!selectedMenu) return;
+
+    const name = updated.name?.trim();
+    const price = Number(updated.price);
+
+    if (!name) {
+      Alert.alert('Validasi', 'Nama menu wajib diisi.');
+      return;
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      Alert.alert('Validasi', 'Harga harus lebih dari 0.');
       return;
     }
 
     const count = await getIncomeCountByMenuId(selectedMenu.id);
-    const name = updated.description;
-    const price = Number(updated.price);
-
     const doUpdate = async () => {
       await updateMenuById(selectedMenu.id, name, price);
       await fetchMenus();
@@ -237,7 +239,6 @@ const DocumentsScreen: React.FC = () => {
         />
       </View>
 
-      {/* List */}
       <View style={styles.cardWrapper}>
         <SwipeListView
           data={filteredMenus}
@@ -280,20 +281,15 @@ const DocumentsScreen: React.FC = () => {
         />
       </View>
 
-      <EditTransactionModal
+      <EditMenuModal
         visible={editVisible}
         onClose={() => {
           setEditVisible(false);
           setSelectedMenu(null);
         }}
-        transactionData={
+        menuData={
           selectedMenu
-            ? {
-                description: selectedMenu.name,
-                price: selectedMenu.price,
-                quantity: 1,
-                date: new Date().toISOString().split('T')[0],
-              }
+            ? {name: selectedMenu.name, price: selectedMenu.price}
             : null
         }
         onSave={handleSaveEdit}

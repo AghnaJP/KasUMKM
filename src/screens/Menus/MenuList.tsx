@@ -11,7 +11,7 @@ import {deleteMenuById, updateMenuById} from '../../database/menus/menuQueries';
 import SwitchBar from '../../components/AddTransaction/SwitchBar';
 import MenuItemRow from '../../components/Menu/MenuItemRow';
 import HiddenMenuActions from '../../components/Menu/HiddenMenuAction';
-import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
+import EditMenuModal from '../../components/Modal/EditmenuModal';
 import {CategoryWithEmpty, MenuItem, CATEGORIES} from '../../types/menu';
 import CustomText from '../../components/Text/CustomText';
 import {COLORS, MENU_ALERTS} from '../../constants';
@@ -67,21 +67,31 @@ const MenuList = () => {
     setEditVisible(true);
   };
 
-  const handleSaveEdit = async (updated: {
-    description: string;
-    price: string;
-    quantity: string;
-    date: string;
-  }) => {
+  const handleSaveEdit = async (updated: {name: string; price: string}) => {
     if (!selectedMenu) {
       return;
     }
 
+    const name = updated.name?.trim();
+    const price = Number(updated.price);
+
+    if (!name) {
+      Alert.alert('Validasi', 'Nama menu tidak boleh kosong.');
+      return;
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      Alert.alert('Validasi', 'Harga harus lebih dari 0.');
+      return;
+    }
     const count = await getIncomeCountByMenuId(selectedMenu.id);
 
-    const name = updated.description;
-
-    const price = Number(updated.price);
+    const doUpdate = async () => {
+      await updateMenuById(selectedMenu.id, name, price);
+      setEditVisible(false);
+      setSelectedMenu(null);
+      fetchMenus();
+      Alert.alert('Sukses', 'Menu berhasil diperbarui.');
+    };
 
     if (count > 0) {
       Alert.alert(
@@ -89,25 +99,11 @@ const MenuList = () => {
         MENU_ALERTS.editWithTransaction(count, selectedMenu.name),
         [
           {text: 'Batal', style: 'cancel'},
-          {
-            text: 'Lanjut Edit',
-            style: 'default',
-            onPress: async () => {
-              await updateMenuById(selectedMenu.id, name, price);
-              fetchMenus();
-              setEditVisible(false);
-              setSelectedMenu(null);
-              Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
-            },
-          },
+          {text: 'Lanjut Edit', onPress: doUpdate},
         ],
       );
     } else {
-      await updateMenuById(selectedMenu.id, name, price);
-      fetchMenus();
-      setEditVisible(false);
-      setSelectedMenu(null);
-      Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
+      await doUpdate();
     }
   };
 
@@ -195,20 +191,15 @@ const MenuList = () => {
         />
       </View>
 
-      <EditTransactionModal
+      <EditMenuModal
         visible={editVisible}
         onClose={() => {
           setEditVisible(false);
           setSelectedMenu(null);
         }}
-        transactionData={
+        menuData={
           selectedMenu
-            ? {
-                description: selectedMenu.name,
-                price: selectedMenu.price,
-                quantity: 1,
-                date: new Date().toISOString().split('T')[0],
-              }
+            ? {name: selectedMenu.name, price: selectedMenu.price}
             : null
         }
         onSave={handleSaveEdit}
