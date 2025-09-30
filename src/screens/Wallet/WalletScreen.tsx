@@ -13,6 +13,7 @@ import {
   getUnifiedIncomeDetails,
   getUnifiedExpenseDetails,
   softDeleteUnifiedByRowId,
+  updateUnifiedByRowId,
   type IncomeData,
   type ExpenseData,
 } from '../../database/transactions/unifiedForWallet';
@@ -53,10 +54,43 @@ const WalletScreen = () => {
     }
   };
 
-  const handleSaveEdit = async () => {
-    // TODO: kalau mau edit beneran, panggil updateTransaction (unified)
-    setEditModalVisible(false);
-    Alert.alert('Info', 'Edit unified belum diimplementasikan.');
+  const handleSaveEdit = async (updatedData: {
+    description: string;
+    price: string;
+    quantity: string;
+    date: string;
+  }) => {
+    if (!transactionToEdit) return;
+
+    try {
+      const rowId = Number(transactionToEdit.id); // di list unified id = rowid (number)
+      const priceNum = Number(updatedData.price);
+      const qtyNum = Number(updatedData.quantity || 1);
+
+      if (!Number.isFinite(priceNum) || priceNum <= 0) {
+        Alert.alert('Validasi', 'Harga harus lebih dari 0.');
+        return;
+      }
+      if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+        Alert.alert('Validasi', 'Jumlah harus lebih dari 0.');
+        return;
+      }
+
+      await updateUnifiedByRowId(rowId, {
+        description: updatedData.description,
+        price: priceNum,
+        quantity: qtyNum,
+        date: updatedData.date,
+      });
+
+      setEditModalVisible(false);
+      setTransactionToEdit(null);
+      setRefreshKey(prev => prev + 1);
+      Alert.alert('Sukses', 'Transaksi berhasil diperbarui.');
+    } catch (e) {
+      console.log('edit unified error', e);
+      Alert.alert('Error', 'Gagal memperbarui transaksi.');
+    }
   };
 
   return (

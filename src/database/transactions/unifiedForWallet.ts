@@ -67,3 +67,48 @@ export async function softDeleteUnifiedByRowId(rowId: number) {
     [now, now, uuid],
   );
 }
+
+export async function updateUnifiedByRowId(
+  rowId: number,
+  patch: {
+    description?: string;
+    price?: number;
+    quantity?: number;
+    date?: string;
+  },
+) {
+  const q = await executeSql(
+    `SELECT id, type, name, amount, occurred_at
+       FROM transactions
+      WHERE rowid = ?`,
+    [rowId],
+  );
+  if (q.rows.length === 0) {
+    throw new Error('row_not_found');
+  }
+  const row = q.rows.item(0) as {
+    id: string;
+    type: 'INCOME' | 'EXPENSE';
+    name: string;
+    amount: number;
+    occurred_at: string;
+  };
+
+  const nextName = patch.description ?? row.name;
+  const qty = patch.quantity ?? 1;
+  const unit = patch.price ?? row.amount;
+  const nextAmount = Math.round(Number(unit) * Number(qty));
+  const nextWhen = patch.date ?? row.occurred_at;
+  const now = new Date().toISOString();
+
+  await executeSql(
+    `UPDATE transactions
+        SET name = ?,
+            amount = ?,
+            occurred_at = ?,
+            updated_at = ?,
+            dirty = 1
+      WHERE id = ?`,
+    [nextName, nextAmount, nextWhen, now, row.id],
+  );
+}
