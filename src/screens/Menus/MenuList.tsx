@@ -21,6 +21,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {fetchAndFormatMenus} from '../../services/menuService';
 import {getIncomeCountByMenuId} from '../../database/Incomes/incomeQueries';
+import {useFocusEffect} from '@react-navigation/native';
 
 const categoryOptions = [{label: 'Semua', value: ''}, ...CATEGORIES];
 
@@ -39,11 +40,22 @@ const MenuList = () => {
     fetchMenus();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchMenus();
+      return () => {};
+    }, []),
+  );
+
   const fetchMenus = async () => {
     setLoading(true);
-    const mapped = await fetchAndFormatMenus();
-    setMenus(mapped);
-    setLoading(false);
+    try {
+      const mapped = await fetchAndFormatMenus();
+      Object.values(rowMapRef.current).forEach(row => row?.closeRow?.());
+      setMenus(mapped);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -144,6 +156,7 @@ const MenuList = () => {
       <View style={styles.cardWrapper}>
         <SwipeListView
           data={filteredMenus}
+          extraData={{menus, selectedCategory}}
           keyExtractor={item => item.id.toString()}
           renderItem={({item}) => (
             <MenuItemRow

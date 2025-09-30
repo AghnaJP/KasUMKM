@@ -6,6 +6,7 @@ import React, {
   useState,
   useLayoutEffect,
 } from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {
   View,
   StyleSheet,
@@ -63,7 +64,6 @@ const DocumentsScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryWithEmpty>('');
   const [loading, setLoading] = useState(false);
-
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [editVisible, setEditVisible] = useState(false);
 
@@ -80,10 +80,18 @@ const DocumentsScreen: React.FC = () => {
     fetchMenus();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchMenus();
+      return () => {};
+    }, []),
+  );
+
   const fetchMenus = async () => {
     setLoading(true);
     try {
       const mapped = await fetchAndFormatMenus();
+      Object.values(rowMapRef.current).forEach(row => row?.closeRow?.());
       setMenus(mapped);
     } finally {
       setLoading(false);
@@ -214,8 +222,12 @@ const DocumentsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.wrapper}>
-
-      <Button title="Tambah Menu" onPress={()=>setAddVisible(true)} customStyle={styles.addCornerBtn} variant="primary"/>
+      <Button
+        title="Tambah Menu"
+        onPress={() => setAddVisible(true)}
+        customStyle={styles.addCornerBtn}
+        variant="primary"
+      />
 
       <View style={styles.topRow}>
         <SwitchBar
@@ -229,6 +241,7 @@ const DocumentsScreen: React.FC = () => {
       <View style={styles.cardWrapper}>
         <SwipeListView
           data={filteredMenus}
+          extraData={{menus, selectedCategory}}
           keyExtractor={item => item.id.toString()}
           renderItem={({item}) => (
             <MenuItemRow
