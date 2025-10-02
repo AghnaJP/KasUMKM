@@ -16,13 +16,14 @@ router.get('/pull', async (req, res) => {
 
     const server_time = new Date().toISOString();
 
-    // Query for transactions
     const txSql = since
-      ? `SELECT id, name, type, amount, occurred_at, updated_at, deleted_at
+      ? `SELECT id, name, type, amount, quantity, unit_price, menu_id,
+                occurred_at, updated_at, deleted_at
            FROM transactions
           WHERE company_id = ? AND updated_at > ?
           ORDER BY updated_at ASC`
-      : `SELECT id, name, type, amount, occurred_at, updated_at, deleted_at
+      : `SELECT id, name, type, amount, quantity, unit_price, menu_id,
+                occurred_at, updated_at, deleted_at
            FROM transactions
           WHERE company_id = ?
           ORDER BY updated_at ASC`;
@@ -30,7 +31,6 @@ router.get('/pull', async (req, res) => {
     const txParams = since ? [company_id, since] : [company_id];
     const [txRows] = await pool.query(txSql, txParams);
 
-    // Query for menus
     const menuSql = since
       ? `SELECT id, name, price, category, occurred_at, updated_at, deleted_at
            FROM menus
@@ -77,19 +77,21 @@ router.post('/push', async (req, res) => {
     const txs = Array.isArray(changes?.transactions)
       ? changes.transactions
       : [];
-
     const menus = Array.isArray(changes?.menus) ? changes.menus : [];
-
     if (!txs.length && !menus.length) return res.json({ok: true, pushed: 0});
 
     const txSql = `
       INSERT INTO transactions
-        (id, company_id, name, type, amount, occurred_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (id, company_id, name, type, amount, quantity, unit_price, menu_id,
+         occurred_at, updated_at, deleted_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         name=VALUES(name),
         type=VALUES(type),
         amount=VALUES(amount),
+        quantity=VALUES(quantity),
+        unit_price=VALUES(unit_price),
+        menu_id=VALUES(menu_id),
         occurred_at=VALUES(occurred_at),
         updated_at=VALUES(updated_at),
         deleted_at=VALUES(deleted_at)
@@ -115,48 +117,45 @@ router.post('/push', async (req, res) => {
     try {
       await conn.beginTransaction();
 
-      // Process transactions
+      // === transactions ===
       for (const r of txs) {
-        try {
-          await conn.query(txSql, [
-            r.id,
-            company_id,
-            r.name,
-            r.type, // 'INCOME' | 'EXPENSE'
-            r.amount,
-            isoToMySQL(r.occurred_at), // ← convert ISO → 'YYYY-MM-DD HH:MM:SS.mmm'
-            isoToMySQL(r.updated_at),
-            r.deleted_at ? isoToMySQL(r.deleted_at) : null,
-          ]);
-          txCount++;
-        } catch (e) {
-          console.error(
-            '❌ INSERT TRANSACTION FAILED id=',
-            r.id,
-            e?.sqlMessage || e,
-          );
-          throw e;
-        }
+        const qty = Number(r.quantity ?? 1);
+        const unit =
+          r.unit_price != null
+            ? Number(r.unit_price)
+            : qty
+            ? Number(r.amount) / qty
+            : Number(r.amount);
+        const menuId = r.menu_id ?? null;
+
+        await conn.query(txSql, [
+          r.id,
+          company_id,
+          r.name,
+          r.type,
+          r.amount,
+          qty,
+          unit,
+          menuId,
+          isoToMySQL(r.occurred_at),
+          isoToMySQL(r.updated_at),
+          r.deleted_at ? isoToMySQL(r.deleted_at) : null,
+        ]);
+        txCount++;
       }
 
-      // Process menus
       for (const m of menus) {
-        try {
-          await conn.query(menuSql, [
-            m.id,
-            company_id,
-            m.name,
-            m.price,
-            m.category, // 'food' | 'drink'
-            isoToMySQL(m.occurred_at),
-            isoToMySQL(m.updated_at),
-            m.deleted_at ? isoToMySQL(m.deleted_at) : null,
-          ]);
-          menuCount++;
-        } catch (e) {
-          console.error('❌ INSERT MENU FAILED id=', m.id, e?.sqlMessage || e);
-          throw e;
-        }
+        await conn.query(menuSql, [
+          m.id,
+          company_id,
+          m.name,
+          m.price,
+          m.category,
+          isoToMySQL(m.occurred_at),
+          isoToMySQL(m.updated_at),
+          m.deleted_at ? isoToMySQL(m.deleted_at) : null,
+        ]);
+        menuCount++;
       }
 
       await conn.commit();

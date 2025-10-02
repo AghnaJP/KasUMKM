@@ -1,12 +1,12 @@
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import Button from '../Button/Button';
-import {MenuItem} from '../../types/menu';
+import {ID, MenuItem} from '../../types/menu';
 
 interface Props {
   item: MenuItem;
   onEdit: (item: MenuItem) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: ID) => void;
 }
 
 const HiddenMenuActions: React.FC<Props> = ({item, onEdit, onDelete}) => {

@@ -4,6 +4,7 @@ import {initIncomeTable} from './Incomes/initIncomeTable';
 import {initExpenseTable} from './Expense/initExpenseTable';
 import {migrateCreateTransactionsTable} from './migrations/001_transaction_table';
 import {migrateCreateMenuTable} from './migrations/002_menu_table';
+import {ensureMapTable} from './sync/legacyMirror';
 
 export const initAllTables = async () => {
   await initUserTable();
@@ -12,5 +13,6 @@ export const initAllTables = async () => {
   await initExpenseTable();
   await migrateCreateTransactionsTable();
   await migrateCreateMenuTable();
+  await ensureMapTable();
   console.log('All tables initialized');
 };

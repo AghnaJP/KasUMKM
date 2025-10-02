@@ -12,7 +12,7 @@ import SwitchBar from '../../components/AddTransaction/SwitchBar';
 import MenuItemRow from '../../components/Menu/MenuItemRow';
 import HiddenMenuActions from '../../components/Menu/HiddenMenuAction';
 import EditMenuModal from '../../components/Modal/EditmenuModal';
-import {CategoryWithEmpty, MenuItem, CATEGORIES} from '../../types/menu';
+import {CategoryWithEmpty, MenuItem, CATEGORIES, ID} from '../../types/menu';
 import CustomText from '../../components/Text/CustomText';
 import {COLORS, MENU_ALERTS} from '../../constants';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -34,7 +34,7 @@ const MenuList = () => {
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [editVisible, setEditVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const rowMapRef = useRef<{[key: number]: any}>({});
+  const rowMapRef = useRef<{[key: string]: any}>({});
 
   useEffect(() => {
     fetchMenus();
@@ -107,7 +107,7 @@ const MenuList = () => {
     }
   };
 
-  const handleDelete = useCallback(async (id: number, name: string) => {
+  const handleDelete = useCallback(async (id: ID, name: string) => {
     const count = await getIncomeCountByMenuId(id);
 
     const message =

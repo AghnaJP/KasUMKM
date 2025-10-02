@@ -4,13 +4,14 @@ import {SwipeListView} from 'react-native-swipe-list-view';
 import CustomText from '../Text/CustomText';
 import HiddenTransactionActions from './HiddenTransactionActions';
 import {TransactionItem} from '../../types/transaction';
+import {ID} from '../../types/menu';
 
 interface TransactionListProps {
   data: TransactionItem[];
   totalAmount?: number;
   totalLabel?: string;
   onEdit: (item: TransactionItem) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: ID) => void;
   refreshKey: number;
 }
 

@@ -7,31 +7,53 @@ export type TxType = 'INCOME' | 'EXPENSE';
 export type TxRow = {
   id: string;
   name: string;
-  type: TxType;
+  type: 'INCOME' | 'EXPENSE';
   amount: number;
-  occurred_at: string; // ISO
+  quantity: number;
+  unit_price: number | null;
+  menu_id: string | null;
+  occurred_at: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
   dirty: number;
 };
 
-// ❌ HAPUS createTransactionsTable() di sini.
-// Tabel dibuat lewat migrasi saja agar tidak ada perbedaan koneksi.
-
 export async function addTransaction(input: {
   name: string;
-  type: TxType;
-  amount: number;
+  type: 'INCOME' | 'EXPENSE';
+  amount?: number;
+  quantity?: number;
+  unit_price?: number;
+  menu_id?: string | null;
   occurred_at?: string;
 }): Promise<string> {
   const id = newId();
   const now = new Date().toISOString();
   const when = input.occurred_at || now;
+
+  const qty = Number(input.quantity ?? 1);
+  const unit = input.unit_price != null ? Number(input.unit_price) : undefined;
+  const amount =
+    input.amount != null ? Number(input.amount) : unit != null ? unit * qty : 0;
+
   await executeSql(
-    `INSERT INTO transactions (id, name, type, amount, occurred_at, created_at, updated_at, deleted_at, dirty)
-     VALUES (?,?,?,?,?,?,?,NULL,1)`,
-    [id, input.name, input.type, input.amount, when, now, now],
+    `INSERT INTO transactions
+      (id, name, type, amount, quantity, unit_price, menu_id,
+       occurred_at, created_at, updated_at, deleted_at, dirty)
+     VALUES (?,?,?,?,?,?,?, ?, ?, ?, NULL, 1)`,
+    [
+      id,
+      input.name,
+      input.type,
+      amount,
+      qty,
+      unit ?? null,
+      input.menu_id ?? null,
+      when,
+      now,
+      now,
+    ],
   );
   return id;
 }
@@ -60,7 +82,6 @@ export async function updateTransaction(
     vals.push(patch.occurred_at);
   }
 
-  // tandai kotor + update timestamp
   sets.push('updated_at=?');
   vals.push(now);
   sets.push('dirty=1');
@@ -94,8 +115,10 @@ export async function getTransactionsInMonth(year: number, month0: number) {
 
 export async function getDirtyTransactions(): Promise<TxRow[]> {
   const rs = await executeSql(
-    `SELECT id, name, type, amount, occurred_at, created_at, updated_at, deleted_at, dirty
-       FROM transactions WHERE dirty=1`,
+    `SELECT id, name, type, amount, quantity, unit_price, menu_id,
+            occurred_at, created_at, updated_at, deleted_at, dirty
+       FROM transactions
+      WHERE dirty=1`,
   );
   return rowsToArray(rs) as TxRow[];
 }
@@ -116,8 +139,11 @@ export async function applyPulledTransactions(
   rows: Array<{
     id: string;
     name: string;
-    type: TxType;
+    type: 'INCOME' | 'EXPENSE';
     amount: number;
+    quantity?: number;
+    unit_price?: number | null;
+    menu_id?: string | null;
     occurred_at: string;
     updated_at: string;
     deleted_at?: string | null;
@@ -127,12 +153,17 @@ export async function applyPulledTransactions(
   try {
     for (const r of rows) {
       await executeSql(
-        `INSERT INTO transactions (id, name, type, amount, occurred_at, created_at, updated_at, deleted_at, dirty)
-         VALUES (?,?,?,?,?, datetime('now'), ?, ?, 0)
+        `INSERT INTO transactions
+           (id, name, type, amount, quantity, unit_price, menu_id,
+            occurred_at, created_at, updated_at, deleted_at, dirty)
+         VALUES (?,?,?,?,?,?,?, ?, datetime('now'), ?, ?, 0)
          ON CONFLICT(id) DO UPDATE SET
            name=excluded.name,
            type=excluded.type,
            amount=excluded.amount,
+           quantity=excluded.quantity,
+           unit_price=excluded.unit_price,
+           menu_id=excluded.menu_id,
            occurred_at=excluded.occurred_at,
            updated_at=excluded.updated_at,
            deleted_at=excluded.deleted_at,
@@ -142,6 +173,9 @@ export async function applyPulledTransactions(
           r.name,
           r.type,
           r.amount,
+          Number(r.quantity ?? 1),
+          r.unit_price ?? null,
+          r.menu_id ?? null,
           r.occurred_at,
           r.updated_at,
           r.deleted_at ?? null,

@@ -21,6 +21,7 @@ import {useNavigation} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {AppTabParamList} from '../../types/navigation';
 import {addTransaction} from '../../database/transactions/transactionUnified';
+import {linkLocalIncomeToRemote} from '../../database/sync/legacyMirror';
 
 const AddIncome = () => {
   const navigation =
@@ -49,16 +50,19 @@ const AddIncome = () => {
       const now = selectedDate.toISOString();
 
       for (const {item, quantity} of selectedMenus) {
-        // 1) simpan detail ke tabel incomes (yang lama)
-        await insertIncome(item.id, quantity, now, now);
-
-        // 2) simpan ringkasannya ke tabel unified -> untuk sinkronisasi
-        await addTransaction({
+        const txId = await addTransaction({
           name: item.name ?? `Menu #${item.id}`,
           type: 'INCOME',
+          quantity,
+          unit_price: item.price,
+          menu_id: String(item.id),
           amount: item.price * quantity,
           occurred_at: now,
         });
+
+        const localId = await insertIncome(String(item.id), quantity, now, now);
+
+        await linkLocalIncomeToRemote(txId, localId);
       }
 
       Alert.alert('Berhasil', 'Pendapatan berhasil disimpan');

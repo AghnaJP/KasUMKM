@@ -2,6 +2,7 @@ import React from 'react';
 import TransactionList from '../../components/TransactionList/TransactionList';
 import {useTransactionList} from '../../hooks/useTransactionList';
 import type {ExpenseData as UExpenseData} from '../../database/transactions/unifiedForWallet';
+import {ID} from '../../types/menu';
 
 interface Props {
   selectedMonth: string;
@@ -9,7 +10,7 @@ interface Props {
   getDataFn: () => Promise<UExpenseData[]>;
   onDataLoaded: (data: UExpenseData[]) => void;
   onEdit: (item: UExpenseData) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: ID) => void;
   refreshKey: number;
 }
 

@@ -1,16 +1,20 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {API_BASE} from '../constants/api';
 import {useAuth} from '../context/AuthContext';
+
 import {
   getDirtyTransactions,
   markTransactionsSynced,
   applyPulledTransactions,
 } from '../database/transactions/transactionUnified';
+
 import {
   getDirtyMenus,
   markMenusSynced,
   applyPulledMenus,
 } from '../database/menus/menuUnified';
+
+import {mirrorPulledTxToLegacy} from '../database/sync/legacyMirror';
 
 const KEY = (companyId: string) => `last_sync_at:${companyId}`;
 
@@ -22,19 +26,9 @@ export function useSync() {
 
     const headers = await getAuthHeaders();
 
-    // === PUSH TRANSACTIONS ===
     const dirtyTransactions = await getDirtyTransactions();
-    console.log('Mulai sinkronisasi...');
-    console.log('SYNC dirty transactions count =', dirtyTransactions.length);
-    console.log('Mulai sinkronisasi...');
-
-    // === PUSH MENUS ===
     const dirtyMenus = await getDirtyMenus();
-    console.log('Mulai sinkronisasi...');
-    console.log('SYNC dirty menus count =', dirtyMenus.length);
-    console.log('Mulai sinkronisasi...');
 
-    // Combine both transactions and menus in one request
     if (dirtyTransactions.length > 0 || dirtyMenus.length > 0) {
       const body = JSON.stringify({
         company_id: companyId,
@@ -44,6 +38,9 @@ export function useSync() {
             name: t.name,
             type: t.type,
             amount: t.amount,
+            quantity: (t as any).quantity ?? 1,
+            unit_price: (t as any).unit_price ?? null,
+            menu_id: (t as any).menu_id ?? null,
             occurred_at: t.occurred_at,
             updated_at: t.updated_at,
             deleted_at: t.deleted_at ?? null,
@@ -69,21 +66,21 @@ export function useSync() {
       let pj: any = {};
       try {
         pj = await pr.json();
-      } catch {}
-      if (!pr.ok) throw new Error(pj?.error || 'push_failed');
+      } catch {
+        /* ignore */
+      }
+      if (!pr.ok) {
+        throw new Error(pj?.error || 'push_failed');
+      }
 
       const nowISO = new Date().toISOString();
-
-      // Mark transactions as synced
-      if (dirtyTransactions.length > 0) {
+      if (dirtyTransactions.length) {
         await markTransactionsSynced(
           dirtyTransactions.map(t => t.id),
           nowISO,
         );
       }
-
-      // Mark menus as synced
-      if (dirtyMenus.length > 0) {
+      if (dirtyMenus.length) {
         await markMenusSynced(
           dirtyMenus.map(m => m.id),
           nowISO,
@@ -91,46 +88,41 @@ export function useSync() {
       }
     }
 
-    // === PULL ===
-    const url = `${API_BASE}/sync/pull?company_id=${companyId}`;
-    console.log('PULL URL =', url);
+    const pullUrl = `${API_BASE}/sync/pull?company_id=${companyId}`;
+    const gr = await fetch(pullUrl, {headers});
 
-    const gr = await fetch(url, {headers});
-
-    // Coba parse JSON; kalau gagal, baca text-nya biar tau 404/HTML error dll
     let gj: any = null;
-    let rawText = '';
+    let raw = '';
     try {
       gj = await gr.json();
     } catch {
       try {
-        rawText = await gr.text();
-      } catch {}
+        raw = await gr.text();
+      } catch {
+        /* ignore */
+      }
     }
-
     if (!gr.ok) {
-      console.log(
-        'PULL FAILED status=',
-        gr.status,
-        'json=',
-        gj,
-        'raw=',
-        rawText,
-      );
       throw new Error(gj?.error || `pull_failed_${gr.status}`);
     }
 
-    // Apply pulled transactions
+    const pulledMenus = Array.isArray(gj?.menus) ? gj.menus : [];
+    if (pulledMenus.length > 0) {
+      await applyPulledMenus(pulledMenus);
+    }
+
     const pulledTransactions = Array.isArray(gj?.transactions)
       ? gj.transactions
       : [];
-    await applyPulledTransactions(pulledTransactions);
+    if (pulledTransactions.length > 0) {
+      await applyPulledTransactions(pulledTransactions);
+    }
 
-    // Apply pulled menus
-    const pulledMenus = Array.isArray(gj?.menus) ? gj.menus : [];
-    await applyPulledMenus(pulledMenus);
+    if (pulledTransactions.length > 0) {
+      await mirrorPulledTxToLegacy(pulledTransactions);
+    }
 
-    if (gj?.server_time) {
+    if (gj?.server_time && companyId) {
       await EncryptedStorage.setItem(KEY(companyId), String(gj.server_time));
     }
   }

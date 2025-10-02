@@ -2,11 +2,12 @@ import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import Button from '../Button/Button';
 import {IncomeData, ExpenseData} from '../../types/transaction';
+import {ID} from '../../types/menu';
 
 interface Props {
   item: IncomeData | ExpenseData;
   onEdit: (item: IncomeData | ExpenseData) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: ID) => void;
 }
 
 const HiddenTransactionActions: React.FC<Props> = ({

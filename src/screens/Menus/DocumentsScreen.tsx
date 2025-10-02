@@ -42,7 +42,7 @@ import {getIncomeCountByMenuId} from '../../database/Incomes/incomeQueries';
 import {fetchAndFormatMenus} from '../../services/menuService';
 
 import type {AppStackParamList} from '../../types/navigation';
-import {CategoryWithEmpty, MenuItem, CATEGORIES} from '../../types/menu';
+import {CategoryWithEmpty, MenuItem, CATEGORIES, ID} from '../../types/menu';
 
 import {COLORS, MENU_ALERTS} from '../../constants';
 
@@ -74,7 +74,7 @@ const DocumentsScreen: React.FC = () => {
   const [addDisplayPrice, setAddDisplayPrice] = useState('');
   const [addErrors, setAddErrors] = useState<FieldErrors>({});
 
-  const rowMapRef = useRef<{[key: number]: any}>({});
+  const rowMapRef = useRef<Record<string, any>>({});
 
   useEffect(() => {
     fetchMenus();
@@ -138,10 +138,9 @@ const DocumentsScreen: React.FC = () => {
   };
 
   const handleEditPress = (item: MenuItem) => {
-    const row = rowMapRef.current[item.id];
-    if (row) {
-      row.closeRow();
-    }
+    const sid = String(item.id);
+    const row = rowMapRef.current[sid];
+    if (row) row.closeRow();
     setSelectedMenu(item);
     setEditVisible(true);
   };
@@ -184,7 +183,7 @@ const DocumentsScreen: React.FC = () => {
     }
   };
 
-  const handleDelete = useCallback(async (id: number, name: string) => {
+  const handleDelete = useCallback(async (id: ID, name: string) => {
     const count = await getIncomeCountByMenuId(id);
     const message =
       count > 0
@@ -243,7 +242,7 @@ const DocumentsScreen: React.FC = () => {
         <SwipeListView
           data={filteredMenus}
           extraData={{menus, selectedCategory}}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => String(item.id)}
           renderItem={({item}) => (
             <MenuItemRow
               name={item.name}
@@ -252,7 +251,8 @@ const DocumentsScreen: React.FC = () => {
             />
           )}
           renderHiddenItem={(data, rowMap) => {
-            rowMapRef.current[data.item.id] = rowMap[data.item.id];
+            const sid = String(data.item.id);
+            rowMapRef.current[sid] = rowMap[sid];
             return (
               <HiddenMenuActions
                 item={data.item}

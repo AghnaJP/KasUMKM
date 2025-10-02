@@ -1,4 +1,4 @@
-import {Category, MenuItem} from '../../types/menu';
+import {Category, ID, MenuItem} from '../../types/menu';
 import {getDBConnection} from '../db';
 import {addMenu} from './menuUnified';
 import {
@@ -71,7 +71,7 @@ export async function insertMenu(
 }
 
 export const updateMenuById = async (
-  id: number | string,
+  id: ID,
   name: string,
   price: number,
 ): Promise<void> => {
@@ -89,7 +89,7 @@ export const updateMenuById = async (
   });
 };
 
-export const deleteMenuById = async (id: number) => {
+export const deleteMenuById = async (id: ID) => {
   const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {

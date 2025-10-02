@@ -21,8 +21,6 @@ const formatRupiah = (value: string): string => {
   return 'Rp ' + parseInt(value, 10).toLocaleString('id-ID');
 };
 
-const formatToYYYYMMDD = (date: Date) => date.toISOString().split('T')[0];
-
 interface EditTransactionModalProps {
   visible: boolean;
   onClose: () => void;
@@ -68,10 +66,13 @@ const EditTransactionModal = ({
       return;
     }
 
-    const formattedDate = formatToYYYYMMDD(selectedDate);
-    onSave({description, price, quantity, date: formattedDate});
+    onSave({
+      description,
+      price,
+      quantity,
+      date: selectedDate.toISOString(),
+    });
   };
-
   return (
     <Modal
       transparent

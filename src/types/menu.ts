@@ -1,5 +1,6 @@
+export type ID = number | string;
 export interface MenuItem {
-  id: number;
+  id: ID;
   name: string;
   price: number;
   category: Category;
@@ -8,14 +9,14 @@ export interface MenuItem {
 }
 
 export interface IncomeItem {
-  id: number;
-  menu_id: number;
+  id: ID;
+  menu_id: string | null;
   quantity: number;
   created_at: string;
 }
 
 export interface ExpenseItem {
-  id: number;
+  id: ID;
   description: string;
   price: number;
   quantity: number;
@@ -29,3 +30,7 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number]['value'];
 export type CategoryWithEmpty = Category | '';
+
+export const toIdStr = (v: ID) => String(v);
+export const toIdNum = (v: ID) =>
+  typeof v === 'number' ? v : Number.parseInt(v, 10);

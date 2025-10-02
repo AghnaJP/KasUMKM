@@ -12,11 +12,13 @@ import EditTransactionModal from '../../components/TransactionList/EditTransacti
 import {
   getUnifiedIncomeDetails,
   getUnifiedExpenseDetails,
-  softDeleteUnifiedByRowId,
   updateUnifiedByRowId,
   type IncomeData,
   type ExpenseData,
+  getUnifiedOneByRowId,
+  softDeleteUnifiedByRowId,
 } from '../../database/transactions/unifiedForWallet';
+import {ID} from '../../types/menu';
 
 type AnyTx = IncomeData | ExpenseData;
 
@@ -39,17 +41,24 @@ const WalletScreen = () => {
   const getIncomes = useCallback(() => getUnifiedIncomeDetails(), []);
   const getExpenses = useCallback(() => getUnifiedExpenseDetails(), []);
 
-  const handleEdit = (item: AnyTx) => {
-    setTransactionToEdit(item);
-    setEditModalVisible(true);
+  const handleEdit = async (item: AnyTx) => {
+    try {
+      const fresh = await getUnifiedOneByRowId(Number(item.id));
+      setTransactionToEdit(fresh);
+      setEditModalVisible(true);
+    } catch {
+      setTransactionToEdit(item);
+      setEditModalVisible(true);
+    }
   };
 
-  const handleDelete = async (rowId: number) => {
+  const handleDelete = async (rowId: ID) => {
     try {
       await softDeleteUnifiedByRowId(rowId);
       Alert.alert('Sukses', 'Transaksi dihapus.');
       setRefreshKey(prev => prev + 1);
-    } catch {
+    } catch (e) {
+      console.log('softDeleteUnifiedByRowId failed:', e);
       Alert.alert('Error', 'Gagal menghapus transaksi.');
     }
   };
@@ -63,7 +72,7 @@ const WalletScreen = () => {
     if (!transactionToEdit) return;
 
     try {
-      const rowId = Number(transactionToEdit.id); // di list unified id = rowid (number)
+      const rowId = Number(transactionToEdit.id);
       const priceNum = Number(updatedData.price);
       const qtyNum = Number(updatedData.quantity || 1);
 

@@ -9,6 +9,7 @@ import type {
   IncomeData,
   ExpenseData,
 } from '../../database/transactions/unifiedForWallet';
+import {ID} from '../../types/menu';
 
 type AnyTx = IncomeData | ExpenseData;
 
@@ -18,7 +19,7 @@ interface TransactionSwitcherProps {
   getDataFn: () => Promise<AnyTx[]>;
   onDataLoaded: (data: AnyTx[]) => void;
   onEdit: (item: AnyTx) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: ID) => void;
   refreshKey: number;
 }
 
