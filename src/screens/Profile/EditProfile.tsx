@@ -6,7 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   editUsername,
   updateUserPassword,
-  deleteUser,
 } from '../../database/users/userQueries';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FormField from '../../components/Form/FormField';
@@ -17,7 +16,7 @@ import InitialAvatar from '../../components/Avatar/InitialAvatar';
 import {useAuth} from '../../context/AuthContext';
 
 const EditProfile = () => {
-  const {profile, logout} = useAuth();
+  const {profile, logout, deleteAccount} = useAuth();
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
 
@@ -36,27 +35,21 @@ const EditProfile = () => {
   };
 
   const handleDeleteAccount = async () => {
-    Alert.alert(
-      'Hapus Akun',
-      'Apakah Anda yakin ingin menghapus akun ini? Tindakan ini tidak dapat dibatalkan.',
-      [
-        {text: 'Batal', style: 'cancel'},
-        {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteUser(profile.phone);
-              await AsyncStorage.removeItem('isLoggedIn');
-              logout();
-              Alert.alert('Akun berhasil dihapus');
-            } catch (e) {
-              Alert.alert('Gagal', 'Gagal menghapus akun');
-            }
-          },
+    Alert.alert('Hapus Akun', 'Apakah Anda yakin ingin menghapus akun ini?', [
+      {text: 'Batal', style: 'cancel'},
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteAccount();
+            Alert.alert('Berhasil', 'Akun berhasil dihapus');
+          } catch (e) {
+            Alert.alert('Gagal', 'Gagal menghapus akun');
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const {updateUserName} = useContext(AuthContext);

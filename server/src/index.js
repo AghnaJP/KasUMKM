@@ -8,6 +8,7 @@ import inviteRoute from './routes/invite.js';
 import {pingDB} from './db.js';
 import meRoute from './routes/me.js';
 import syncRoutes from './routes/sync.js';
+import deleteRoute from './routes/delete.js';
 
 const app = express();
 app.use(cors());
@@ -26,6 +27,7 @@ app.use(loginRoute);
 app.use(inviteRoute);
 app.use(meRoute);
 app.use('/sync', syncRoutes);
+app.use(deleteRoute);
 
 const PORT = Number(process.env.PORT || 3000);
 app.listen(PORT, () =>

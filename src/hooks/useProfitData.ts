@@ -1,7 +1,9 @@
 import {useEffect, useState} from 'react';
 import {useIsFocused} from '@react-navigation/native';
-import {MONTHS} from '../constants/months';
-import {getMonthlyTotalsUnified} from '../database/transactions/transactionQueriesUnified';
+import {
+  getUnifiedIncomeDetails,
+  getUnifiedExpenseDetails,
+} from '../database/transactions/unifiedForWallet';
 
 export const useProfitData = (refreshKey: number = 0) => {
   const isFocused = useIsFocused();
@@ -11,19 +13,43 @@ export const useProfitData = (refreshKey: number = 0) => {
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      setLoading(true);
-      const now = new Date();
-      const monthName = MONTHS[now.getMonth()];
-      const year = now.getFullYear();
 
-      const t = await getMonthlyTotalsUnified(monthName, year);
-      if (mounted) {
-        setTotalIncome(t.income);
-        setTotalExpense(t.expense);
-        setLoading(false);
+    const fetchProfitData = async () => {
+      try {
+        setLoading(true);
+
+        const [incomeData, expenseData] = await Promise.all([
+          getUnifiedIncomeDetails(),
+          getUnifiedExpenseDetails(),
+        ]);
+
+        const totalAllTimeIncome = incomeData.reduce(
+          (sum, item) => sum + (item.amount || 0),
+          0,
+        );
+
+        const totalAllTimeExpense = expenseData.reduce(
+          (sum, item) => sum + (item.amount || 0),
+          0,
+        );
+
+        if (mounted) {
+          setTotalIncome(totalAllTimeIncome);
+          setTotalExpense(totalAllTimeExpense);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profit data:', error);
+        if (mounted) {
+          setTotalIncome(0);
+          setTotalExpense(0);
+          setLoading(false);
+        }
       }
-    })();
+    };
+
+    fetchProfitData();
+
     return () => {
       mounted = false;
     };

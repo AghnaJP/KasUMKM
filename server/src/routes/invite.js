@@ -8,7 +8,9 @@ const router = Router();
 router.post('/companies/:companyId/invites', auth, async (req, res) => {
   const companyId = req.params.companyId;
   const perm = requireRole(req, companyId, ['OWNER']);
-  if (!perm.ok) return res.status(403).json({error: perm.reason});
+  if (!perm.ok) {
+    return res.status(403).json({error: perm.reason});
+  }
 
   const days = Number(req.body?.expires_in_days || 7);
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);

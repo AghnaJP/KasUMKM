@@ -23,7 +23,7 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import SwitchBar from '../../components/AddTransaction/SwitchBar';
 import MenuItemRow from '../../components/Menu/MenuItemRow';
-import HiddenMenuActions from '../../components/Menu/HiddenMenuAction';
+import HiddenActions from '../../components/Menu/HiddenAction';
 import EditMenuModal from '../../components/Modal/EditmenuModal';
 import CustomText from '../../components/Text/CustomText';
 import Button from '../../components/Button/Button';
@@ -140,13 +140,13 @@ const DocumentsScreen: React.FC = () => {
   const handleEditPress = (item: MenuItem) => {
     const sid = String(item.id);
     const row = rowMapRef.current[sid];
-    if (row) row.closeRow();
+    if (row) {row.closeRow();}
     setSelectedMenu(item);
     setEditVisible(true);
   };
 
   const handleSaveEdit = async (updated: {name: string; price: string}) => {
-    if (!selectedMenu) return;
+    if (!selectedMenu) {return;}
 
     const name = updated.name?.trim();
     const price = Number(updated.price);
@@ -254,7 +254,7 @@ const DocumentsScreen: React.FC = () => {
             const sid = String(data.item.id);
             rowMapRef.current[sid] = rowMap[sid];
             return (
-              <HiddenMenuActions
+              <HiddenActions
                 item={data.item}
                 onEdit={handleEditPress}
                 onDelete={() => handleDelete(data.item.id, data.item.name)}

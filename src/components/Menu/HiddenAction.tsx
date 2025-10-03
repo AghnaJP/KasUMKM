@@ -1,15 +1,18 @@
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import Button from '../Button/Button';
-import {ID, MenuItem} from '../../types/menu';
 
-interface Props {
-  item: MenuItem;
-  onEdit: (item: MenuItem) => void;
-  onDelete: (id: ID) => void;
+interface Props<T extends {id: string | number}> {
+  item: T;
+  onEdit: (item: T) => void;
+  onDelete: (id: string | number) => void;
 }
 
-const HiddenMenuActions: React.FC<Props> = ({item, onEdit, onDelete}) => {
+const HiddenActions = <T extends {id: string | number}>({
+  item,
+  onEdit,
+  onDelete,
+}: Props<T>) => {
   return (
     <View style={styles.hiddenRow}>
       <Button
@@ -51,4 +54,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HiddenMenuActions;
+export default HiddenActions;

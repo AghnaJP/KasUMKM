@@ -50,16 +50,6 @@ export const insertIncome = async (
   });
 };
 
-export const getIncomeCountByMenuId = async (menuId: ID): Promise<number> => {
-  const db = await getDBConnection();
-  const id = String(menuId);
-  const [results] = await db.executeSql(
-    'SELECT COUNT(*) as count FROM incomes WHERE menu_id = ?',
-    [id],
-  );
-  return results.rows.item(0).count ?? 0;
-};
-
 export const getIncomeDetails = async (): Promise<IncomeData[]> => {
   const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
