@@ -6,17 +6,14 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
 import FormField from '../Form/FormField';
-import {getUserByPhone} from '../../database/users/userQueries';
-import {useContext} from 'react';
-import {AuthContext} from '../../context/AuthContext';
-import {hashText} from '../../utils/crypto';
-import {validateRegisterInput} from '../../utils/form';
 import {VALIDATION_MESSAGES} from '../../constants';
+import {API_BASE} from '../../constants/api';
 
 interface EditPasswordModalProps {
   visible: boolean;
@@ -31,76 +28,69 @@ const EditPasswordModal = ({
   onSave,
   profileData,
 }: EditPasswordModalProps) => {
-  const [password, setPassword] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [newPasswordError, setNewPasswordError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-
-  const {} = useContext(AuthContext);
+  const [errorOld, setErrorOld] = useState('');
+  const [errorNew, setErrorNew] = useState('');
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
 
   useEffect(() => {
     if (!visible) {
-      setPassword('');
+      setOldPassword('');
       setNewPassword('');
-      setShowPassword(false);
-      setShowNewPassword(false);
-      setPasswordError('');
-      setNewPasswordError('');
+      setErrorOld('');
+      setErrorNew('');
     }
   }, [visible]);
 
   const handleSave = async () => {
-    setPasswordError('');
-    setNewPasswordError('');
+    setErrorOld('');
+    setErrorNew('');
 
-    let hasError = false;
-
-    if (!password) {
-      setPasswordError(VALIDATION_MESSAGES.oldPasswordRequired);
-      hasError = true;
+    if (!oldPassword) {
+      setErrorOld(VALIDATION_MESSAGES.oldPasswordRequired);
+      return;
     }
     if (!newPassword) {
-      setNewPasswordError(VALIDATION_MESSAGES.newPasswordRequired);
-      hasError = true;
-    }
-
-    if (profileData?.phone && password) {
-      const user = await getUserByPhone(profileData.phone);
-      const hashedInputPassword = await hashText(password);
-      if (!user || user.password !== hashedInputPassword) {
-        setPasswordError(VALIDATION_MESSAGES.oldPasswordInvalid);
-        hasError = true;
-      }
-    }
-
-    if (newPassword) {
-      const {passwordError: newPasswordValidationError} = validateRegisterInput(
-        '',
-        '',
-        newPassword,
-      );
-      if (newPasswordValidationError) {
-        setNewPasswordError(newPasswordValidationError);
-        hasError = true;
-      }
-    }
-
-    if (hasError) {
+      setErrorNew(VALIDATION_MESSAGES.newPasswordRequired);
       return;
     }
 
-    const hashedNewPassword = await hashText(newPassword);
-    onSave({password: hashedNewPassword});
+    try {
+      // ✅ Gunakan API_BASE di sini
+      const res = await fetch(`${API_BASE}/update-password`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          phone: profileData?.phone,
+          old_password: oldPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.error === 'invalid_old_password') {
+          setErrorOld(VALIDATION_MESSAGES.oldPasswordInvalid);
+        } else {
+          Alert.alert('Gagal', 'Gagal memperbarui kata sandi');
+        }
+        return;
+      }
+
+      Alert.alert('Berhasil', 'Kata sandi berhasil diperbarui');
+      onSave({password: newPassword});
+      onClose();
+    } catch (err) {
+      console.error('Network error:', err);
+      Alert.alert('Error', 'Tidak dapat terhubung ke server');
+    }
   };
 
   return (
-    <Modal
-      transparent
-      animationType="fade"
-      visible={visible}
-      onRequestClose={onClose}>
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.overlay}>
@@ -115,37 +105,31 @@ const EditPasswordModal = ({
           <FormField
             label="Kata Sandi Lama"
             placeholder="Masukkan kata sandi lama"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
+            value={oldPassword}
+            onChangeText={setOldPassword}
+            secureTextEntry={!showOld}
             rightIcon={
-              <TouchableOpacity onPress={() => setShowPassword(v => !v)}>
-                <Icon
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={20}
-                  color="#888"
-                />
+              <TouchableOpacity onPress={() => setShowOld(v => !v)}>
+                <Icon name={showOld ? 'eye-off' : 'eye'} size={20} color="#888" />
               </TouchableOpacity>
             }
-            error={passwordError}
+            error={errorOld}
           />
+
           <FormField
             label="Kata Sandi Baru"
             placeholder="Masukkan kata sandi baru"
             value={newPassword}
             onChangeText={setNewPassword}
-            secureTextEntry={!showNewPassword}
+            secureTextEntry={!showNew}
             rightIcon={
-              <TouchableOpacity onPress={() => setShowNewPassword(v => !v)}>
-                <Icon
-                  name={showNewPassword ? 'eye-off' : 'eye'}
-                  size={20}
-                  color="#888"
-                />
+              <TouchableOpacity onPress={() => setShowNew(v => !v)}>
+                <Icon name={showNew ? 'eye-off' : 'eye'} size={20} color="#888" />
               </TouchableOpacity>
             }
-            error={newPasswordError}
+            error={errorNew}
           />
+
           <Button title="Simpan" onPress={handleSave} variant="primary" />
         </View>
       </KeyboardAvoidingView>
