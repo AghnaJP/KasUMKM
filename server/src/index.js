@@ -9,6 +9,7 @@ import {pingDB} from './db.js';
 import meRoute from './routes/me.js';
 import syncRoutes from './routes/sync.js';
 import deleteRoute from './routes/delete.js';
+import updatePassword from './routes/update_password.js'
 
 const app = express();
 app.use(cors());
@@ -26,6 +27,7 @@ app.use(registerRoute);
 app.use(loginRoute);
 app.use(inviteRoute);
 app.use(meRoute);
+app.use(updatePassword);
 app.use('/sync', syncRoutes);
 app.use(deleteRoute);
 

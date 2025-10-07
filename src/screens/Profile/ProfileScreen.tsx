@@ -12,8 +12,6 @@ import {useAuth} from '../../context/AuthContext';
 const ProfileScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  // ✅ ambil dari AuthContext baru
   const {companyId, role, profile} = useAuth();
   const isOwner = role === 'OWNER';
   const displayName = profile?.name || '-';
