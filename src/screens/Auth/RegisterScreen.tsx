@@ -29,11 +29,19 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import {API_BASE} from '../../constants/api';
 
 type RegisterResponse = {
-  session_token: string;
-  company_id?: string | number;
-  role?: string;
-  name?: string;
-  phone?: string;
+  ok?: boolean;
+
+  token?: string | null;
+  expires_at?: string | null;
+  user?: {id: string; name: string; phone: string; created_at: string};
+  company?: {id: string; name: string; created_at: string};
+  membership?: {
+    id: string;
+    company_id: string;
+    role: string; // 'OWNER' | 'CASHIER'
+    created_at: string;
+  };
+  error?: string;
   message?: string;
   [key: string]: any;
 };
@@ -85,18 +93,27 @@ const RegisterScreen = () => {
     }
 
     try {
-      const r = await fetch(`${API_BASE}/register`, {
+      const url = `${API_BASE}/register`;
+      console.log('POST', url);
+
+      const r = await fetch(url, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           name: trimmedName,
           phone: normalized,
           password: trimmedPassword,
-          invite_code: inviteCode || undefined,
+          invite_code: inviteCode ? inviteCode.trim().toUpperCase() : undefined,
         }),
       });
 
-      const data: RegisterResponse = await r.json();
+      
+      const raw = await r.text();
+      console.log('Register raw:', raw);
+
+      const data: RegisterResponse = JSON.parse(raw);
+      console.log('Register parsed:', data);
+
 
       if (!r.ok) {
         if (r.status === 409) setPhoneError('Nomor handphone sudah terdaftar');
@@ -106,46 +123,39 @@ const RegisterScreen = () => {
         return;
       }
 
-      if (!data?.session_token) {
+      const sessionToken = data?.token ?? null;
+      if (!sessionToken) {
         setFormError('Respon server tidak valid (token kosong).');
         return;
       }
 
+      const companyId = data?.membership?.company_id ?? null;
+      const role = data?.membership?.role ?? null;
+
       try {
-        await EncryptedStorage.setItem(
-          'session_token',
-          String(data.session_token),
-        );
-        if (data.company_id != null) {
-          await EncryptedStorage.setItem('company_id', String(data.company_id));
-        } else {
-          await EncryptedStorage.removeItem('company_id');
-        }
-        if (data.role != null) {
-          await EncryptedStorage.setItem('role', String(data.role));
-        } else {
-          await EncryptedStorage.removeItem('role');
-        }
+        await EncryptedStorage.setItem('session_token', String(sessionToken));
+        if (companyId != null)
+          await EncryptedStorage.setItem('company_id', String(companyId));
+        else await EncryptedStorage.removeItem('company_id');
+        if (role != null) await EncryptedStorage.setItem('role', String(role));
+        else await EncryptedStorage.removeItem('role');
       } catch (e) {
         console.warn('Failed to persist secure data:', e);
       }
 
-      console.log('token:', await EncryptedStorage.getItem('session_token'));
-      console.log('company_id:', await EncryptedStorage.getItem('company_id'));
-      console.log('role:', await EncryptedStorage.getItem('role'));
-
       await (login as any)({
-        token: data.session_token,
-        companyId: (data.company_id as string) ?? null,
-        role: (data.role as string) ?? null,
-        profile: {name: trimmedName, phone: normalized},
+        token: sessionToken,
+        companyId,
+        role,
+        profile: {
+          name: data?.user?.name ?? trimmedName,
+          phone: data?.user?.phone ?? normalized,
+        },
       });
 
       navigation.replace('App', {
         screen: 'AppTabs',
-        params: {
-          screen: 'Home',
-        },
+        params: {screen: 'Home'},
       });
     } catch (error) {
       console.error('Registration failed:', error);

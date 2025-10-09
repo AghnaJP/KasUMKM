@@ -1,62 +1,59 @@
 import {Router} from 'express';
 import bcrypt from 'bcrypt';
-import {v4 as uuidv4} from 'uuid';
-import pool from '../db.js';
+import {sb} from '../supabase.js';
 
 const router = Router();
 
-// POST /login { phone, password }
 router.post('/login', async (req, res) => {
-  const {phone, password} = req.body;
-  if (!phone || !password) {
-    return res.status(400).json({error: 'missing_phone_or_password'});
-  }
-
   try {
-    const [userRows] = await pool.query(
-      'SELECT id, name, phone, password_hash FROM users WHERE phone = ?',
-      [phone],
-    );
+    const {phone, password} = req.body || {};
+    if (!phone || !password)
+      return res.status(400).json({error: 'missing_fields'});
 
-    if (!userRows.length) {
-      console.log('❌ User not found:', phone);
-      return res.status(404).json({
-        error: 'user_not_found',
-        message: 'Nomor handphone tidak terdaftar',
-      });
-    }
-
-    const user = userRows[0];
+    const {data: user, error} = await sb
+      .from('users')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+    if (error || !user)
+      return res.status(401).json({error: 'invalid_credentials'});
 
     const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) {
-      return res.status(401).json({error: 'invalid_credentials'});
+    if (!ok) return res.status(401).json({error: 'invalid_credentials'});
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+    const {data: session, error: eSess} = await sb
+      .from('sessions')
+      .insert({user_id: user.id, expires_at: expiresAt})
+      .select()
+      .single();
+    if (eSess) return res.status(500).json({error: 'create_session_failed'});
+
+    const {data: memberships = []} = await sb
+      .from('memberships')
+      .select('company_id, role, created_at')
+      .eq('user_id', user.id);
+
+    let default_company_id = null;
+    let default_role = null;
+    if (memberships.length) {
+      const owner = memberships.find(m => m.role === 'OWNER');
+      const pick = owner || memberships[0];
+      default_company_id = pick.company_id;
+      default_role = pick.role;
     }
 
-    const token = uuidv4();
-    const days = Number(process.env.SESSION_TTL_DAYS || 7);
-    const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-    await pool.query(
-      'INSERT INTO sessions(id, user_id, expires_at) VALUES (?,?,?)',
-      [token, user.id, expires],
-    );
-
-    const [m] = await pool.query(
-      `SELECT company_id, role
-       FROM memberships WHERE user_id=? ORDER BY (role='OWNER') DESC LIMIT 1`,
-      [user.id],
-    );
-
     res.json({
-      session_token: token,
-      user_id: user.id,
-      name: user.name,
-      company_id: m[0]?.company_id ?? null,
-      role: m[0]?.role ?? null,
-      expires_at: expires.toISOString(),
+      ok: true,
+      token: session.id,
+      expires_at: session.expires_at,
+      user: {id: user.id, name: user.name, phone: user.phone},
+      memberships,
+      default_company_id,
+      default_role,
     });
   } catch (e) {
-    console.error(e);
+    console.error('[login]', e);
     res.status(500).json({error: 'login_failed'});
   }
 });

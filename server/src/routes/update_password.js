@@ -1,40 +1,51 @@
-// routes/update_password.js
-import { Router } from 'express';
+import {Router} from 'express';
 import bcrypt from 'bcrypt';
-import pool from '../db.js';
+import {sb} from '../supabase.js';
 
 const router = Router();
 
-router.put('/update-password', async (req, res) => {
-  const { phone, old_password, new_password } = req.body || {};
-
-  if (!phone || !old_password || !new_password) {
-    return res.status(400).json({ error: 'missing_fields' });
-  }
-
-  const conn = await pool.getConnection();
-  try {
-    const [rows] = await conn.query('SELECT password_hash FROM users WHERE phone=?', [phone]);
-    if (!rows.length) {
-      return res.status(404).json({ error: 'user_not_found' });
+router.put('/update-password', async (req, res) => 
+{
+  try
+  {
+    const {phone, old_password, new_password} = req.body || {};
+    if (!phone || !old_password || !new_password) 
+    {
+      return res.status(400).json({error: 'missing_fields'});
     }
 
-    const { password_hash } = rows[0];
-    const match = await bcrypt.compare(old_password, password_hash);
-    if (!match) {
-      return res.status(401).json({ error: 'invalid_old_password' });
+    const {data: user, error: eUser} = await sb
+      .from('users')
+      .select('id, password_hash')
+      .eq('phone', String(phone).trim())
+      .single();
+
+    if (eUser || !user) 
+    {
+      return res.status(401).json({error: 'invalid_old_password'});
     }
 
-    const newHash = await bcrypt.hash(new_password, 10);
+    const ok = await bcrypt.compare(String(old_password), user.password_hash);
+    if (!ok) 
+    {
+      return res.status(401).json({error: 'invalid_old_password'});
+    }
 
-    await conn.query('UPDATE users SET password_hash=? WHERE phone=?', [newHash, phone]);
+    const newHash = await bcrypt.hash(String(new_password), 10);
+    const {error: eUpd} = await sb
+      .from('users')
+      .update({password_hash: newHash})
+      .eq('id', user.id);
 
-    res.json({ success: true });
+    if (eUpd) 
+    {
+      console.error('[update-password] update failed:', eUpd);
+      return res.status(500).json({error: 'update_failed'});
+    }
+    return res.json({ok: true});
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'update_failed' });
-  } finally {
-    conn.release();
+    console.error('[update-password]', e);
+    return res.status(500).json({error: 'update_failed'});
   }
 });
 

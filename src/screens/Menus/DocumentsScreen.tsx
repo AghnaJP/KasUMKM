@@ -35,10 +35,12 @@ import {formatRupiah} from '../../utils/formatIDR';
 
 import {
   insertMenu,
-  deleteMenuById,
+  //deleteMenuById,
   updateMenuById,
 } from '../../database/menus/menuQueries';
 import {getIncomeCountByMenuId} from '../../database/Incomes/incomeQueries';
+
+import {softDeleteMenu} from '../../database/menus/menuUnified';
 import {fetchAndFormatMenus} from '../../services/menuService';
 
 import type {AppStackParamList} from '../../types/navigation';
@@ -140,13 +142,17 @@ const DocumentsScreen: React.FC = () => {
   const handleEditPress = (item: MenuItem) => {
     const sid = String(item.id);
     const row = rowMapRef.current[sid];
-    if (row) {row.closeRow();}
+    if (row) {
+      row.closeRow();
+    }
     setSelectedMenu(item);
     setEditVisible(true);
   };
 
   const handleSaveEdit = async (updated: {name: string; price: string}) => {
-    if (!selectedMenu) {return;}
+    if (!selectedMenu) {
+      return;
+    }
 
     const name = updated.name?.trim();
     const price = Number(updated.price);
@@ -199,7 +205,7 @@ const DocumentsScreen: React.FC = () => {
           text: 'Hapus',
           style: 'destructive',
           onPress: async () => {
-            await deleteMenuById(id);
+            await softDeleteMenu(String(id));
             await fetchMenus();
             Alert.alert('Berhasil', 'Menu berhasil dihapus.');
           },

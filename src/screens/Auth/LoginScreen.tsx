@@ -25,13 +25,16 @@ import {API_BASE} from '../../constants/api';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
 type LoginResponse = {
-  session_token: string;
-  company_id?: string | number;
-  role?: string;
-  name?: string;
-  phone?: string;
-  message?: string; // optional backend error message
-  [key: string]: any;
+  ok?: boolean;
+  token?: string;
+  expires_at?: string | null;
+  user?: {id: string; name: string; phone: string};
+  memberships?: Array<{company_id: string; role: string}>;
+  default_company_id?: string | null;
+  default_role?: string | null; 
+  message?: string;
+  error?: string;
+  [k: string]: any;
 };
 
 const LoginScreen = () => {
@@ -48,7 +51,6 @@ const LoginScreen = () => {
   const {login} = useContext(AuthContext);
 
   const handleLogin = async () => {
-    // reset error & set loading
     setFormError('');
     setPhoneError('');
     setPasswordError('');
@@ -57,7 +59,6 @@ const LoginScreen = () => {
     const normalizedPhone = normalizePhone(phone.trim());
     const trimmedPassword = password.trim();
 
-    // Validasi dasar
     if (!normalizedPhone) {
       setPhoneError('Nomor handphone wajib diisi');
       setIsLoading(false);
@@ -70,7 +71,6 @@ const LoginScreen = () => {
     }
 
     try {
-      // Call API
       const r = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -83,31 +83,33 @@ const LoginScreen = () => {
       const data: LoginResponse = await r.json();
 
       if (!r.ok) {
-        const msg = data?.message || 'Nomor HP atau password salah';
-        if (r.status === 404) setPhoneError('Nomor handphone tidak terdaftar');
-        else if (r.status === 401) setPasswordError('Password salah');
+        const msg =
+          data?.message || data?.error || 'Nomor HP atau password salah';
+        if (r.status === 401) setFormError('Nomor HP atau password salah');
         else setFormError(msg);
         return;
       }
 
-      if (!data?.session_token) {
+
+      const sessionToken = data?.token ?? null;
+      const companyId = data?.default_company_id ?? null; 
+      const role = data?.default_role ?? null;
+
+      if (!sessionToken) {
         setFormError('Respon server tidak valid (token kosong).');
         return;
       }
 
-      // 🔒 Simpan ke secure storage
+
       try {
-        await EncryptedStorage.setItem(
-          'session_token',
-          String(data.session_token),
-        );
-        if (data.company_id != null) {
-          await EncryptedStorage.setItem('company_id', String(data.company_id));
+        await EncryptedStorage.setItem('session_token', String(sessionToken));
+        if (companyId != null) {
+          await EncryptedStorage.setItem('company_id', String(companyId));
         } else {
           await EncryptedStorage.removeItem('company_id');
         }
-        if (data.role != null) {
-          await EncryptedStorage.setItem('role', String(data.role));
+        if (role != null) {
+          await EncryptedStorage.setItem('role', String(role));
         } else {
           await EncryptedStorage.removeItem('role');
         }
@@ -115,16 +117,17 @@ const LoginScreen = () => {
         console.warn('Failed to persist secure data:', e);
       }
 
-      // 🔐 Update context pakai FORMAT OBJECT
       await (login as any)({
-        token: data.session_token,
-        companyId: (data.company_id as string) ?? null,
-        role: (data.role as string) ?? null,
-        profile: {name: data.name ?? normalizedPhone, phone: normalizedPhone},
+        token: sessionToken,
+        companyId,
+        role,
+        profile: {
+          name: data?.user?.name ?? normalizedPhone,
+          phone: data?.user?.phone ?? normalizedPhone,
+        },
       });
 
-      // (opsional) navigate ke home
-      // navigation.replace('Home');
+   
     } catch (error) {
       console.error('Login failed:', error);
       setFormError('Gagal terhubung ke server. Coba lagi.');

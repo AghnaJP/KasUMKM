@@ -1,7 +1,11 @@
 import {ID, IncomeItem} from '../../types/menu';
 import {IncomeData} from '../../types/transaction';
 import {getDBConnection} from '../db';
-import {SQLiteDatabase, Transaction} from 'react-native-sqlite-storage';
+import {
+  SQLiteDatabase,
+  Transaction,
+  ResultSet,
+} from 'react-native-sqlite-storage';
 
 export const getAllIncomes = async (): Promise<IncomeItem[]> => {
   const database: SQLiteDatabase = await getDBConnection();
@@ -49,7 +53,27 @@ export const insertIncome = async (
     });
   });
 };
-
+export const getIncomeCountByMenuId = async (
+  menuId: string | number,
+): Promise<number> => {
+  const db: SQLiteDatabase = await getDBConnection();
+  return new Promise((resolve, reject) => {
+    db.transaction((tx: Transaction) => {
+      tx.executeSql(
+        'SELECT COUNT(*) as count FROM incomes WHERE menu_id = ?',
+        [menuId],
+        (_, result: ResultSet) => {
+          const count = result.rows.item(0).count;
+          resolve(count);
+        },
+        (_, error) => {
+          reject(error);
+          return false;
+        },
+      );
+    });
+  });
+};
 export const getIncomeDetails = async (): Promise<IncomeData[]> => {
   const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {

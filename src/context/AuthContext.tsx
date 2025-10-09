@@ -213,48 +213,49 @@ export function AuthProvider({children}: PropsWithChildren) {
 
   const updateUserName = useCallback(
     async (name: string) => {
-      if (!state.profile.phone) {
-        throw new Error('Nomor telepon tidak tersedia');
-      }
+      const phone = state.profile.phone;
+      if (!phone) throw new Error('Nomor telepon tidak tersedia');
 
+      
       try {
-        console.log('📝 Updating user name to:', name);
-
-        // ✅ 1. Update di server dulu
-        console.log('📝 Updating name on server...');
         const headers = await getAuthHeaders();
-        const response = await fetch(`${API_BASE}/me`, {
-          method: 'PUT',
+        const body = JSON.stringify({name});
+
+        let res = await fetch(`${API_BASE}/users/me`, {
+          method: 'PATCH',
           headers,
-          body: JSON.stringify({name}),
+          body,
         });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `Server update failed: ${response.status}`,
-          );
+        if (res.status === 404 || res.status === 405) {
+          res = await fetch(`${API_BASE}/users`, {
+            method: 'PUT',
+            headers,
+            body,
+          });
         }
 
-        const serverResult = await response.json();
-        console.log('✅ Server update successful:', serverResult);
-
-        // ✅ 2. Update di SQLite lokal
-        console.log('📝 Updating name in SQLite...');
-        await editUsername(name, state.profile.phone);
-        console.log('✅ SQLite update successful');
-
-        // ✅ 3. Update local state
-        setState(s => ({...s, profile: {...s.profile, name}}));
-
-        // ✅ 4. Update encrypted storage
-        await EncryptedStorage.setItem('profile_name', name);
-
-        console.log('✅ User name update completed');
-      } catch (error) {
-        console.error('❌ Failed to update user name:', error);
-        throw error;
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(`Server update failed: ${res.status} ${text}`);
+        }
+      } catch (err) {
+        console.warn(
+          '⚠️ Update nama di server gagal, lanjut update lokal:',
+          err,
+        );
       }
+
+      
+      await editUsername(name, phone);
+
+      
+      setState(s => ({...s, profile: {...s.profile, name}}));
+
+      
+      await EncryptedStorage.setItem('profile_name', name);
+
+      console.log('✅ User name update completed (server + local)');
     },
     [state.profile.phone, getAuthHeaders],
   );

@@ -1,97 +1,110 @@
 import {Router} from 'express';
 import bcrypt from 'bcrypt';
-import {v4 as uuidv4} from 'uuid';
-import pool from '../db.js';
+import {sb} from '../supabase.js';
 
 const router = Router();
 
-// POST /register { name, phone, password, invite_code? }
 router.post('/register', async (req, res) => {
   const {name, phone, password, invite_code} = req.body || {};
   if (!name || !phone || !password) {
     return res.status(400).json({error: 'missing_fields'});
   }
 
-  const conn = await pool.getConnection();
   try {
-    await conn.beginTransaction();
+    const password_hash = await bcrypt.hash(password, 10);
 
-    const [dup] = await conn.query('SELECT id FROM users WHERE phone=?', [
-      phone,
-    ]);
-    if (dup.length) {
-      await conn.rollback();
-      return res.status(409).json({error: 'phone_exists'});
+    let invite = null;
+    if (invite_code && String(invite_code).trim()) {
+      const now = new Date().toISOString();
+      const {data, error} = await sb
+        .from('invite_codes')
+        .select('*')
+        .eq('code', String(invite_code).trim().toUpperCase())
+        .gt('expires_at', now)
+        .single();
+      if (error)
+        return res.status(400).json({error: 'invalid_or_expired_invite'});
+      invite = data;
     }
 
-    const userId = uuidv4();
-    const passHash = await bcrypt.hash(password, 10);
-    await conn.query(
-      'INSERT INTO users(id, name, phone, password_hash) VALUES (?,?,?,?)',
-      [userId, name, phone, passHash],
-    );
+    const {data: user, error: eUser} = await sb
+      .from('users')
+      .insert({name, phone, password_hash})
+      .select()
+      .single();
+    if (eUser) {
+      if (eUser.code === '23505')
+        return res.status(409).json({error: 'phone_already_used'});
+      throw eUser;
+    }
 
-    let companyId, role;
+    let company = null;
+    let membership = null;
 
-    if (invite_code) {
-      const [codes] = await conn.query(
-        'SELECT company_id, expires_at FROM invite_codes WHERE code=?',
-        [invite_code.trim()],
-      );
-      if (!codes.length) {
-        await conn.rollback();
-        return res.status(400).json({error: 'invalid_invite'});
-      }
-      if (new Date(codes[0].expires_at) < new Date()) {
-        await conn.rollback();
-        return res.status(400).json({error: 'expired_invite'});
-      }
-
-      companyId = codes[0].company_id;
-      role = 'CASHIER';
-      await conn.query(
-        'INSERT INTO memberships(id, user_id, company_id, role) VALUES (UUID(),?,?,?)',
-        [userId, companyId, role],
-      );
-      await conn.query('DELETE FROM invite_codes WHERE code=?', [
-        invite_code.trim(),
-      ]);
+    if (invite) {
+      const {data: mem, error: eMem} = await sb
+        .from('memberships')
+        .insert({
+          user_id: user.id,
+          company_id: invite.company_id,
+          role: invite.role || 'CASHIER',
+        })
+        .select()
+        .single();
+      if (eMem) throw eMem;
+      membership = mem;
+      await sb.from('invite_codes').delete().eq('code', invite.code);
+      const {data: comp} = await sb
+        .from('companies')
+        .select('*')
+        .eq('id', invite.company_id)
+        .single();
+      company = comp || null;
     } else {
-      companyId = uuidv4();
-      role = 'OWNER';
-      await conn.query('INSERT INTO companies(id, name) VALUES (?,?)', [
-        companyId,
-        `${name}'s Company`,
-      ]);
-      await conn.query(
-        'INSERT INTO memberships(id, user_id, company_id, role) VALUES (UUID(),?,?,?)',
-        [userId, companyId, role],
-      );
+      const companyName = `${name}'s Company`;
+      const {data: comp, error: eComp} = await sb
+        .from('companies')
+        .insert({name: companyName})
+        .select()
+        .single();
+      if (eComp) throw eComp;
+      company = comp;
+
+      const {data: mem, error: eMem} = await sb
+        .from('memberships')
+        .insert({user_id: user.id, company_id: company.id, role: 'OWNER'})
+        .select()
+        .single();
+      if (eMem) throw eMem;
+      membership = mem;
     }
 
-    const token = uuidv4();
-    const days = Number(process.env.SESSION_TTL_DAYS || 7);
-    const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-    await conn.query(
-      'INSERT INTO sessions(id, user_id, expires_at) VALUES (?,?,?)',
-      [token, userId, expires],
-    );
+    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+    const {data: session, error: eSess} = await sb
+      .from('sessions')
+      .insert({user_id: user.id, expires_at: expiresAt})
+      .select()
+      .single();
+    if (eSess) {
+      console.warn('[register] create session failed:', eSess);
+    }
 
-    await conn.commit();
-    res.json({
-      session_token: token,
-      user_id: userId,
-      name: name,
-      company_id: companyId,
-      role,
-      expires_at: expires.toISOString(),
+    return res.json({
+      ok: true,
+      token: session?.id ?? null,
+      expires_at: session?.expires_at ?? null,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        created_at: user.created_at,
+      },
+      company,
+      membership,
     });
   } catch (e) {
-    await conn.rollback();
-    console.error(e);
-    res.status(500).json({error: 'register_failed'});
-  } finally {
-    conn.release();
+    console.error('[register]', e);
+    return res.status(500).json({error: 'register_failed'});
   }
 });
 

@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {SwipeListView} from 'react-native-swipe-list-view';
-import {deleteMenuById, updateMenuById} from '../../database/menus/menuQueries';
+import {updateMenuById} from '../../database/menus/menuQueries';
 import SwitchBar from '../../components/AddTransaction/SwitchBar';
 import MenuItemRow from '../../components/Menu/MenuItemRow';
 import HiddenActions from '../../components/Menu/HiddenAction';
@@ -21,6 +21,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {fetchAndFormatMenus} from '../../services/menuService';
 import {useFocusEffect} from '@react-navigation/native';
+import {softDeleteMenu} from '../../database/menus/menuUnified';
 
 const categoryOptions = [{label: 'Semua', value: ''}, ...CATEGORIES];
 
@@ -104,8 +105,8 @@ const MenuList = () => {
           text: 'Hapus',
           style: 'destructive',
           onPress: async () => {
-            await deleteMenuById(id);
-            fetchMenus();
+            await softDeleteMenu(String(id));
+            await fetchMenus();
             Alert.alert('Berhasil', 'Menu berhasil dihapus.');
           },
         },

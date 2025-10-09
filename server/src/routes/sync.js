@@ -1,183 +1,170 @@
 import {Router} from 'express';
-import pool from '../db.js';
-import {isoToMySQL} from '../utils/dateTime.js';
+import {sb} from '../supabase.js';
+
 const router = Router();
 
-/**
- * GET /sync/pull?company_id=...&since=ISO(optional)
- * Respon: { server_time, transactions: [], menus: [] }
- */
+function getSessionId(req) {
+  const h = req.headers?.authorization || req.headers?.Authorization;
+  if (!h) return null;
+  const m = /^Bearer\s+(.+)$/i.exec(h.trim());
+  return m ? m[1] : null;
+}
+async function getUserFromSession(req) {
+  const sid = getSessionId(req);
+  if (!sid) return {error: 'missing_token'};
+  const now = new Date().toISOString();
+
+  const {data: session, error: eSess} = await sb
+    .from('sessions')
+    .select('id, user_id, expires_at')
+    .eq('id', sid)
+    .gt('expires_at', now)
+    .single();
+  if (eSess || !session) return {error: 'invalid_or_expired_session'};
+  return {session};
+}
+async function assertMembership(user_id, company_id) {
+  const {data: m, error} = await sb
+    .from('memberships')
+    .select('id')
+    .eq('user_id', user_id)
+    .eq('company_id', company_id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!m) throw new Error('not_member_of_company');
+}
+
 router.get('/pull', async (req, res) => {
   try {
-    const company_id = String(req.query.company_id || '');
-    const since = req.query.since ? String(req.query.since) : null;
-    if (!company_id)
-      return res.status(400).json({error: 'company_id_required'});
+    const {session, error} = await getUserFromSession(req);
+    if (error) return res.status(401).json({error});
 
-    const server_time = new Date().toISOString();
+    const company_id = String(req.query.company_id || '').trim();
+    const since =
+      String(req.query.since || '').trim() || '1970-01-01T00:00:00Z';
+    if (!company_id) return res.status(400).json({error: 'missing_company_id'});
 
-    const txSql = since
-      ? `SELECT id, name, type, amount, quantity, unit_price, menu_id,
-                occurred_at, updated_at, deleted_at
-           FROM transactions
-          WHERE company_id = ? AND updated_at > ?
-          ORDER BY updated_at ASC`
-      : `SELECT id, name, type, amount, quantity, unit_price, menu_id,
-                occurred_at, updated_at, deleted_at
-           FROM transactions
-          WHERE company_id = ?
-          ORDER BY updated_at ASC`;
+    await assertMembership(session.user_id, company_id);
 
-    const txParams = since ? [company_id, since] : [company_id];
-    const [txRows] = await pool.query(txSql, txParams);
+    const {data: menus, error: e1} = await sb
+      .from('menus')
+      .select('*')
+      .eq('company_id', company_id)
+      .gte('updated_at', since)
+      .order('updated_at', {ascending: true});
+    if (e1) throw e1;
 
-    const menuSql = since
-      ? `SELECT id, name, price, category, occurred_at, updated_at, deleted_at
-           FROM menus
-          WHERE company_id = ? AND updated_at > ?
-          ORDER BY updated_at ASC`
-      : `SELECT id, name, price, category, occurred_at, updated_at, deleted_at
-           FROM menus
-          WHERE company_id = ?
-          ORDER BY updated_at ASC`;
-
-    const menuParams = since ? [company_id, since] : [company_id];
-    const [menuRows] = await pool.query(menuSql, menuParams);
+    const {data: txs, error: e2} = await sb
+      .from('transactions')
+      .select('*')
+      .eq('company_id', company_id)
+      .gte('updated_at', since)
+      .order('updated_at', {ascending: true});
+    if (e2) throw e2;
 
     return res.json({
-      server_time,
-      transactions: Array.isArray(txRows) ? txRows : [],
-      menus: Array.isArray(menuRows) ? menuRows : [],
+      ok: true,
+      server_time: new Date().toISOString(),
+      menus: menus ?? [],
+      transactions: txs ?? [],
     });
   } catch (e) {
-    console.error('pull error', e);
-    return res.status(500).json({error: 'server_error'});
+    if (e?.message === 'not_member_of_company') {
+      return res.status(403).json({error: 'not_member_of_company'});
+    }
+    console.error('[sync/pull]', e);
+    return res.status(500).json({error: 'sync_pull_failed'});
   }
 });
 
-/**
- * POST /sync/push
- * Body:
- * {
- *   company_id: "...",
- *   changes: {
- *     transactions: [{id,name,type,amount,occurred_at,updated_at,deleted_at}],
- *     menus: [{id,name,price,category,occurred_at,updated_at,deleted_at}]
- *   }
- * }
- * Upsert ke MySQL by id.
- */
 router.post('/push', async (req, res) => {
-  console.log('🔁 Received PUSH:', req.body);
   try {
-    const {company_id, changes} = req.body || {};
-    if (!company_id)
-      return res.status(400).json({error: 'company_id_required'});
+    const {session, error} = await getUserFromSession(req);
+    if (error) return res.status(401).json({error});
 
-    const txs = Array.isArray(changes?.transactions)
-      ? changes.transactions
-      : [];
-    const menus = Array.isArray(changes?.menus) ? changes.menus : [];
-    if (!txs.length && !menus.length) return res.json({ok: true, pushed: 0});
+    const {
+      company_id,
+      menus_upsert = [],
+      menus_delete = [],
+      transactions_upsert = [],
+      transactions_delete = [],
+    } = req.body || {};
 
-    const txSql = `
-      INSERT INTO transactions
-        (id, company_id, name, type, amount, quantity, unit_price, menu_id,
-         occurred_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        name=VALUES(name),
-        type=VALUES(type),
-        amount=VALUES(amount),
-        quantity=VALUES(quantity),
-        unit_price=VALUES(unit_price),
-        menu_id=VALUES(menu_id),
-        occurred_at=VALUES(occurred_at),
-        updated_at=VALUES(updated_at),
-        deleted_at=VALUES(deleted_at)
-    `;
+    if (!company_id) return res.status(400).json({error: 'missing_company_id'});
+    await assertMembership(session.user_id, company_id);
 
-    const menuSql = `
-      INSERT INTO menus
-        (id, company_id, name, price, category, occurred_at, updated_at, deleted_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        name=VALUES(name),
-        price=VALUES(price),
-        category=VALUES(category),
-        occurred_at=VALUES(occurred_at),
-        updated_at=VALUES(updated_at),
-        deleted_at=VALUES(deleted_at)
-    `;
+    const nowIso = new Date().toISOString();
+    const withCompanyAndUpdatedAt = r => {
+      const hasDelete = !!r?.deleted_at;
+      return {
+        ...r,
+        company_id,
+        // kalau client lupa isi updated_at saat delete, kita paksa nowIso
+        updated_at: r?.updated_at ?? (hasDelete ? nowIso : nowIso),
+      };
+    };
 
-    const conn = await pool.getConnection();
-    let txCount = 0;
-    let menuCount = 0;
-
-    try {
-      await conn.beginTransaction();
-
-      // === transactions ===
-      for (const r of txs) {
-        const qty = Number(r.quantity ?? 1);
-        const unit =
-          r.unit_price != null
-            ? Number(r.unit_price)
-            : qty
-            ? Number(r.amount) / qty
-            : Number(r.amount);
-        const menuId = r.menu_id ?? null;
-
-        await conn.query(txSql, [
-          r.id,
-          company_id,
-          r.name,
-          r.type,
-          r.amount,
-          qty,
-          unit,
-          menuId,
-          isoToMySQL(r.occurred_at),
-          isoToMySQL(r.updated_at),
-          r.deleted_at ? isoToMySQL(r.deleted_at) : null,
-        ]);
-        txCount++;
+    if (menus_upsert.length) {
+      const payload = menus_upsert.map(withCompanyAndUpdatedAt);
+      const {error: eM} = await sb
+        .from('menus')
+        .upsert(payload, {onConflict: 'id'});
+      if (eM) {
+        console.error('[sync/push] menus_upsert error:', eM);
+        return res.status(500).json({error: 'menus_upsert_failed'});
       }
+    }
 
-      for (const m of menus) {
-        await conn.query(menuSql, [
-          m.id,
-          company_id,
-          m.name,
-          m.price,
-          m.category,
-          isoToMySQL(m.occurred_at),
-          isoToMySQL(m.updated_at),
-          m.deleted_at ? isoToMySQL(m.deleted_at) : null,
-        ]);
-        menuCount++;
+    if (menus_delete.length) {
+      const {error: eMD} = await sb
+        .from('menus')
+        .update({deleted_at: nowIso, updated_at: nowIso})
+        .eq('company_id', company_id)
+        .in('id', menus_delete);
+      if (eMD) {
+        console.error('[sync/push] menus_delete error:', eMD);
+        return res.status(500).json({error: 'menus_delete_failed'});
       }
+    }
 
-      await conn.commit();
-    } catch (e) {
-      await conn.rollback();
-      console.error('❌ TRANSACTION ROLLBACK', e?.sqlMessage || e);
-      return res.status(500).json({ok: false, error: 'insert_failed'});
-    } finally {
-      conn.release();
+    if (transactions_upsert.length) {
+      const payload = transactions_upsert.map(withCompanyAndUpdatedAt);
+      const {error: eT} = await sb
+        .from('transactions')
+        .upsert(payload, {onConflict: 'id'});
+      if (eT) {
+        console.error('[sync/push] transactions_upsert error:', eT);
+        return res.status(500).json({error: 'transactions_upsert_failed'});
+      }
+    }
+    if (transactions_delete.length) {
+      const {error: eTD} = await sb
+        .from('transactions')
+        .update({deleted_at: nowIso, updated_at: nowIso})
+        .eq('company_id', company_id)
+        .in('id', transactions_delete);
+      if (eTD) {
+        console.error('[sync/push] transactions_delete error:', eTD);
+        return res.status(500).json({error: 'transactions_delete_failed'});
+      }
     }
 
     return res.json({
       ok: true,
-      pushed: {
-        transactions: txCount,
-        menus: menuCount,
-        total: txCount + menuCount,
+      server_time: nowIso,
+      stats: {
+        menus_upserted: menus_upsert.length,
+        menus_deleted: menus_delete.length,
+        transactions_upserted: transactions_upsert.length,
+        transactions_deleted: transactions_delete.length,
       },
     });
   } catch (e) {
-    console.error('push error', e);
-    return res.status(500).json({error: 'server_error'});
+    if (e?.message === 'not_member_of_company') {
+      return res.status(403).json({error: 'not_member_of_company'});
+    }
+    console.error('[sync/push]', e);
+    return res.status(500).json({error: 'sync_push_failed'});
   }
 });
 

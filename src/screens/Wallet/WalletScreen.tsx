@@ -1,4 +1,3 @@
-// src/screens/Wallet/WalletScreen.tsx
 import React, {useState, useCallback} from 'react';
 import {StyleSheet, SafeAreaView, View, Alert} from 'react-native';
 import {useRoute} from '@react-navigation/native';

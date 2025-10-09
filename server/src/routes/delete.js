@@ -1,80 +1,74 @@
 import {Router} from 'express';
-import pool from '../db.js';
+import {sb} from '../supabase.js';
 import {auth} from '../auth.js';
 
 const router = Router();
 
-console.log('✅ Delete route loaded');
+console.log('✅ Delete route loaded (Supabase)');
 
 router.delete('/users', auth, async (req, res) => {
   console.log('🗑️ ===== DELETE /users ENDPOINT HIT =====');
-  console.log('🗑️ req.userId:', req.userId); // ✅ Change from req.user to req.userId
+  const userId = req.userId;
 
-  // ✅ Check req.userId instead of req.user
-  if (!req.userId) {
-    console.error('❌ req.userId is undefined - auth middleware failed');
+  if (!userId) {
     return res.status(401).json({error: 'user_not_authenticated'});
   }
 
-  const userId = req.userId; // ✅ Use req.userId directly
-  console.log('🗑️ Processing delete for user:', userId);
-
   try {
-    // Test connection first
-    console.log('🔍 Testing database connection...');
-    const [testResult] = await pool.query('SELECT 1 as test');
-    console.log('✅ Database connection OK:', testResult);
+    const {data: user, error: eUser} = await sb
+      .from('users')
+      .select('id, phone')
+      .eq('id', userId)
+      .single();
 
-    // Check if user exists
-    console.log('🔍 Checking if user exists...');
-    const [userCheck] = await pool.query(
-      'SELECT id, phone FROM users WHERE id = ?',
-      [userId],
-    );
-    console.log('🔍 User check result:', userCheck);
-
-    if (!userCheck.length) {
+    if (eUser || !user) {
       return res.status(404).json({error: 'user_not_found'});
     }
 
-    // Delete user sessions first
-    console.log('🗑️ Deleting user sessions...');
-    const [sessionResult] = await pool.query(
-      'DELETE FROM sessions WHERE user_id = ?',
-      [userId],
-    );
-    console.log('✅ Sessions deleted:', sessionResult.affectedRows);
+    const {count: sessionsDeleted, error: eSessDel} = await sb
+      .from('sessions')
+      .delete()
+      .eq('user_id', userId)
+      .select('id', {count: 'exact'});
+    if (eSessDel) {
+      console.error('❌ delete sessions error:', eSessDel);
+      return res.status(500).json({error: 'delete_failed'});
+    }
 
-    // Delete user memberships
-    console.log('🗑️ Deleting user memberships...');
-    const [memberResult] = await pool.query(
-      'DELETE FROM memberships WHERE user_id = ?',
-      [userId],
-    );
-    console.log('✅ Memberships deleted:', memberResult.affectedRows);
+    const {count: membershipsDeleted, error: eMemDel} = await sb
+      .from('memberships')
+      .delete()
+      .eq('user_id', userId)
+      .select('id', {count: 'exact'});
+    if (eMemDel) {
+      console.error('❌ delete memberships error:', eMemDel);
+      return res.status(500).json({error: 'delete_failed'});
+    }
 
-    // Delete user
-    console.log('🗑️ Deleting user...');
-    const [userResult] = await pool.query('DELETE FROM users WHERE id = ?', [
-      userId,
-    ]);
-    console.log('✅ User deleted:', userResult.affectedRows);
+    const {count: usersDeleted, error: eUserDel} = await sb
+      .from('users')
+      .delete()
+      .eq('id', userId)
+      .select('id', {count: 'exact'});
+    if (eUserDel) {
+      console.error('❌ delete user error:', eUserDel);
+      return res.status(500).json({error: 'delete_failed'});
+    }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'User deleted successfully',
       deleted: {
-        sessions: sessionResult.affectedRows,
-        memberships: memberResult.affectedRows,
-        users: userResult.affectedRows,
+        sessions: sessionsDeleted ?? 0,
+        memberships: membershipsDeleted ?? 0,
+        users: usersDeleted ?? 0,
       },
     });
-  } catch (error) {
-    console.error('❌ Delete operation error:', error);
-    res.status(500).json({
-      error: 'delete_failed',
-      message: error.message,
-    });
+  } catch (err) {
+    console.error('❌ Delete operation error:', err);
+    return res
+      .status(500)
+      .json({error: 'delete_failed', message: err?.message});
   }
 });
 

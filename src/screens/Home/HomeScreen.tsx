@@ -36,10 +36,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import {API_BASE} from '../../constants/api';
 import Button from '../../components/Button/Button';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
-// DEV: insert langsung ke tabel unified (SQLite) // atau 'transactionUnified' sesuai nama file kamu
-
-// DEV: cek DB & tabel (optional, untuk diagnosa)
+const lastSyncKey = (companyId?: string | null) =>
+  companyId ? `last_sync_at:${companyId}` : 'last_sync_at';
 
 const HomeScreen = () => {
   const navigation =
@@ -88,6 +88,15 @@ const HomeScreen = () => {
     fetchMe();
   }, [getAuthHeaders]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const ts = await EncryptedStorage.getItem(lastSyncKey(companyId));
+        setLastSyncAt(ts);
+      } catch {}
+    })();
+  }, [companyId]);
+
   // === SYNC NOW manual ===
   const handleSyncNow = useCallback(async () => {
     try {
@@ -96,10 +105,18 @@ const HomeScreen = () => {
         return;
       }
       setIsSyncing(true);
-      await syncNow(); // push dirty → pull terbaru
-      setLastSyncAt(new Date().toLocaleString('id-ID'));
+
+      await syncNow();
+
+      const ts = new Date().toISOString();
+      setLastSyncAt(new Date(ts).toLocaleString('id-ID'));
       setRefreshKey(prev => prev + 1); // segarkan chart/list
-      Toast.show({type: 'infoCustom', text1: 'Sinkronisasi selesai'});
+
+      Toast.show({
+        type: 'infoCustom',
+        text1: 'Sinkronisasi selesai',
+        position: 'top',
+      });
     } catch (e) {
       console.log('syncNow error', e);
       Toast.show({type: 'error', text1: 'Gagal sinkronisasi'});
@@ -118,23 +135,29 @@ const HomeScreen = () => {
         });
         return;
       }
-      if (!companyId) {
-        Toast.show({type: 'error', text1: 'Company tidak ditemukan.'});
-        return;
-      }
 
       const headers = await getAuthHeaders();
-      const r = await fetch(`${API_BASE}/companies/${companyId}/invites`, {
+
+      const r = await fetch(`${API_BASE}/invite/create`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify({expires_in_days: 7}),
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ttl_hours: 24}),
       });
 
-      const data = await r.json();
+      const raw = await r.text();
+      let data: any = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {}
+
       if (!r.ok) {
+        console.log('invite/create failed raw:', raw);
         Toast.show({
           type: 'error',
-          text1: data?.error || 'Gagal membuat undangan',
+          text1: (data && data.error) || 'Gagal membuat undangan',
         });
         return;
       }
@@ -161,7 +184,7 @@ const HomeScreen = () => {
         text1: 'Terjadi kesalahan saat membuat undangan',
       });
     }
-  }, [isOwner, companyId, getAuthHeaders]);
+  }, [isOwner, getAuthHeaders]);
 
   // const addDummyUnified = useCallback(async () => {
   //   try {
@@ -196,6 +219,11 @@ const HomeScreen = () => {
         <CustomText variant="body" color={COLORS.darkBlue}>
           {props.text1}
         </CustomText>
+        {!!props.text2 && (
+          <CustomText variant="caption" color="#5d6d7e">
+            {props.text2}
+          </CustomText>
+        )}
       </View>
       <TouchableOpacity onPress={() => Toast.hide()} style={{marginLeft: 8}}>
         <Ionicons name="close" size={20} color="#888" />
@@ -277,30 +305,10 @@ const HomeScreen = () => {
           </View>
         )}
 
-        {/* {isOwner && (
-          <View style={{marginTop: 12}}>
-            <Button
-              title="Buat Kode Kasir"
-              variant="primary"
-              onPress={handleCreateInvite}
-            /> */}
-
-        {/* 🔹 Tombol dev: insert langsung ke unified */}
-        {/* <View style={{marginTop: 8}}>
-              <Button
-                title="Add Dummy Unified Tx"
-                variant="secondary"
-                onPress={addDummyUnified}
-                disabled={isSyncing}
-              />
-            </View> */}
-        {/* </View>
-        )} */}
-
         {/* === TOMBOL SYNC NOW (untuk semua role) === */}
         <View style={{marginTop: 12}}>
           <Button
-            title={isSyncing ? 'Menyinkronkan...' : 'Sinkronasi Sekarang'}
+            title={isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Sekarang'}
             variant="secondary"
             onPress={handleSyncNow}
             disabled={isSyncing}
