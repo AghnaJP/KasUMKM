@@ -35,10 +35,8 @@ import {formatRupiah} from '../../utils/formatIDR';
 
 import {
   insertMenu,
-  //deleteMenuById,
   updateMenuById,
 } from '../../database/menus/menuQueries';
-import {getIncomeCountByMenuId} from '../../database/Incomes/incomeQueries';
 
 import {softDeleteMenu} from '../../database/menus/menuUnified';
 import {fetchAndFormatMenus} from '../../services/menuService';
@@ -46,7 +44,7 @@ import {fetchAndFormatMenus} from '../../services/menuService';
 import type {AppStackParamList} from '../../types/navigation';
 import {CategoryWithEmpty, MenuItem, CATEGORIES, ID} from '../../types/menu';
 
-import {COLORS, MENU_ALERTS} from '../../constants';
+import {COLORS} from '../../constants';
 
 type Nav = NativeStackNavigationProp<AppStackParamList>;
 interface FieldErrors {
@@ -166,39 +164,21 @@ const DocumentsScreen: React.FC = () => {
       return;
     }
 
-    const count = await getIncomeCountByMenuId(selectedMenu.id);
-    const doUpdate = async () => {
+    try {
       await updateMenuById(selectedMenu.id, name, price);
-      await fetchMenus();
       setEditVisible(false);
       setSelectedMenu(null);
-      Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
-    };
-
-    if (count > 0) {
-      Alert.alert(
-        'Edit Menu',
-        MENU_ALERTS.editWithTransaction(count, selectedMenu.name),
-        [
-          {text: 'Batal', style: 'cancel'},
-          {text: 'Lanjut Edit', onPress: doUpdate},
-        ],
-      );
-    } else {
-      await doUpdate();
+      fetchMenus();
+      Alert.alert('Sukses', 'Menu berhasil diperbarui.');
+    } catch (error) {
+      Alert.alert('Error', 'Gagal memperbarui menu.');
     }
   };
 
   const handleDelete = useCallback(async (id: ID, name: string) => {
-    const count = await getIncomeCountByMenuId(id);
-    const message =
-      count > 0
-        ? MENU_ALERTS.deleteWithTransaction(count, name)
-        : MENU_ALERTS.deleteWithoutTransaction(name);
-
     Alert.alert(
       'Hapus Menu',
-      message,
+      `Apakah Anda yakin ingin menghapus menu "${name}"?`,
       [
         {text: 'Batal', style: 'cancel'},
         {

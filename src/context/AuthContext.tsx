@@ -213,49 +213,48 @@ export function AuthProvider({children}: PropsWithChildren) {
 
   const updateUserName = useCallback(
     async (name: string) => {
-      const phone = state.profile.phone;
-      if (!phone) throw new Error('Nomor telepon tidak tersedia');
-
-      
-      try {
-        const headers = await getAuthHeaders();
-        const body = JSON.stringify({name});
-
-        let res = await fetch(`${API_BASE}/users/me`, {
-          method: 'PATCH',
-          headers,
-          body,
-        });
-
-        if (res.status === 404 || res.status === 405) {
-          res = await fetch(`${API_BASE}/users`, {
-            method: 'PUT',
-            headers,
-            body,
-          });
-        }
-
-        if (!res.ok) {
-          const text = await res.text().catch(() => '');
-          throw new Error(`Server update failed: ${res.status} ${text}`);
-        }
-      } catch (err) {
-        console.warn(
-          '⚠️ Update nama di server gagal, lanjut update lokal:',
-          err,
-        );
+      if (!state.profile.phone) {
+        throw new Error('Nomor telepon tidak tersedia');
       }
 
-      
-      await editUsername(name, phone);
+      try {
+        console.log('📝 Updating user name to:', name);
 
-      
-      setState(s => ({...s, profile: {...s.profile, name}}));
+        // 1. Update di server dulu
+        console.log('📝 Updating name on server...');
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${API_BASE}/me`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({name}),
+        });
 
-      
-      await EncryptedStorage.setItem('profile_name', name);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || `Server update failed: ${response.status}`,
+          );
+        }
 
-      console.log('✅ User name update completed (server + local)');
+        const serverResult = await response.json();
+        console.log('Server update successful:', serverResult);
+
+        // 2. Update di SQLite lokal
+        console.log('📝 Updating name in SQLite...');
+        await editUsername(name, state.profile.phone);
+        console.log('SQLite update successful');
+
+        // 3. Update local state
+        setState(s => ({...s, profile: {...s.profile, name}}));
+
+        // 4. Update encrypted storage
+        await EncryptedStorage.setItem('profile_name', name);
+
+        console.log('User name update completed');
+      } catch (error) {
+        console.error('Failed to update user name:', error);
+        throw error;
+      }
     },
     [state.profile.phone, getAuthHeaders],
   );
@@ -271,7 +270,7 @@ export function AuthProvider({children}: PropsWithChildren) {
         state.profile.phone,
       );
 
-      // ✅ 1. HAPUS DARI SERVER DULU
+      // 1. HAPUS DARI SERVER DULU
       console.log('🗑️ Deleting from server...');
       const headers = await getAuthHeaders();
       console.log('📤 Request headers:', headers);
@@ -282,40 +281,38 @@ export function AuthProvider({children}: PropsWithChildren) {
         headers,
       });
 
-      console.log('📥 Response status:', response.status);
-      console.log('📥 Response ok:', response.ok);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
 
       if (!response.ok) {
-        // ✅ Get detailed error info
+        // Get detailed error info
         let errorData;
         try {
           errorData = await response.json();
-          console.log('📥 Error response body:', errorData);
+          console.log('Error response body:', errorData);
         } catch {
           errorData = {};
-          console.log('📥 Could not parse error response as JSON');
+          console.log('Could not parse error response as JSON');
         }
 
-        // ✅ Get response text for debugging
+        // Get response text for debugging
         const responseText = await response
           .text()
           .catch(() => 'Unable to read response text');
-        console.log('📥 Response text:', responseText);
+        console.log('Response text:', responseText);
 
         throw new Error(
           errorData.error || `HTTP ${response.status}: ${responseText}`,
         );
       }
 
-      console.log('✅ User deleted from server');
+      console.log('User deleted from server');
       console.log('🗑️ Auto logout after account deletion...');
       await logout();
 
-      console.log('✅ Account deletion completed - user logged out');
-
-      // ... rest of the function
+      console.log('Account deletion completed - user logged out');
     } catch (error) {
-      console.error('❌ Failed to delete account:', error);
+      console.error('Failed to delete account:', error);
       throw error;
     }
   }, [state.profile.phone, getAuthHeaders, logout]);

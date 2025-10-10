@@ -4,7 +4,6 @@ import {getDBConnection} from '../db';
 import {
   SQLiteDatabase,
   Transaction,
-  ResultSet,
 } from 'react-native-sqlite-storage';
 
 export const getAllIncomes = async (): Promise<IncomeItem[]> => {
@@ -47,27 +46,6 @@ export const insertIncome = async (
         (_, res) => resolve(Number(res.insertId)),
         (_, err) => {
           reject(err);
-          return false;
-        },
-      );
-    });
-  });
-};
-export const getIncomeCountByMenuId = async (
-  menuId: string | number,
-): Promise<number> => {
-  const db: SQLiteDatabase = await getDBConnection();
-  return new Promise((resolve, reject) => {
-    db.transaction((tx: Transaction) => {
-      tx.executeSql(
-        'SELECT COUNT(*) as count FROM incomes WHERE menu_id = ?',
-        [menuId],
-        (_, result: ResultSet) => {
-          const count = result.rows.item(0).count;
-          resolve(count);
-        },
-        (_, error) => {
-          reject(error);
           return false;
         },
       );

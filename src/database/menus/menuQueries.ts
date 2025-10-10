@@ -88,17 +88,3 @@ export const updateMenuById = async (
     });
   });
 };
-
-export const deleteMenuById = async (id: ID) => {
-  const database: SQLiteDatabase = await getDBConnection();
-  return new Promise((resolve, reject) => {
-    database.transaction(tx => {
-      tx.executeSql(
-        'DELETE FROM menus WHERE id = ?',
-        [id],
-        (_, result) => resolve(result),
-        (_, error) => reject(error),
-      );
-    });
-  });
-};
