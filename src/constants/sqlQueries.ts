@@ -1,9 +1,9 @@
 export const CREATE_USERS_TABLE = `
   CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     phone TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
+    password TEXT
   );
 `;
 

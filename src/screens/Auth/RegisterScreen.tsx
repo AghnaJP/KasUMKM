@@ -27,6 +27,8 @@ import {AuthContext} from '../../context/AuthContext';
 // 🔒 Encrypted storage (non-Expo)
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {API_BASE} from '../../constants/api';
+import {insertUserWithId} from '../../database/users/userQueries';
+
 
 type RegisterResponse = {
   ok?: boolean;
@@ -152,6 +154,18 @@ const RegisterScreen = () => {
           phone: data?.user?.phone ?? normalized,
         },
       });
+
+      try {
+        await insertUserWithId(
+          data?.user?.id ?? '',
+          data?.user?.name ?? trimmedName,
+          data?.user?.phone ?? normalized,
+          trimmedPassword,
+        );
+        console.log('User inserted locally in SQLite');
+      } catch (err) {
+        console.warn('Failed to insert user locally:', err);
+      }
 
       navigation.replace('App', {
         screen: 'AppTabs',
