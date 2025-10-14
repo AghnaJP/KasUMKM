@@ -266,20 +266,21 @@ export function AuthProvider({children}: PropsWithChildren) {
 
     try {
       console.log(
-        '🗑️ Starting account deletion for user:',
+        'Starting account deletion for user:',
         state.profile.phone,
       );
 
       // 1. HAPUS DARI SERVER DULU
-      console.log('🗑️ Deleting from server...');
+      console.log('Deleting from server...');
       const headers = await getAuthHeaders();
-      console.log('📤 Request headers:', headers);
-      console.log('📤 Request URL:', `${API_BASE}/users`);
 
-      const response = await fetch(`${API_BASE}/users`, {
-        method: 'DELETE',
-        headers,
-      });
+      const response = await fetch(
+        `${API_BASE}/delete?user_phone=${state.profile.phone}`,
+        {
+          method: 'DELETE',
+          headers,
+        },
+      );
 
       console.log('Response status:', response.status);
       console.log('Response ok:', response.ok);
@@ -307,7 +308,7 @@ export function AuthProvider({children}: PropsWithChildren) {
       }
 
       console.log('User deleted from server');
-      console.log('🗑️ Auto logout after account deletion...');
+      console.log('Auto logout after account deletion...');
       await logout();
 
       console.log('Account deletion completed - user logged out');

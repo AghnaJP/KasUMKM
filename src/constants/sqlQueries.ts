@@ -3,7 +3,7 @@ export const CREATE_USERS_TABLE = `
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     phone TEXT UNIQUE NOT NULL,
-    password TEXT
+    password TEXT NOT NULL
   );
 `;
 

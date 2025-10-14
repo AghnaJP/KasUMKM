@@ -59,7 +59,7 @@ const EditPasswordModal = ({
 
     try {
       // ✅ Gunakan API_BASE di sini
-      const res = await fetch(`${API_BASE}/update-password`, {
+      const res = await fetch(`${API_BASE}/update_password`, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -70,12 +70,13 @@ const EditPasswordModal = ({
       });
 
       const data = await res.json();
+      console.log('Status:', res.status, res.statusText, data);
 
       if (!res.ok) {
         if (data.error === 'invalid_old_password') {
           setErrorOld(VALIDATION_MESSAGES.oldPasswordInvalid);
         } else {
-          Alert.alert('Gagal', 'Gagal memperbarui kata sandi');
+          Alert.alert('Gagal', JSON.stringify(data));
         }
         return;
       }
@@ -90,7 +91,11 @@ const EditPasswordModal = ({
   };
 
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.overlay}>
@@ -110,7 +115,11 @@ const EditPasswordModal = ({
             secureTextEntry={!showOld}
             rightIcon={
               <TouchableOpacity onPress={() => setShowOld(v => !v)}>
-                <Icon name={showOld ? 'eye-off' : 'eye'} size={20} color="#888" />
+                <Icon
+                  name={showOld ? 'eye-off' : 'eye'}
+                  size={20}
+                  color="#888"
+                />
               </TouchableOpacity>
             }
             error={errorOld}
@@ -124,7 +133,11 @@ const EditPasswordModal = ({
             secureTextEntry={!showNew}
             rightIcon={
               <TouchableOpacity onPress={() => setShowNew(v => !v)}>
-                <Icon name={showNew ? 'eye-off' : 'eye'} size={20} color="#888" />
+                <Icon
+                  name={showNew ? 'eye-off' : 'eye'}
+                  size={20}
+                  color="#888"
+                />
               </TouchableOpacity>
             }
             error={errorNew}

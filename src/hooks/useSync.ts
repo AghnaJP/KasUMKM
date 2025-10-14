@@ -22,7 +22,7 @@ export function useSync() {
   const {companyId, getAuthHeaders} = useAuth();
 
   async function syncNow(): Promise<void> {
-    if (!companyId) return;
+    if (!companyId) {return;}
 
     const authHeaders = await getAuthHeaders();
 
@@ -57,24 +57,21 @@ export function useSync() {
         transactions_delete: [],
       };
 
-      const pr = await fetch(`${API_BASE}/sync/push`, {
+      const pushRes = await fetch(`${API_BASE}/sync`, {
         method: 'POST',
-        headers: {
-          ...authHeaders,
-          'Content-Type': 'application/json',
-        },
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const pushRaw = await pr.text();
+      const pushRaw = await pushRes.text();
       let pushJson: any = {};
       try {
         pushJson = pushRaw ? JSON.parse(pushRaw) : {};
       } catch {
         // ignore; akan dilemparkan sebagai error di bawah kalau !pr.ok
       }
-      if (!pr.ok) {
-        throw new Error(pushJson?.error || `push_failed_${pr.status}`);
+      if (!pushRes.ok) {
+        throw new Error(pushJson?.error || `push_failed_${pushRes.status}`);
       }
 
       const serverTimeFromPush: string | undefined = pushJson?.server_time;
@@ -98,13 +95,8 @@ export function useSync() {
       (await EncryptedStorage.getItem(KEY(companyId))) ??
       '1970-01-01T00:00:00Z';
 
-    const pullUrl = `${API_BASE}/sync/pull?company_id=${encodeURIComponent(
-      companyId,
-    )}&since=${encodeURIComponent(since)}`;
-
-    const gr = await fetch(pullUrl, {headers: authHeaders});
-
-    const pullRaw = await gr.text();
+    const pullRes = await fetch(`${API_BASE}/sync?company_id=${encodeURIComponent(companyId)}&since=${since}`, {method: 'GET', headers: authHeaders});
+    const pullRaw = await pullRes.text();
     let gj: any = {};
     try {
       gj = pullRaw ? JSON.parse(pullRaw) : {};
@@ -112,8 +104,8 @@ export function useSync() {
       // jika bukan JSON, lempar error dengan body mentahnya
       throw new Error(`pull_parse_failed: ${pullRaw?.slice(0, 200)}`);
     }
-    if (!gr.ok) {
-      throw new Error(gj?.error || `pull_failed_${gr.status}`);
+    if (!pullRes.ok) {
+      throw new Error(gj?.error || `pull_failed_${pullRes.status}`);
     }
 
     const pulledMenus = Array.isArray(gj?.menus) ? gj.menus : [];

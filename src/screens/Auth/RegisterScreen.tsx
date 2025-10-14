@@ -29,7 +29,6 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import {API_BASE} from '../../constants/api';
 import {insertUserWithId} from '../../database/users/userQueries';
 
-
 type RegisterResponse = {
   ok?: boolean;
 
@@ -100,7 +99,9 @@ const RegisterScreen = () => {
 
       const r = await fetch(url, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           name: trimmedName,
           phone: normalized,
@@ -109,19 +110,20 @@ const RegisterScreen = () => {
         }),
       });
 
-      
       const raw = await r.text();
       console.log('Register raw:', raw);
 
       const data: RegisterResponse = JSON.parse(raw);
       console.log('Register parsed:', data);
 
-
       if (!r.ok) {
-        if (r.status === 409) setPhoneError('Nomor handphone sudah terdaftar');
-        else if (r.status === 400)
+        if (r.status === 409) {
+          setPhoneError('Nomor handphone sudah terdaftar');
+        } else if (r.status === 400) {
           setFormError(data?.message || 'Data tidak valid');
-        else setFormError(data?.message || 'Gagal mendaftar');
+        } else {
+          setFormError(data?.message || 'Gagal mendaftar');
+        }
         return;
       }
 
@@ -136,11 +138,16 @@ const RegisterScreen = () => {
 
       try {
         await EncryptedStorage.setItem('session_token', String(sessionToken));
-        if (companyId != null)
+        if (companyId != null) {
           await EncryptedStorage.setItem('company_id', String(companyId));
-        else await EncryptedStorage.removeItem('company_id');
-        if (role != null) await EncryptedStorage.setItem('role', String(role));
-        else await EncryptedStorage.removeItem('role');
+        } else {
+          await EncryptedStorage.removeItem('company_id');
+        }
+        if (role != null) {
+          await EncryptedStorage.setItem('role', String(role));
+        } else {
+          await EncryptedStorage.removeItem('role');
+        }
       } catch (e) {
         console.warn('Failed to persist secure data:', e);
       }
@@ -162,9 +169,11 @@ const RegisterScreen = () => {
           data?.user?.phone ?? normalized,
           trimmedPassword,
         );
+
         console.log('User inserted locally in SQLite');
       } catch (err) {
         console.warn('Failed to insert user locally:', err);
+        console.warn('Full error:', JSON.stringify(err, null, 2));
       }
 
       navigation.replace('App', {

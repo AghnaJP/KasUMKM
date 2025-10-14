@@ -109,10 +109,16 @@ export const insertUserWithId = async (
       tx.executeSql(
         'INSERT OR REPLACE INTO users (id, name, phone, password) VALUES (?, ?, ?, ?)',
         [id, name, phone, password],
-        (_, result) => resolve(result),
-        (_, error) => reject(error),
+        (_, result) => {
+          console.log('[DEBUG] Insert result:', result);
+          resolve(result);
+        },
+        (_, error) => {
+          console.log('[DEBUG] SQLite error object:', error);
+          reject(new Error(error?.message || JSON.stringify(error)));
+          return false;
+        },
       );
     });
   });
 };
-
