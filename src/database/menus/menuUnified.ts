@@ -72,9 +72,17 @@ export async function updateMenu(
 export async function softDeleteMenu(id: string) {
   const now = new Date().toISOString();
   await executeSql(
-    `UPDATE menus SET deleted_at=?, updated_at=?, dirty=1 WHERE id=?`,
+    `UPDATE menus
+       SET deleted_at = ?, updated_at = ?, dirty = 1
+     WHERE id = ?`,
     [now, now, id],
   );
+}
+
+export async function hardDeleteMenus(ids: string[]) {
+  if (!ids.length) return;
+  const ph = ids.map(() => '?').join(',');
+  await executeSql(`DELETE FROM menus WHERE id IN (${ph})`, ids);
 }
 
 export async function getAllMenus(includeDeleted: boolean = false) {
@@ -116,48 +124,36 @@ export async function markMenusSynced(ids: string[], serverTimeISO: string) {
   );
 }
 
-export async function applyPulledMenus(
-  rows: Array<{
-    id: string;
-    name: string;
-    price: number;
-    category?: string | null;
-    occurred_at: string;
-    updated_at: string;
-    deleted_at?: string | null;
-  }>
-) {
+export async function applyPulledMenus(rows: Array<{
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  occurred_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}>) {
   await executeSql('BEGIN');
   try {
     for (const r of rows) {
       if (r.deleted_at) {
-        // server sudah tandai delete -> hard delete di lokal
-        await executeSql(`DELETE FROM menus WHERE id = ?`, [r.id]);
-      } else {
-        // upsert normal, bersihkan flag delete/dirty
-        await executeSql(
-          `INSERT INTO menus
-             (id, name, price, category, occurred_at, created_at, updated_at, deleted_at, dirty)
-           VALUES
-             (?,?,?,?,?, datetime('now'), ?, NULL, 0)
-           ON CONFLICT(id) DO UPDATE SET
-             name=excluded.name,
-             price=excluded.price,
-             category=excluded.category,
-             occurred_at=excluded.occurred_at,
-             updated_at=excluded.updated_at,
-             deleted_at=NULL,
-             dirty=0`,
-          [
-            r.id,
-            r.name,
-            r.price,
-            r.category ?? null,
-            r.occurred_at,
-            r.updated_at,
-          ]
-        );
+        await executeSql(`DELETE FROM menus WHERE id=?`, [r.id]);
+        continue;
       }
+      await executeSql(
+        `INSERT INTO menus
+           (id, name, price, category, occurred_at, created_at, updated_at, deleted_at, dirty)
+         VALUES (?,?,?,?,?, datetime('now'), ?, NULL, 0)
+         ON CONFLICT(id) DO UPDATE SET
+           name=excluded.name,
+           price=excluded.price,
+           category=excluded.category,
+           occurred_at=excluded.occurred_at,
+           updated_at=excluded.updated_at,
+           deleted_at=NULL,
+           dirty=0`,
+        [r.id, r.name, r.price, r.category, r.occurred_at, r.updated_at],
+      );
     }
     await executeSql('COMMIT');
   } catch (e) {
@@ -165,6 +161,7 @@ export async function applyPulledMenus(
     throw e;
   }
 }
+
 
 export async function getMenuById(id: string): Promise<MenuRow | null> {
   const rs = await executeSql(

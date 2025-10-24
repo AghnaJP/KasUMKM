@@ -1,6 +1,9 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { API_BASE } from '../constants/api';
 import { useAuth } from '../context/AuthContext';
+import { hardDeleteTransactions } from '../database/transactions/transactionUnified';
+import { hardDeleteMenus } from '../database/menus/menuUnified';
+
 
 import {
   getDirtyTransactions,
@@ -24,25 +27,17 @@ export function useSync() {
   async function syncNow(): Promise<void> {
     if (!companyId) return;
 
-    // === 1) ambil yang kotor ===
+    // 1) Kumpulkan perubahan lokal
     const dirtyTransactions = await getDirtyTransactions();
     const dirtyMenus = await getDirtyMenus();
 
-    // helper klasifikasi
-    const isDeleted = (r: any) => !!r.deleted_at;
-    const isNeverSynced = (r: any) => !r.synced_at && !r.last_synced_at;
+    // Klasifikasi payload
+    const txUpsert   = dirtyTransactions.filter(t => !t.deleted_at);
+    const txDelete   = dirtyTransactions.filter(t =>  t.deleted_at).map(t => t.id);
+    const menuUpsert = dirtyMenus.filter(m => !m.deleted_at);
+    const menuDelete = dirtyMenus.filter(m =>  m.deleted_at).map(m => m.id);
 
-
-    const txUpsert = dirtyTransactions.filter(t => !isDeleted(t));
-    const txDelete = dirtyTransactions
-      .filter(t => isDeleted(t) && !isNeverSynced(t))
-      .map(t => t.id);
-
-    const menuUpsert = dirtyMenus.filter(m => !isDeleted(m));
-    const menuDelete = dirtyMenus
-      .filter(m => isDeleted(m) && !isNeverSynced(m))
-      .map(m => m.id);
-
+    // 2) PUSH (hanya kalau ada perubahan)
     if (txUpsert.length || txDelete.length || menuUpsert.length || menuDelete.length) {
       const payload = {
         company_id: companyId,
@@ -85,21 +80,19 @@ export function useSync() {
 
       const markTime = pushJson?.server_time || new Date().toISOString();
 
-      // tandai yang berhasil upsert sebagai tersinkron
-      if (txUpsert.length)
-        await markTransactionsSynced(txUpsert.map(t => t.id), markTime);
-      if (menuUpsert.length)
-        await markMenusSynced(menuUpsert.map(m => m.id), markTime);
+      if (txUpsert.length)  await markTransactionsSynced(txUpsert.map(t => t.id), markTime);
+      if (menuUpsert.length) await markMenusSynced(menuUpsert.map(m => m.id), markTime);
 
-      // catatan:
-      // untuk yang dihapus, kita biarkan dihapus saat PULL (server sudah set deleted_at)
-      // alternatif: kamu bisa hard-delete lokal segera saat aksi hapus dilakukan
+      if (txDelete.length) {
+        await hardDeleteTransactions(txDelete);
+      }
+      if (menuDelete.length) {
+        await hardDeleteMenus(menuDelete);
+      }
     }
 
-    // === 3) tarik perubahan (pull) ===
-    const since =
-      (await EncryptedStorage.getItem(KEY(companyId))) ??
-      '1970-01-01T00:00:00Z';
+    // 3) PULL semenjak last_sync_at
+    const since = (await EncryptedStorage.getItem(KEY(companyId))) ?? '1970-01-01T00:00:00Z';
 
     const gr = await fetch(
       `${API_BASE}/sync/pull?company_id=${encodeURIComponent(companyId)}&since=${encodeURIComponent(since)}`,
@@ -108,7 +101,9 @@ export function useSync() {
 
     const pullRaw = await gr.text();
     let gj: any = {};
-    try { gj = pullRaw ? JSON.parse(pullRaw) : {}; } catch {
+    try {
+      gj = pullRaw ? JSON.parse(pullRaw) : {};
+    } catch {
       throw new Error(`pull_parse_failed: ${pullRaw?.slice(0, 200)}`);
     }
     if (!gr.ok) throw new Error(gj?.error || `pull_failed_${gr.status}`);
@@ -122,6 +117,7 @@ export function useSync() {
       await mirrorPulledTxToLegacy(pulledTx);
     }
 
+    // 4) Simpan timestamp server sebagai last_sync_at
     const serverTime = gj?.server_time || new Date().toISOString();
     await EncryptedStorage.setItem(KEY(companyId), String(serverTime));
   }

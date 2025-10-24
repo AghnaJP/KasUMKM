@@ -94,9 +94,17 @@ export async function updateTransaction(
 export async function softDeleteTransaction(id: string) {
   const now = new Date().toISOString();
   await executeSql(
-    `UPDATE transactions SET deleted_at=?, updated_at=?, dirty=1 WHERE id=?`,
+    `UPDATE transactions
+       SET deleted_at = ?, updated_at = ?, dirty = 1
+     WHERE id = ?`,
     [now, now, id],
   );
+}
+
+export async function hardDeleteTransactions(ids: string[]) {
+  if (!ids.length) return;
+  const ph = ids.map(() => '?').join(',');
+  await executeSql(`DELETE FROM transactions WHERE id IN (${ph})`, ids);
 }
 
 export async function getTransactionsInMonth(year: number, month0: number) {
@@ -134,60 +142,53 @@ export async function markTransactionsSynced(
   );
 }
 
-export async function applyPulledTransactions(
-  rows: Array<{
-    id: string;
-    name: string;
-    type: 'INCOME' | 'EXPENSE';
-    amount: number;
-    quantity?: number;
-    unit_price?: number | null;
-    menu_id?: string | null;
-    occurred_at: string;
-    updated_at: string;
-    deleted_at?: string | null;
-  }>,
-) {
+export async function applyPulledTransactions(rows: Array<{
+  id: string;
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  amount: number;
+  quantity?: number;
+  unit_price?: number | null;
+  menu_id?: string | null;
+  occurred_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}>) {
   await executeSql('BEGIN');
   try {
     for (const r of rows) {
       if (r.deleted_at) {
-        // server sudah menandai delete -> hapus/hard-delete lokal
         await executeSql(`DELETE FROM transactions WHERE id=?`, [r.id]);
-      } else {
-        // upsert normal (hapus flag delete lokal kalau ada)
-        await executeSql(
-          `INSERT INTO transactions
-             (id, name, type, amount, quantity, unit_price, menu_id,
-              occurred_at, created_at, updated_at, deleted_at, dirty, synced_at)
-           VALUES
-             (?,?,?,?,?,?,?, ?, datetime('now'), ?, NULL, 0, ?)
-           ON CONFLICT(id) DO UPDATE SET
-             name=excluded.name,
-             type=excluded.type,
-             amount=excluded.amount,
-             quantity=excluded.quantity,
-             unit_price=excluded.unit_price,
-             menu_id=excluded.menu_id,
-             occurred_at=excluded.occurred_at,
-             updated_at=excluded.updated_at,
-             deleted_at=NULL,
-             dirty=0,
-             synced_at=excluded.synced_at`,
-          [
-            r.id,
-            r.name,
-            r.type,
-            r.amount,
-            Number(r.quantity ?? 1),
-            r.unit_price ?? null,
-            r.menu_id ?? null,
-            r.occurred_at,
-            r.updated_at,
-            r.updated_at, // simpan sebagai synced_at kalau kamu punya kolomnya
-          ],
-        );
+        continue;
       }
+      await executeSql(
+        `INSERT INTO transactions
+           (id, name, type, amount, quantity, unit_price, menu_id,
+            occurred_at, created_at, updated_at, deleted_at, dirty)
+         VALUES (?,?,?,?,?,?,?, ?, datetime('now'), ?, NULL, 0)
+         ON CONFLICT(id) DO UPDATE SET
+           name=excluded.name,
+           type=excluded.type,
+           amount=excluded.amount,
+           quantity=excluded.quantity,
+           unit_price=excluded.unit_price,
+           menu_id=excluded.menu_id,
+           occurred_at=excluded.occurred_at,
+           updated_at=excluded.updated_at,
+           deleted_at=NULL,
+           dirty=0`,
+        [
+          r.id,
+          r.name,
+          r.type,
+          r.amount,
+          Number(r.quantity ?? 1),
+          r.unit_price ?? null,
+          r.menu_id ?? null,
+          r.occurred_at,
+          r.updated_at,
+        ],
+      );
     }
     await executeSql('COMMIT');
   } catch (e) {
@@ -195,4 +196,3 @@ export async function applyPulledTransactions(
     throw e;
   }
 }
-
