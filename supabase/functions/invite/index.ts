@@ -16,7 +16,7 @@ function getSessionId(req: Request) {
 
 async function getUserFromSession(req: Request) {
   const sid = getSessionId(req);
-  if (!sid) {return { error: 'missing_token' };}
+  if (!sid) return { error: 'missing_token' };
 
   const now = new Date().toISOString();
   const { data: session } = await sb
@@ -26,7 +26,7 @@ async function getUserFromSession(req: Request) {
     .gt('expires_at', now)
     .single();
 
-  if (!session) {return { error: 'invalid_or_expired_session' };}
+    if (!session) return { error: 'invalid_or_expired_session' };
 
   const { data: user } = await sb
     .from('users')
@@ -34,7 +34,7 @@ async function getUserFromSession(req: Request) {
     .eq('id', session.user_id)
     .single();
 
-  return { user, session };
+    return { user, session, error: null };
 }
 
 function genCode6() {
@@ -74,33 +74,57 @@ serve(async (req) => {
     const method = req.method;
 
     // POST /invite/create
-    if (pathname === '/invite/create' && method === 'POST') {
-      const { user, error } = await getUserFromSession(req);
-      if (error) {return new Response(JSON.stringify({ error }), { status: 401, headers: { 'Content-Type': 'application/json' } });}
+if (pathname === '/invite/create' && method === 'POST') {
+  // coba pakai session seperti biasa
+  const { user, error } = await getUserFromSession(req);
 
-      const body = await req.json();
-      const ttl = Number(body?.ttl_hours ?? 24);
-      const expires_at = new Date(Date.now() + ttl * 3600 * 1000).toISOString();
+  const body = await req.json().catch(() => ({}));
+  const ttl = Number(body?.ttl_hours ?? 24);
+  const expires_at = new Date(Date.now() + ttl * 3600 * 1000).toISOString();
 
-      const company_id = await resolveOwnerCompanyId(user.id);
-      const code = await generateUniqueCode();
+  let company_id: string | null = null;
 
-      const { data, error: eIns } = await sb
-        .from('invite_codes')
-        .insert({ code, company_id, role: 'CASHIER', expires_at })
-        .select()
-        .single();
-
-      if (eIns) {return new Response(JSON.stringify({ error: 'create_invite_failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } });}
-
-      return new Response(JSON.stringify({
-        ok: true,
-        code: data.code,
-        expires_at: data.expires_at,
-        company_id,
-        role: data.role,
-      }), { headers: { 'Content-Type': 'application/json' } });
+  if (!error && user) {
+    // jalur normal: resolve company dari OWNER membership
+    company_id = await resolveOwnerCompanyId(user.id);
+  } else {
+    // fallback sementara: terima company_id dari client
+    const cid = String(body?.company_id || '').trim();
+    if (!cid) {
+      return new Response(
+        JSON.stringify({ error: 'missing_token_or_company_id' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
     }
+    company_id = cid;
+  }
+
+  const code = await generateUniqueCode();
+  const { data, error: eIns } = await sb
+    .from('invite_codes')
+    .insert({ code, company_id, role: 'CASHIER', expires_at })
+    .select()
+    .single();
+
+  if (eIns) {
+    return new Response(JSON.stringify({ error: 'create_invite_failed' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      code: data.code,
+      expires_at: data.expires_at,
+      company_id,
+      role: data.role,
+    }),
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+}
+
 
     // GET /invite/verify/:code
     if (pathname.startsWith('/invite/verify/') && method === 'GET') {

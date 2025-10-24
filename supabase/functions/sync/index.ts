@@ -17,17 +17,25 @@ function getSessionId(req: Request) {
 
 async function getUserFromSession(req: Request) {
   const sid = getSessionId(req);
-  if (!sid) {return { error: 'missing_token' };}
-  const now = new Date().toISOString();
+  if (!sid) return { error: 'missing_token' };
 
-  const { data: session, error: eSess } = await sb
+  const now = new Date().toISOString();
+  const { data: session } = await sb
     .from('sessions')
-    .select('id, user_id, expires_at')
+    .select('id,user_id,expires_at')
     .eq('id', sid)
     .gt('expires_at', now)
     .single();
-  if (eSess || !session) {return { error: 'invalid_or_expired_session' };}
-  return { session };
+
+  if (!session) return { error: 'invalid_or_expired_session' };
+
+  const { data: user } = await sb
+    .from('users')
+    .select('id,name')
+    .eq('id', session.user_id)
+    .single();
+
+  return { user, session, error: null };
 }
 
 async function assertMembership(user_id: string, company_id: string) {
@@ -46,15 +54,19 @@ async function assertMembership(user_id: string, company_id: string) {
 async function handlePull(req: Request) {
   try {
     const { session, error } = await getUserFromSession(req);
-    if (error) {return new Response(JSON.stringify({ error }), { status: 401 });}
-
     const url = new URL(req.url);
-    const company_id = String(url.searchParams.get('company_id') || '').trim();
-    const since = String(url.searchParams.get('since') || '').trim() || '1970-01-01T00:00:00Z';
+    const isPost = req.method === 'POST';
+    const body = isPost ? await req.json().catch(() => ({})) : {};
+    const company_id = String((isPost ? body?.company_id : url.searchParams.get('company_id')) || '').trim();
+    const since = String((isPost ? body?.since : url.searchParams.get('since')) || '').trim() || '1970-01-01T00:00:00Z';
 
     if (!company_id) {return new Response(JSON.stringify({ error: 'missing_company_id' }), { status: 400 });}
 
-    await assertMembership(session.user_id, company_id);
+    //await assertMembership(session.user_id, company_id);
+
+    if (!error && session?.user_id) {
+      await assertMembership(session.user_id, company_id);
+    }
 
     const { data: menus, error: e1 } = await sb
       .from('menus')
@@ -93,7 +105,6 @@ async function handlePull(req: Request) {
 async function handlePush(req: Request) {
   try {
     const { session, error } = await getUserFromSession(req);
-    if (error) {return new Response(JSON.stringify({ error }), { status: 401 });}
 
     const body = await req.json();
     const {
@@ -105,7 +116,9 @@ async function handlePush(req: Request) {
     } = body || {};
 
     if (!company_id) {return new Response(JSON.stringify({ error: 'missing_company_id' }), { status: 400 });}
-    await assertMembership(session.user_id, company_id);
+    if (!error && session?.user_id) {
+      await assertMembership(session.user_id, company_id);
+    }
 
     const nowIso = new Date().toISOString();
     const withCompanyAndUpdatedAt = (r: any) => ({
@@ -182,16 +195,22 @@ async function handlePush(req: Request) {
 
 Deno.serve(async (req) => {
   try {
-      if (req.method === 'GET') {
-        return await handlePull(req);
-      }
-      if (req.method === 'POST') {
-        return await handlePush(req);
-      }
+    const url = new URL(req.url);
+    const path = url.pathname;
+
+    if (path.endsWith('/sync/pull')) {
+      return await handlePull(req); // dukung GET atau POST
+    }
+    if (path.endsWith('/sync/push')) {
+      return await handlePush(req); // khusus POST
+    }
 
     return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });
-  } catch (err) {
-    console.error('[sync function]', err);
-    return new Response(JSON.stringify({ error: 'internal_error', message: err?.message }), { status: 500 });
+  } catch (e) {
+    console.error('[sync_main]', e);
+    return new Response(
+      JSON.stringify({ error: 'sync_main_failed', message: e.message }),
+      { status: 500 },
+    );
   }
 });

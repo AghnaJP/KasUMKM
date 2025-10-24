@@ -6,27 +6,23 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
 import FormField from '../Form/FormField';
 import {VALIDATION_MESSAGES} from '../../constants';
-import {API_BASE} from '../../constants/api';
 
 interface EditPasswordModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (updatedData: {password: string}) => void;
-  profileData: {phone: string} | null;
+  onSave: (updatedData: {oldPassword: string; newPassword: string}) => void;
 }
 
 const EditPasswordModal = ({
   visible,
   onClose,
   onSave,
-  profileData,
 }: EditPasswordModalProps) => {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -41,10 +37,12 @@ const EditPasswordModal = ({
       setNewPassword('');
       setErrorOld('');
       setErrorNew('');
+      setShowOld(false);
+      setShowNew(false);
     }
   }, [visible]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setErrorOld('');
     setErrorNew('');
 
@@ -57,37 +55,7 @@ const EditPasswordModal = ({
       return;
     }
 
-    try {
-      // ✅ Gunakan API_BASE di sini
-      const res = await fetch(`${API_BASE}/update_password`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          phone: profileData?.phone,
-          old_password: oldPassword,
-          new_password: newPassword,
-        }),
-      });
-
-      const data = await res.json();
-      console.log('Status:', res.status, res.statusText, data);
-
-      if (!res.ok) {
-        if (data.error === 'invalid_old_password') {
-          setErrorOld(VALIDATION_MESSAGES.oldPasswordInvalid);
-        } else {
-          Alert.alert('Gagal', JSON.stringify(data));
-        }
-        return;
-      }
-
-      Alert.alert('Berhasil', 'Kata sandi berhasil diperbarui');
-      onSave({password: newPassword});
-      onClose();
-    } catch (err) {
-      console.error('Network error:', err);
-      Alert.alert('Error', 'Tidak dapat terhubung ke server');
-    }
+    onSave({oldPassword, newPassword});
   };
 
   return (
@@ -153,7 +121,7 @@ const EditPasswordModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -9,8 +9,14 @@ import React, {
 } from 'react';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {editUsername} from '../database/users/userQueries';
+import {editUsername, deleteUser} from '../database/users/userQueries';
 import {API_BASE} from '../constants/api';
+import {
+  saveSession,
+  clearSession,
+  getActiveSession,
+  getAccessToken,
+} from '../database/sessions/sessionStore';
 
 type Role = 'OWNER' | 'CASHIER' | string | null;
 
@@ -81,39 +87,35 @@ export function AuthProvider({children}: PropsWithChildren) {
     profile: defaultProfile,
   });
 
+  // 🔹 Simpan sesi ke storage
   const persist = useCallback(async (s: AuthState) => {
-    if (s.token) {
-      await EncryptedStorage.setItem(K.TOKEN, s.token);
-    } else {
-      await EncryptedStorage.removeItem(K.TOKEN);
-    }
+    if (s.token) await EncryptedStorage.setItem(K.TOKEN, s.token);
+    else await EncryptedStorage.removeItem(K.TOKEN);
 
-    if (s.companyId != null) {
-      await EncryptedStorage.setItem(K.COMPANY, s.companyId);
-    } else {
-      await EncryptedStorage.removeItem(K.COMPANY);
-    }
+    if (s.companyId) await EncryptedStorage.setItem(K.COMPANY, s.companyId);
+    else await EncryptedStorage.removeItem(K.COMPANY);
 
-    if (s.role != null) {
-      await EncryptedStorage.setItem(K.ROLE, String(s.role));
-    } else {
-      await EncryptedStorage.removeItem(K.ROLE);
-    }
+    if (s.role) await EncryptedStorage.setItem(K.ROLE, String(s.role));
+    else await EncryptedStorage.removeItem(K.ROLE);
 
     await EncryptedStorage.setItem(K.PHONE, s.profile.phone ?? '');
     await EncryptedStorage.setItem('profile_name', s.profile.name ?? '');
 
-    // 🧹 kill legacy keys so old code can't write/read them
+    // bersihkan legacy
     try {
-      await AsyncStorage.removeItem('userPhone');
-      await AsyncStorage.removeItem('userName');
+      await AsyncStorage.multiRemove(['userPhone', 'userName']);
     } catch {}
   }, []);
 
+  // 🔹 Restore sesi user
   const restore = useCallback(async () => {
     try {
-      const [token, companyId, role, phone, name] = await Promise.all([
-        EncryptedStorage.getItem(K.TOKEN),
+      const tokenInEncrypted = await EncryptedStorage.getItem(K.TOKEN);
+      const sqliteSession = await getActiveSession();
+      const finalToken =
+        tokenInEncrypted ?? (sqliteSession ? await getAccessToken() : null);
+
+      const [companyId, role, phone, name] = await Promise.all([
         EncryptedStorage.getItem(K.COMPANY),
         EncryptedStorage.getItem(K.ROLE),
         EncryptedStorage.getItem(K.PHONE),
@@ -121,66 +123,65 @@ export function AuthProvider({children}: PropsWithChildren) {
       ]);
 
       setState({
-        isLoggedIn: !!token,
-        token: token ?? null,
+        isLoggedIn: !!finalToken || !!sqliteSession,
+        token: finalToken ?? null,
         companyId: companyId ?? null,
         role: (role as Role) ?? null,
-        profile: {
-          name: name ?? '',
-          phone: phone ?? '-',
-        },
+        profile: {name: name ?? '', phone: phone ?? '-'},
       });
-
-      try {
-        await AsyncStorage.removeItem('userPhone');
-        await AsyncStorage.removeItem('userName');
-      } catch {}
     } catch {
       setState(s => ({...s, isLoggedIn: false, token: null}));
     }
   }, []);
-
   useEffect(() => {
     restore();
   }, [restore]);
 
+  // 🔹 Login handler
   const login = useCallback(
     async (a: any, b?: any) => {
       let next: AuthState;
-
       if (typeof a === 'object') {
         const obj = a as LoginObject;
-        let userName = obj.profile?.name ?? '';
-        let phone = obj.profile?.phone ?? state.profile.phone ?? '';
+        const name = obj.profile?.name ?? '';
+        const phone = obj.profile?.phone ?? state.profile.phone ?? '';
 
         next = {
           isLoggedIn: true,
           token: obj.token,
           companyId: obj.companyId ?? null,
           role: obj.role ?? null,
-          profile: {name: userName ?? '', phone},
+          profile: {name, phone},
         };
       } else {
-        // back-compat: login(name, phone)
         const name = String(a ?? '');
         const phone = String(b ?? '');
-
         next = {
           isLoggedIn: true,
           token: state.token,
           companyId: state.companyId,
           role: state.role,
-          profile: {name: name ?? '', phone},
+          profile: {name, phone},
         };
       }
 
       setState(next);
       await persist(next);
+      if (next.token) {
+        await saveSession({
+          userId: next.companyId ?? next.profile.phone ?? 'unknown',
+          accessToken: next.token,
+          expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+          deviceId: 'rn-device',
+        });
+      }
     },
-    [persist, state.companyId, state.role, state.token, state.profile.phone],
+    [persist, state],
   );
 
+  // 🔹 Logout handler
   const logout = useCallback(async () => {
+    await clearSession();
     setState({
       isLoggedIn: false,
       token: null,
@@ -193,130 +194,98 @@ export function AuthProvider({children}: PropsWithChildren) {
       EncryptedStorage.removeItem(K.COMPANY),
       EncryptedStorage.removeItem(K.ROLE),
       EncryptedStorage.removeItem(K.PHONE),
-      AsyncStorage.removeItem('userPhone'),
-      AsyncStorage.removeItem('userName'),
+      EncryptedStorage.removeItem('profile_name'),
     ]);
   }, []);
 
-  const getAuthHeaders = useCallback(async (): Promise<
-    Record<string, string>
-  > => {
-    const token = state.token ?? (await EncryptedStorage.getItem(K.TOKEN));
+  // 🔹 Get Authorization header
+  const getAuthHeaders = useCallback(async () => {
+    const token = state.token ?? (await getAccessToken());
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
   }, [state.token]);
 
+  // 🔹 Update nama user
   const updateUserName = useCallback(
     async (name: string) => {
-      if (!state.profile.phone) {
-        throw new Error('Nomor telepon tidak tersedia');
-      }
-
+      if (!state.profile.phone) throw new Error('Nomor telepon tidak tersedia');
       try {
         console.log('📝 Updating user name to:', name);
-
-        // 1. Update di server dulu
-        console.log('📝 Updating name on server...');
-        const headers = await getAuthHeaders();
-        const response = await fetch(`${API_BASE}/me`, {
+        const res = await fetch(`${API_BASE}/me`, {
           method: 'PUT',
-          headers,
-          body: JSON.stringify({name}),
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name, phone: state.profile.phone}),
         });
+        const raw = await res.text();
+        let json: any = {};
+        try {
+          json = raw ? JSON.parse(raw) : {};
+        } catch {}
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
+        if (!res.ok) {
           throw new Error(
-            errorData.error || `Server update failed: ${response.status}`,
+            json?.error || json?.message || `Server error ${res.status}`,
           );
         }
 
-        const serverResult = await response.json();
-        console.log('Server update successful:', serverResult);
-
-        // 2. Update di SQLite lokal
-        console.log('📝 Updating name in SQLite...');
         await editUsername(name, state.profile.phone);
-        console.log('SQLite update successful');
-
-        // 3. Update local state
-        setState(s => ({...s, profile: {...s.profile, name}}));
-
-        // 4. Update encrypted storage
         await EncryptedStorage.setItem('profile_name', name);
-
-        console.log('User name update completed');
-      } catch (error) {
-        console.error('Failed to update user name:', error);
-        throw error;
+        setState(s => ({...s, profile: {...s.profile, name}}));
+        console.log('✅ Username updated');
+      } catch (err) {
+        console.error('Failed to update user name:', err);
+        throw err;
       }
     },
-    [state.profile.phone, getAuthHeaders],
+    [state.profile.phone],
   );
 
+  // 🔹 Hapus akun user (Supabase + SQLite)
   const deleteAccount = useCallback(async () => {
-    if (!state.profile.phone) {
-      throw new Error('Nomor telepon tidak tersedia');
-    }
+    if (!state.profile.phone) throw new Error('Nomor telepon tidak tersedia');
 
     try {
-      console.log(
-        'Starting account deletion for user:',
-        state.profile.phone,
+      console.log('🗑️ Starting account deletion for:', state.profile.phone);
+
+      const res = await fetch(
+        `${API_BASE}/delete?user_phone=${encodeURIComponent(
+          state.profile.phone,
+        )}`,
+        {method: 'DELETE', headers: {'Content-Type': 'application/json'}},
       );
 
-      // 1. HAPUS DARI SERVER DULU
-      console.log('Deleting from server...');
-      const headers = await getAuthHeaders();
+      const raw = await res.text();
+      let json: any = {};
+      try {
+        json = raw ? JSON.parse(raw) : {};
+      } catch {}
 
-      const response = await fetch(
-        `${API_BASE}/delete?user_phone=${state.profile.phone}`,
-        {
-          method: 'DELETE',
-          headers,
-        },
-      );
-
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
-      if (!response.ok) {
-        // Get detailed error info
-        let errorData;
-        try {
-          errorData = await response.json();
-          console.log('Error response body:', errorData);
-        } catch {
-          errorData = {};
-          console.log('Could not parse error response as JSON');
-        }
-
-        // Get response text for debugging
-        const responseText = await response
-          .text()
-          .catch(() => 'Unable to read response text');
-        console.log('Response text:', responseText);
-
+      if (!res.ok) {
         throw new Error(
-          errorData.error || `HTTP ${response.status}: ${responseText}`,
+          json?.error || json?.message || `Server error ${res.status}`,
         );
       }
 
-      console.log('User deleted from server');
-      console.log('Auto logout after account deletion...');
-      await logout();
+      console.log('✅ User deleted from server:', json);
 
-      console.log('Account deletion completed - user logged out');
-    } catch (error) {
-      console.error('Failed to delete account:', error);
-      throw error;
+      // 🧹 Hapus juga dari SQLite
+      try {
+        await deleteUser(state.profile.phone);
+        console.log('🧹 Local user deleted from SQLite');
+      } catch (e) {
+        console.warn('Skip local delete:', e);
+      }
+
+      await logout();
+      console.log('👋 Account deletion completed and logged out');
+    } catch (err) {
+      console.error('Failed to delete account:', err);
+      throw err;
     }
-  }, [state.profile.phone, getAuthHeaders, logout]);
+  }, [state.profile.phone, logout]);
 
   const value = useMemo<AuthContextType>(
     () => ({

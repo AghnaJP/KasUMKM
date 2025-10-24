@@ -1,100 +1,74 @@
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Supabase client
 const sb = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-Deno.serve(async (req: Request) => {
-  if (req.method !== 'DELETE') {
-    return new Response(JSON.stringify({ error: 'method_not_allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+const ct = { 'Content-Type': 'application/json' };
+
+serve(async (req) => {
+  const url = new URL(req.url);
+
+  if (url.pathname !== '/delete' || req.method !== 'DELETE') {
+    return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: ct });
   }
 
   try {
-    // Extract phone from query parameters
-    const url = new URL(req.url);
-    const phone = url.searchParams.get('user_phone');
-
+    const phone = (url.searchParams.get('user_phone') ?? '').trim();
     if (!phone) {
-      return new Response(JSON.stringify({ error: 'missing_phone' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify({ error: 'missing_phone' }), { status: 400, headers: ct });
     }
 
-    // Cek user exist by phone
+    // 1) get user
     const { data: user, error: eUser } = await sb
       .from('users')
-      .select('id, phone')
+      .select('id')
       .eq('phone', phone)
       .single();
 
     if (eUser || !user) {
-      return new Response(JSON.stringify({ error: 'user_not_found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({ error: 'user_not_found' }), { status: 404, headers: ct });
+    }
+
+    // 2) delete memberships first
+    const { error: eMem } = await sb.from('memberships').delete().eq('user_id', user.id);
+    if (eMem) {
+      console.warn('[delete] memberships delete error:', eMem);
+      return new Response(JSON.stringify({ error: 'delete_failed', message: eMem.message }), {
+        status: 500, headers: ct,
       });
     }
 
-    const userId = user.id;
+    // 3) try delete sessions — ignore if table missing (404 / 42P01 / PGRST114)
+    // const { error: eSess } = await sb.from('sessions').delete().eq('user_id', user.id);
+    // if (
+    //   eSess &&
+    //     String(eSess.code).includes('PGRST114') ||
+    //     String(eSess.code).includes('42P01') ||
+    //     (eSess.message || '').toLowerCase().includes('does not exist') ||
+    //     (eSess.details || '').toLowerCase().includes('not exist')
+    //   )
+    // ) {
+    //   console.warn('[delete] sessions delete error (not fatal):', eSess);
+    //   // kalau errornya bukan "table not exist", kamu boleh throw:
+    //   // return new Response(JSON.stringify({ error: 'delete_failed', message: eSess.message }), { status: 500, headers: ct });
+    // }
 
-    // Hapus sessions
-    const { count: sessionsDeleted, error: eSessDel } = await sb
-      .from('sessions')
-      .delete()
-      .eq('user_id', userId)
-      .select('id', { count: 'exact' });
-    if (eSessDel) {
-      throw eSessDel;
+    // 4) delete user
+    const { error: eDel } = await sb.from('users').delete().eq('id', user.id);
+    if (eDel) {
+      return new Response(JSON.stringify({ error: 'delete_failed', message: eDel.message }), {
+        status: 500, headers: ct,
+      });
     }
 
-    // Hapus memberships
-    const { count: membershipsDeleted, error: eMemDel } = await sb
-      .from('memberships')
-      .delete()
-      .eq('user_id', userId)
-      .select('id', { count: 'exact' });
-    if (eMemDel) {
-      throw eMemDel;
-    }
-
-    // Hapus user
-    const { count: usersDeleted, error: eUserDel } = await sb
-      .from('users')
-      .delete()
-      .eq('id', userId)
-      .select('id', { count: 'exact' });
-    if (eUserDel) {
-      throw eUserDel;
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'User deleted successfully',
-        deleted: {
-          sessions: sessionsDeleted ?? 0,
-          memberships: membershipsDeleted ?? 0,
-          users: usersDeleted ?? 0,
-        },
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  } catch (err: any) {
-    console.error('Delete operation error:', err);
-    return new Response(
-      JSON.stringify({ error: 'delete_failed', message: err?.message }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({ ok: true }), { headers: ct });
+  } catch (e) {
+    console.error('[delete]', e);
+    return new Response(JSON.stringify({ error: 'delete_failed', message: (e as Error).message }), {
+      status: 500, headers: ct,
+    });
   }
 });

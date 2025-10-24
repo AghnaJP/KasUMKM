@@ -45,7 +45,7 @@ const HomeScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const {companyId, role, profile, getAuthHeaders} = useAuth();
+  const {companyId, role, profile} = useAuth();
   const isOwner = role === 'OWNER';
   const {syncNow} = useSync();
 
@@ -73,26 +73,11 @@ const HomeScreen = () => {
     refreshKey,
   );
 
-  // (opsional) tes /me
-  useEffect(() => {
-    const fetchMe = async () => {
-      try {
-        const headers = await getAuthHeaders();
-        const resp = await fetch(`${API_BASE}/me`, {headers});
-        const json = await resp.json();
-        console.log('GET /me ->', json);
-      } catch (e) {
-        console.log('GET /me failed', e);
-      }
-    };
-    fetchMe();
-  }, [getAuthHeaders]);
-
   useEffect(() => {
     (async () => {
       try {
         const ts = await EncryptedStorage.getItem(lastSyncKey(companyId));
-        setLastSyncAt(ts);
+        setLastSyncAt(ts ? new Date(ts).toLocaleString('id-ID') : null);
       } catch {}
     })();
   }, [companyId]);
@@ -136,15 +121,20 @@ const HomeScreen = () => {
         return;
       }
 
-      const headers = await getAuthHeaders();
+      if (!companyId) {
+        Toast.show({type: 'error', text1: 'Company tidak ditemukan.'});
+        return;
+      }
+
+      //const headers = await getAuthHeaders();
 
       const r = await fetch(`${API_BASE}/invite/create`, {
         method: 'POST',
         headers: {
-          ...headers,
+          //...headers,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ttl_hours: 24}),
+        body: JSON.stringify({ttl_hours: 24, company_id: companyId}),
       });
 
       const raw = await r.text();
@@ -184,7 +174,7 @@ const HomeScreen = () => {
         text1: 'Terjadi kesalahan saat membuat undangan',
       });
     }
-  }, [isOwner, getAuthHeaders]);
+  }, [isOwner, companyId]);
 
   // const addDummyUnified = useCallback(async () => {
   //   try {

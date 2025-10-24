@@ -1,6 +1,6 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
-import {API_BASE} from '../constants/api';
-import {useAuth} from '../context/AuthContext';
+import { API_BASE } from '../constants/api';
+import { useAuth } from '../context/AuthContext';
 
 import {
   getDirtyTransactions,
@@ -14,35 +14,48 @@ import {
   applyPulledMenus,
 } from '../database/menus/menuUnified';
 
-import {mirrorPulledTxToLegacy} from '../database/sync/legacyMirror';
+import { mirrorPulledTxToLegacy } from '../database/sync/legacyMirror';
 
 const KEY = (companyId: string) => `last_sync_at:${companyId}`;
 
 export function useSync() {
-  const {companyId, getAuthHeaders} = useAuth();
+  const { companyId } = useAuth();
 
   async function syncNow(): Promise<void> {
-    if (!companyId) {return;}
+    if (!companyId) return;
 
-    const authHeaders = await getAuthHeaders();
-
+    // === 1) ambil yang kotor ===
     const dirtyTransactions = await getDirtyTransactions();
     const dirtyMenus = await getDirtyMenus();
 
-    if (dirtyTransactions.length > 0 || dirtyMenus.length > 0) {
+    // helper klasifikasi
+    const isDeleted = (r: any) => !!r.deleted_at;
+    const isNeverSynced = (r: any) => !r.synced_at && !r.last_synced_at;
+
+
+    const txUpsert = dirtyTransactions.filter(t => !isDeleted(t));
+    const txDelete = dirtyTransactions
+      .filter(t => isDeleted(t) && !isNeverSynced(t))
+      .map(t => t.id);
+
+    const menuUpsert = dirtyMenus.filter(m => !isDeleted(m));
+    const menuDelete = dirtyMenus
+      .filter(m => isDeleted(m) && !isNeverSynced(m))
+      .map(m => m.id);
+
+    if (txUpsert.length || txDelete.length || menuUpsert.length || menuDelete.length) {
       const payload = {
         company_id: companyId,
-        menus_upsert: dirtyMenus.map(m => ({
+        menus_upsert: menuUpsert.map(m => ({
           id: m.id,
           name: m.name,
           price: m.price,
           category: m.category,
           occurred_at: m.occurred_at,
           updated_at: m.updated_at,
-          deleted_at: m.deleted_at ?? null,
         })),
-        menus_delete: [],
-        transactions_upsert: dirtyTransactions.map(t => ({
+        menus_delete: menuDelete,
+        transactions_upsert: txUpsert.map(t => ({
           id: t.id,
           name: t.name,
           type: t.type,
@@ -52,78 +65,66 @@ export function useSync() {
           menu_id: (t as any).menu_id ?? null,
           occurred_at: t.occurred_at,
           updated_at: t.updated_at,
-          deleted_at: t.deleted_at ?? null,
         })),
-        transactions_delete: [],
+        transactions_delete: txDelete,
       };
 
-      const pushRes = await fetch(`${API_BASE}/sync`, {
+      const pr = await fetch(`${API_BASE}/sync/push`, {
         method: 'POST',
-        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const pushRaw = await pushRes.text();
+      const pushRaw = await pr.text();
       let pushJson: any = {};
-      try {
-        pushJson = pushRaw ? JSON.parse(pushRaw) : {};
-      } catch {
-        // ignore; akan dilemparkan sebagai error di bawah kalau !pr.ok
-      }
-      if (!pushRes.ok) {
-        throw new Error(pushJson?.error || `push_failed_${pushRes.status}`);
+      try { pushJson = pushRaw ? JSON.parse(pushRaw) : {}; } catch {}
+
+      if (!pr.ok) {
+        throw new Error(pushJson?.error || `push_failed_${pr.status}`);
       }
 
-      const serverTimeFromPush: string | undefined = pushJson?.server_time;
-      const markTime = serverTimeFromPush || new Date().toISOString();
+      const markTime = pushJson?.server_time || new Date().toISOString();
 
-      if (dirtyTransactions.length) {
-        await markTransactionsSynced(
-          dirtyTransactions.map(t => t.id),
-          markTime,
-        );
-      }
-      if (dirtyMenus.length) {
-        await markMenusSynced(
-          dirtyMenus.map(m => m.id),
-          markTime,
-        );
-      }
+      // tandai yang berhasil upsert sebagai tersinkron
+      if (txUpsert.length)
+        await markTransactionsSynced(txUpsert.map(t => t.id), markTime);
+      if (menuUpsert.length)
+        await markMenusSynced(menuUpsert.map(m => m.id), markTime);
+
+      // catatan:
+      // untuk yang dihapus, kita biarkan dihapus saat PULL (server sudah set deleted_at)
+      // alternatif: kamu bisa hard-delete lokal segera saat aksi hapus dilakukan
     }
 
+    // === 3) tarik perubahan (pull) ===
     const since =
       (await EncryptedStorage.getItem(KEY(companyId))) ??
       '1970-01-01T00:00:00Z';
 
-    const pullRes = await fetch(`${API_BASE}/sync?company_id=${encodeURIComponent(companyId)}&since=${since}`, {method: 'GET', headers: authHeaders});
-    const pullRaw = await pullRes.text();
+    const gr = await fetch(
+      `${API_BASE}/sync/pull?company_id=${encodeURIComponent(companyId)}&since=${encodeURIComponent(since)}`,
+      { method: 'GET' }
+    );
+
+    const pullRaw = await gr.text();
     let gj: any = {};
-    try {
-      gj = pullRaw ? JSON.parse(pullRaw) : {};
-    } catch {
-      // jika bukan JSON, lempar error dengan body mentahnya
+    try { gj = pullRaw ? JSON.parse(pullRaw) : {}; } catch {
       throw new Error(`pull_parse_failed: ${pullRaw?.slice(0, 200)}`);
     }
-    if (!pullRes.ok) {
-      throw new Error(gj?.error || `pull_failed_${pullRes.status}`);
-    }
+    if (!gr.ok) throw new Error(gj?.error || `pull_failed_${gr.status}`);
 
     const pulledMenus = Array.isArray(gj?.menus) ? gj.menus : [];
-    if (pulledMenus.length > 0) {
-      await applyPulledMenus(pulledMenus);
-    }
+    if (pulledMenus.length) await applyPulledMenus(pulledMenus);
 
-    const pulledTransactions = Array.isArray(gj?.transactions)
-      ? gj.transactions
-      : [];
-    if (pulledTransactions.length > 0) {
-      await applyPulledTransactions(pulledTransactions);
-      await mirrorPulledTxToLegacy(pulledTransactions);
+    const pulledTx = Array.isArray(gj?.transactions) ? gj.transactions : [];
+    if (pulledTx.length) {
+      await applyPulledTransactions(pulledTx);
+      await mirrorPulledTxToLegacy(pulledTx);
     }
 
     const serverTime = gj?.server_time || new Date().toISOString();
     await EncryptedStorage.setItem(KEY(companyId), String(serverTime));
   }
 
-  return {syncNow};
+  return { syncNow };
 }

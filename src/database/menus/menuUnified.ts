@@ -121,36 +121,43 @@ export async function applyPulledMenus(
     id: string;
     name: string;
     price: number;
-    category: MenuCategory;
+    category?: string | null;
     occurred_at: string;
     updated_at: string;
     deleted_at?: string | null;
-  }>,
+  }>
 ) {
   await executeSql('BEGIN');
   try {
     for (const r of rows) {
-      await executeSql(
-        `INSERT INTO menus (id, name, price, category, occurred_at, created_at, updated_at, deleted_at, dirty)
-         VALUES (?,?,?,?,?, datetime('now'), ?, ?, 0)
-         ON CONFLICT(id) DO UPDATE SET
-           name=excluded.name,
-           price=excluded.price,
-           category=excluded.category,
-           occurred_at=excluded.occurred_at,
-           updated_at=excluded.updated_at,
-           deleted_at=excluded.deleted_at,
-           dirty=0`,
-        [
-          r.id,
-          r.name,
-          r.price,
-          r.category,
-          r.occurred_at,
-          r.updated_at,
-          r.deleted_at ?? null,
-        ],
-      );
+      if (r.deleted_at) {
+        // server sudah tandai delete -> hard delete di lokal
+        await executeSql(`DELETE FROM menus WHERE id = ?`, [r.id]);
+      } else {
+        // upsert normal, bersihkan flag delete/dirty
+        await executeSql(
+          `INSERT INTO menus
+             (id, name, price, category, occurred_at, created_at, updated_at, deleted_at, dirty)
+           VALUES
+             (?,?,?,?,?, datetime('now'), ?, NULL, 0)
+           ON CONFLICT(id) DO UPDATE SET
+             name=excluded.name,
+             price=excluded.price,
+             category=excluded.category,
+             occurred_at=excluded.occurred_at,
+             updated_at=excluded.updated_at,
+             deleted_at=NULL,
+             dirty=0`,
+          [
+            r.id,
+            r.name,
+            r.price,
+            r.category ?? null,
+            r.occurred_at,
+            r.updated_at,
+          ]
+        );
+      }
     }
     await executeSql('COMMIT');
   } catch (e) {

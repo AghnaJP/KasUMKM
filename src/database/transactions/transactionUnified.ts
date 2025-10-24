@@ -1,4 +1,3 @@
-// src/database/transactions/transactionsUnified.ts
 import {executeSql, rowsToArray} from '../db';
 import {newId} from '../../utils/id';
 
@@ -152,35 +151,43 @@ export async function applyPulledTransactions(
   await executeSql('BEGIN');
   try {
     for (const r of rows) {
-      await executeSql(
-        `INSERT INTO transactions
-           (id, name, type, amount, quantity, unit_price, menu_id,
-            occurred_at, created_at, updated_at, deleted_at, dirty)
-         VALUES (?,?,?,?,?,?,?, ?, datetime('now'), ?, ?, 0)
-         ON CONFLICT(id) DO UPDATE SET
-           name=excluded.name,
-           type=excluded.type,
-           amount=excluded.amount,
-           quantity=excluded.quantity,
-           unit_price=excluded.unit_price,
-           menu_id=excluded.menu_id,
-           occurred_at=excluded.occurred_at,
-           updated_at=excluded.updated_at,
-           deleted_at=excluded.deleted_at,
-           dirty=0`,
-        [
-          r.id,
-          r.name,
-          r.type,
-          r.amount,
-          Number(r.quantity ?? 1),
-          r.unit_price ?? null,
-          r.menu_id ?? null,
-          r.occurred_at,
-          r.updated_at,
-          r.deleted_at ?? null,
-        ],
-      );
+      if (r.deleted_at) {
+        // server sudah menandai delete -> hapus/hard-delete lokal
+        await executeSql(`DELETE FROM transactions WHERE id=?`, [r.id]);
+      } else {
+        // upsert normal (hapus flag delete lokal kalau ada)
+        await executeSql(
+          `INSERT INTO transactions
+             (id, name, type, amount, quantity, unit_price, menu_id,
+              occurred_at, created_at, updated_at, deleted_at, dirty, synced_at)
+           VALUES
+             (?,?,?,?,?,?,?, ?, datetime('now'), ?, NULL, 0, ?)
+           ON CONFLICT(id) DO UPDATE SET
+             name=excluded.name,
+             type=excluded.type,
+             amount=excluded.amount,
+             quantity=excluded.quantity,
+             unit_price=excluded.unit_price,
+             menu_id=excluded.menu_id,
+             occurred_at=excluded.occurred_at,
+             updated_at=excluded.updated_at,
+             deleted_at=NULL,
+             dirty=0,
+             synced_at=excluded.synced_at`,
+          [
+            r.id,
+            r.name,
+            r.type,
+            r.amount,
+            Number(r.quantity ?? 1),
+            r.unit_price ?? null,
+            r.menu_id ?? null,
+            r.occurred_at,
+            r.updated_at,
+            r.updated_at, // simpan sebagai synced_at kalau kamu punya kolomnya
+          ],
+        );
+      }
     }
     await executeSql('COMMIT');
   } catch (e) {
@@ -188,3 +195,4 @@ export async function applyPulledTransactions(
     throw e;
   }
 }
+

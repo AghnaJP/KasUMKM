@@ -1,22 +1,18 @@
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Alert, Text} from 'react-native';
 import {COLORS} from '../../constants';
-import {AuthContext} from '../../context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  editUsername,
-  updateUserPassword,
-} from '../../database/users/userQueries';
+import {useAuth} from '../../context/AuthContext';
+import {updateUserPassword} from '../../database/users/userQueries';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FormField from '../../components/Form/FormField';
 import CustomText from '../../components/Text/CustomText';
 import EditProfileModal from '../../components/Modal/EditProfileModal';
 import EditPasswordModal from '../../components/Modal/EditPasswordModal';
 import InitialAvatar from '../../components/Avatar/InitialAvatar';
-import {useAuth} from '../../context/AuthContext';
+import {API_BASE} from '../../constants/api';
 
 const EditProfile = () => {
-  const {profile, logout, deleteAccount} = useAuth();
+  const {profile, logout, deleteAccount, updateUserName} = useAuth();
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
 
@@ -27,8 +23,7 @@ const EditProfile = () => {
         text: 'Keluar',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.removeItem('isLoggedIn');
-          logout();
+          await logout();
         },
       },
     ]);
@@ -44,7 +39,7 @@ const EditProfile = () => {
           try {
             await deleteAccount();
             Alert.alert('Berhasil', 'Akun berhasil dihapus');
-          } catch (e) {
+          } catch {
             Alert.alert('Gagal', 'Gagal menghapus akun');
           }
         },
@@ -52,32 +47,59 @@ const EditProfile = () => {
     ]);
   };
 
-  const {updateUserName} = useContext(AuthContext);
-
   const handleSaveName = async ({name}: {name: string}) => {
     try {
-      await editUsername(name, profile.phone);
-      updateUserName(name);
+      await updateUserName(name); // update Supabase + SQLite + state
       setShowEditProfileModal(false);
       Alert.alert('Berhasil', 'Nama berhasil diperbarui');
-    } catch (e) {
-      Alert.alert('Gagal', 'Gagal memperbarui nama');
+    } catch (e: any) {
+      Alert.alert('Gagal', e?.message || 'Gagal memperbarui nama');
     }
   };
 
-  const handleSavePassword = async ({password}: {password: string}) => {
-    await updateUserPassword(profile.phone, password);
-    setShowEditPasswordModal(false);
-    Alert.alert('Berhasil', 'Kata sandi berhasil diperbarui');
+  const handleSavePassword = async ({
+    oldPassword,
+    newPassword,
+  }: {
+    oldPassword: string;
+    newPassword: string;
+  }) => {
+    try {
+      // 1) Update di Supabase via Edge Function (tanpa auth header)
+      const resp = await fetch(`${API_BASE}/update_password`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          phone: profile.phone,
+          old_password: oldPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      const raw = await resp.text();
+      let json: any = {};
+      try {
+        json = raw ? JSON.parse(raw) : {};
+      } catch {}
+
+      if (!resp.ok) {
+        throw new Error(json?.error || `server_${resp.status}`);
+      }
+
+      // 2) Setelah server OK, update di SQLite
+      await updateUserPassword(profile.phone, newPassword);
+
+      setShowEditPasswordModal(false);
+      Alert.alert('Berhasil', 'Kata sandi berhasil diperbarui');
+    } catch (e: any) {
+      Alert.alert('Gagal', e?.message || 'Gagal memperbarui kata sandi');
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/*<Image
-        source={require('../../assets/images/profile.png')}
-        style={styles.avatar}
-      />*/}
       <InitialAvatar name={profile.name} style={styles.avatar} />
+
       <View style={styles.profile}>
         <FormField
           label="Nama Pengguna"
@@ -110,13 +132,12 @@ const EditProfile = () => {
         visible={showEditProfileModal}
         onClose={() => setShowEditProfileModal(false)}
         onSave={handleSaveName}
-        profileData={profile ? {name: profile.name} : null}
+        profileData={{name: profile.name}}
       />
       <EditPasswordModal
         visible={showEditPasswordModal}
         onClose={() => setShowEditPasswordModal(false)}
         onSave={handleSavePassword}
-        profileData={profile ? {phone: profile.phone} : null}
       />
     </View>
   );
@@ -139,16 +160,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  avatar: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    marginBottom: 24,
-  },
-  profile: {
-    alignSelf: 'stretch',
-    marginBottom: 32,
-  },
+  avatar: {width: 150, height: 150, borderRadius: 75, marginBottom: 24},
+  profile: {alignSelf: 'stretch', marginBottom: 32},
   password: {
     borderWidth: 1,
     borderColor: COLORS.lightGray,
@@ -175,11 +188,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.red,
   },
-  buttonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  buttonText: {color: COLORS.white, fontSize: 16, fontWeight: '600'},
 });
 
 export default EditProfile;

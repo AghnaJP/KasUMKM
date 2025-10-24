@@ -127,40 +127,68 @@ const RegisterScreen = () => {
         return;
       }
 
-      const sessionToken = data?.token ?? null;
-      if (!sessionToken) {
-        setFormError('Respon server tidak valid (token kosong).');
+      // ✅ Setelah register sukses, langsung LOGIN pakai kredensial yang sama
+      const loginRes = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({phone: normalized, password: trimmedPassword}),
+      });
+
+      const loginJson: any = await loginRes.json();
+      if (!loginRes.ok) {
+        const msg =
+          loginJson?.message || loginJson?.error || 'Gagal login otomatis';
+        setFormError(msg);
         return;
       }
 
-      const companyId = data?.membership?.company_id ?? null;
-      const role = data?.membership?.role ?? null;
+      const sessionToken = loginJson?.token ?? null;
+      if (!sessionToken) {
+        setFormError('Login berhasil tapi token kosong.');
+        return;
+      }
 
+      const companyId = loginJson?.default_company_id ?? null;
+      const role = loginJson?.default_role ?? null;
+
+      // persist secure fields
       try {
         await EncryptedStorage.setItem('session_token', String(sessionToken));
-        if (companyId != null) {
+        if (companyId != null)
           await EncryptedStorage.setItem('company_id', String(companyId));
-        } else {
-          await EncryptedStorage.removeItem('company_id');
-        }
-        if (role != null) {
-          await EncryptedStorage.setItem('role', String(role));
-        } else {
-          await EncryptedStorage.removeItem('role');
-        }
+        else await EncryptedStorage.removeItem('company_id');
+        if (role != null) await EncryptedStorage.setItem('role', String(role));
+        else await EncryptedStorage.removeItem('role');
       } catch (e) {
         console.warn('Failed to persist secure data:', e);
       }
 
+      // masukkan ke AuthContext (ini yang akan save ke SQLite juga)
       await (login as any)({
         token: sessionToken,
         companyId,
         role,
         profile: {
-          name: data?.user?.name ?? trimmedName,
-          phone: data?.user?.phone ?? normalized,
+          name: loginJson?.user?.name ?? trimmedName,
+          phone: loginJson?.user?.phone ?? normalized,
         },
       });
+
+      // opsional: simpan user lokal
+      try {
+        await insertUserWithId(
+          loginJson?.user?.id ?? '',
+          loginJson?.user?.name ?? trimmedName,
+          loginJson?.user?.phone ?? normalized,
+          trimmedPassword,
+        );
+        console.log('User inserted locally in SQLite');
+      } catch (err) {
+        console.warn('Failed to insert user locally:', err);
+      }
+
+      // navigasi ke app
+      navigation.replace('App', {screen: 'AppTabs', params: {screen: 'Home'}});
 
       try {
         await insertUserWithId(
