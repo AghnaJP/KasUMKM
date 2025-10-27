@@ -5,20 +5,9 @@ import CustomText from '../Text/CustomText';
 import {COLORS} from '../../constants';
 import {useProfitData} from '../../hooks/useProfitData';
 
-const ProfitCard = () => {
-  const {incomeList, expenseList, loading} = useProfitData();
-
-  const totalIncome = incomeList.reduce(
-    (sum, income) => sum + (Number(income.amount) || 0),
-    0,
-  );
-
-  const totalExpense = expenseList.reduce(
-    (sum, item) => sum + (Number(item.amount) || 0),
-    0,
-  );
-
-  const profit = totalIncome - totalExpense;
+const ProfitCard = ({refreshKey = 0}: {refreshKey?: number}) => {
+  const {loading, totalIncome, totalExpense, profit} =
+    useProfitData(refreshKey);
 
   if (loading) {
     return (
@@ -35,7 +24,7 @@ const ProfitCard = () => {
           {profit < 0 ? 'Kerugian' : 'Keuntungan'}
         </CustomText>
         <CustomText variant="title" color={COLORS.white}>
-          Rp {profit.toLocaleString('id-ID') + ',00'}
+          Rp {profit.toLocaleString('id-ID')},00
         </CustomText>
       </View>
 
@@ -56,7 +45,7 @@ const ProfitCard = () => {
 
         <View style={styles.item}>
           <View style={[styles.iconWrapper]}>
-            <Ionicons name="arrow-up" size={16} color="white" />
+            <Ionicons name="arrow-down" size={16} color="white" />
           </View>
           <View style={styles.textBox}>
             <CustomText variant="caption" color={COLORS.white}>

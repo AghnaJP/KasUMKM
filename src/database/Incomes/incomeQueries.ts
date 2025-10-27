@@ -1,7 +1,10 @@
-import {IncomeItem} from '../../types/menu';
+import {ID, IncomeItem} from '../../types/menu';
 import {IncomeData} from '../../types/transaction';
 import {getDBConnection} from '../db';
-import {SQLiteDatabase, Transaction} from 'react-native-sqlite-storage';
+import {
+  SQLiteDatabase,
+  Transaction,
+} from 'react-native-sqlite-storage';
 
 export const getAllIncomes = async (): Promise<IncomeItem[]> => {
   const database: SQLiteDatabase = await getDBConnection();
@@ -29,47 +32,26 @@ export const getAllIncomes = async (): Promise<IncomeItem[]> => {
 };
 
 export const insertIncome = async (
-  menuId: number,
+  menuId: ID | null,
   quantity: number,
   createdAt: string,
   updatedAt: string,
-): Promise<void> => {
-  const database: SQLiteDatabase = await getDBConnection();
-  return new Promise<void>((resolve, reject) => {
-    database.transaction((tx: Transaction) => {
+): Promise<number> => {
+  const db = await getDBConnection();
+  return new Promise<number>((resolve, reject) => {
+    db.transaction(tx => {
       tx.executeSql(
         'INSERT INTO incomes (menu_id, quantity, created_at, updated_at) VALUES (?, ?, ?, ?)',
         [menuId, quantity, createdAt, updatedAt],
-        () => resolve(),
-        (_, error) => {
-          console.error(
-            'SQL Insert Error:',
-            error,
-            menuId,
-            quantity,
-            createdAt,
-            updatedAt,
-          );
-          reject(error ?? new Error('Unknown SQL error'));
+        (_, res) => resolve(Number(res.insertId)),
+        (_, err) => {
+          reject(err);
           return false;
         },
       );
     });
   });
 };
-
-export const getIncomeCountByMenuId = async (
-  menuId: number,
-): Promise<number> => {
-  const db = await getDBConnection();
-  const [results] = await db.executeSql(
-    'SELECT COUNT(*) as count FROM incomes WHERE menu_id = ?',
-    [menuId],
-  );
-  const count = results.rows.item(0).count;
-  return count;
-};
-
 export const getIncomeDetails = async (): Promise<IncomeData[]> => {
   const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {

@@ -4,10 +4,11 @@ import {MONTHS} from '../constants/months';
 
 const monthToNumber = (month: string): string => {
   const index = MONTHS.indexOf(month);
-  return (index + 1).toString().padStart(2, '0');
+  const idx = index >= 0 ? index : new Date().getMonth();
+  return (idx + 1).toString().padStart(2, '0');
 };
 
-export function useTransactionList<T>(
+export function useTransactionList<T extends {date?: string | number | Date}>(
   getDataFn: () => Promise<T[]>,
   selectedMonth: string,
   selectedYear: number,
@@ -20,17 +21,26 @@ export function useTransactionList<T>(
   const fetchData = useCallback(async () => {
     try {
       const result = await getDataFn();
-      const filtered = result.filter((item: any) => {
-        const date = new Date(item.date);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        return month === monthToNumber(selectedMonth) && year === selectedYear;
+
+      const arr: T[] = Array.isArray(result) ? result : [];
+
+      const mm = monthToNumber(selectedMonth);
+      const filtered = arr.filter((item: any) => {
+        if (!item || !item.date) {return false;}
+        const d = new Date(item.date);
+        if (isNaN(d.getTime())) {return false;}
+
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear();
+        return month === mm && year === selectedYear;
       });
 
       setData(filtered);
       onDataLoaded(filtered);
     } catch (e) {
       console.error('Gagal ambil data transaksi:', e);
+      setData([]);
+      onDataLoaded([]);
     }
   }, [getDataFn, selectedMonth, selectedYear, onDataLoaded]);
 

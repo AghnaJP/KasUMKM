@@ -1,5 +1,6 @@
-import {Category, MenuItem} from '../../types/menu';
+import {Category, ID, MenuItem} from '../../types/menu';
 import {getDBConnection} from '../db';
+import {addMenu} from './menuUnified';
 import {
   Transaction,
   ResultSet,
@@ -15,7 +16,7 @@ export const getAllMenus = async (): Promise<MenuItem[]> => {
   return new Promise((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
-        'SELECT * FROM menus ORDER BY name DESC',
+        'SELECT * FROM menus WHERE deleted_at IS NULL ORDER BY name ASC',
         [],
         (_, result: ResultSet) => {
           const menus: MenuItem[] = [];
@@ -47,52 +48,41 @@ export const getAllMenus = async (): Promise<MenuItem[]> => {
   });
 };
 
-export const insertMenu = async (
+export async function insertMenu(
   name: string,
   category: string,
   price: number,
-): Promise<void> => {
-  const database: SQLiteDatabase = await getDBConnection();
-  const now = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    database.transaction((tx: Transaction) => {
-      tx.executeSql(
-        'INSERT INTO menus (name, category, price, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-        [name, category, price, now, now],
-        () => resolve(),
-        (_, error) => reject(error),
-      );
+  occurred_at?: string,
+): Promise<number> {
+  try {
+    const menuId = await addMenu({
+      name,
+      category: category as 'food' | 'drink',
+      price,
+      occurred_at,
     });
-  });
-};
+
+    console.log(`Menu berhasil ditambahkan dengan ID: ${menuId}`);
+    return 1;
+  } catch (error) {
+    console.error('Error inserting menu:', error);
+    throw error;
+  }
+}
 
 export const updateMenuById = async (
-  id: number,
+  id: ID,
   name: string,
   price: number,
 ): Promise<void> => {
-  const database: SQLiteDatabase = await getDBConnection();
+  const database = await getDBConnection();
   const now = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    database.transaction((tx: Transaction) => {
-      tx.executeSql(
-        'UPDATE menus SET name = ?, price = ?, updated_at = ? WHERE id = ?',
-        [name, price, now, id],
-        () => resolve(),
-        (_, error) => reject(error),
-      );
-    });
-  });
-};
-
-export const deleteMenuById = async (id: number) => {
-  const database: SQLiteDatabase = await getDBConnection();
   return new Promise((resolve, reject) => {
     database.transaction(tx => {
       tx.executeSql(
-        'DELETE FROM menus WHERE id = ?',
-        [id],
-        (_, result) => resolve(result),
+        'UPDATE menus SET name = ?, price = ?, updated_at = ?, dirty = 1 WHERE id = ?',
+        [name, price, now, String(id)],
+        () => resolve(),
         (_, error) => reject(error),
       );
     });

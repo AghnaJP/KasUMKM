@@ -3,7 +3,7 @@ import {StatusBar} from 'react-native';
 import RootNavigator from './navigation/RootNavigator';
 import Toast from 'react-native-toast-message';
 import {initAllTables} from './database/initDB';
-import AuthProvider from './context/AuthProvider';
+import {AuthProvider} from './context/AuthContext';
 import {configureNotifications} from './utils/notification';
 
 const App = (): React.JSX.Element => {
@@ -17,7 +17,6 @@ const App = (): React.JSX.Element => {
         console.error('App setup failed', error);
       }
     };
-
     setupApp();
   }, []);
 

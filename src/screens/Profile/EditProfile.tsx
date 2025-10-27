@@ -1,37 +1,20 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Alert, Text} from 'react-native';
 import {COLORS} from '../../constants';
-import {AuthContext} from '../../context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  getUserByPhone,
-  editUsername,
-  updateUserPassword,
-  deleteUser,
-} from '../../database/users/userQueries';
-import type {User} from '../../types/user';
+import {useAuth} from '../../context/AuthContext';
+import {updateUserPassword} from '../../database/users/userQueries';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import FormField from '../../components/Form/FormField';
 import CustomText from '../../components/Text/CustomText';
 import EditProfileModal from '../../components/Modal/EditProfileModal';
 import EditPasswordModal from '../../components/Modal/EditPasswordModal';
 import InitialAvatar from '../../components/Avatar/InitialAvatar';
+import {API_BASE} from '../../constants/api';
 
 const EditProfile = () => {
-  const {userName, userPhone, logout} = useContext(AuthContext);
-  const [user, setUser] = useState<User | null>(null);
+  const {profile, logout, deleteAccount, updateUserName} = useAuth();
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (userPhone) {
-        const userData = await getUserByPhone(userPhone);
-        setUser(userData);
-      }
-    };
-    fetchUser();
-  }, [userPhone]);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Yakin ingin keluar dari akun?', [
@@ -40,83 +23,93 @@ const EditProfile = () => {
         text: 'Keluar',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.removeItem('isLoggedIn');
-          logout();
+          await logout();
         },
       },
     ]);
   };
 
   const handleDeleteAccount = async () => {
-    if (!user) {
-      return;
-    }
-    Alert.alert(
-      'Hapus Akun',
-      'Apakah Anda yakin ingin menghapus akun ini? Tindakan ini tidak dapat dibatalkan.',
-      [
-        {text: 'Batal', style: 'cancel'},
-        {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteUser(user.phone);
-              await AsyncStorage.removeItem('isLoggedIn');
-              logout();
-              Alert.alert('Akun berhasil dihapus');
-            } catch (e) {
-              Alert.alert('Gagal', 'Gagal menghapus akun');
-            }
-          },
+    Alert.alert('Hapus Akun', 'Apakah Anda yakin ingin menghapus akun ini?', [
+      {text: 'Batal', style: 'cancel'},
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteAccount();
+            Alert.alert('Berhasil', 'Akun berhasil dihapus');
+          } catch {
+            Alert.alert('Gagal', 'Gagal menghapus akun');
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
-
-  const {updateUserName} = useContext(AuthContext);
 
   const handleSaveName = async ({name}: {name: string}) => {
-    if (!user) {
-      return;
-    }
     try {
-      await editUsername(name, user.phone);
-      setUser({...user, name});
-      updateUserName(name);
+      await updateUserName(name); // update Supabase + SQLite + state
       setShowEditProfileModal(false);
       Alert.alert('Berhasil', 'Nama berhasil diperbarui');
-    } catch (e) {
-      Alert.alert('Gagal', 'Gagal memperbarui nama');
+    } catch (e: any) {
+      Alert.alert('Gagal', e?.message || 'Gagal memperbarui nama');
     }
   };
 
-  const handleSavePassword = async ({password}: {password: string}) => {
-    if (!user) {
-      return;
+  const handleSavePassword = async ({
+    oldPassword,
+    newPassword,
+  }: {
+    oldPassword: string;
+    newPassword: string;
+  }) => {
+    try {
+      // 1) Update di Supabase via Edge Function (tanpa auth header)
+      const resp = await fetch(`${API_BASE}/update_password`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          phone: profile.phone,
+          old_password: oldPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      const raw = await resp.text();
+      let json: any = {};
+      try {
+        json = raw ? JSON.parse(raw) : {};
+      } catch {}
+
+      if (!resp.ok) {
+        throw new Error(json?.error || `server_${resp.status}`);
+      }
+
+      // 2) Setelah server OK, update di SQLite
+      await updateUserPassword(profile.phone, newPassword);
+
+      setShowEditPasswordModal(false);
+      Alert.alert('Berhasil', 'Kata sandi berhasil diperbarui');
+    } catch (e: any) {
+      Alert.alert('Gagal', e?.message || 'Gagal memperbarui kata sandi');
     }
-    await updateUserPassword(user.phone, password);
-    setShowEditPasswordModal(false);
-    Alert.alert('Berhasil', 'Kata sandi berhasil diperbarui');
   };
 
   return (
     <View style={styles.container}>
-      {/*<Image
-        source={require('../../assets/images/profile.png')}
-        style={styles.avatar}
-      />*/}
-      <InitialAvatar name={userName} style={styles.avatar} />
+      <InitialAvatar name={profile.name} style={styles.avatar} />
+
       <View style={styles.profile}>
         <FormField
           label="Nama Pengguna"
-          value={userName}
+          value={profile.name}
           touchableOnly
           onPress={() => setShowEditProfileModal(true)}
           rightIcon={<Icon name="edit" size={16} color={COLORS.darkBlue} />}
         />
 
-        <FormField label="Nomor Telepon" value={userPhone} touchableOnly />
+        <FormField label="Nomor Telepon" value={profile.phone} touchableOnly />
 
         <TouchableOpacity
           style={styles.password}
@@ -139,7 +132,7 @@ const EditProfile = () => {
         visible={showEditProfileModal}
         onClose={() => setShowEditProfileModal(false)}
         onSave={handleSaveName}
-        profileData={user ? {name: user.name} : null}
+        profileData={{name: profile.name}}
       />
       <EditPasswordModal
         visible={showEditPasswordModal}
@@ -167,16 +160,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  avatar: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    marginBottom: 24,
-  },
-  profile: {
-    alignSelf: 'stretch',
-    marginBottom: 32,
-  },
+  avatar: {width: 150, height: 150, borderRadius: 75, marginBottom: 24},
+  profile: {alignSelf: 'stretch', marginBottom: 32},
   password: {
     borderWidth: 1,
     borderColor: COLORS.lightGray,
@@ -203,11 +188,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.red,
   },
-  buttonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  buttonText: {color: COLORS.white, fontSize: 16, fontWeight: '600'},
 });
 
 export default EditProfile;

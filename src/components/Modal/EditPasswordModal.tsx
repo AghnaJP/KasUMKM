@@ -11,17 +11,12 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
 import FormField from '../Form/FormField';
-import {getUserByPhone} from '../../database/users/userQueries';
-import {useContext} from 'react';
-import {AuthContext} from '../../context/AuthContext';
-import {hashText} from '../../utils/crypto';
-import {validateRegisterInput} from '../../utils/form';
 import {VALIDATION_MESSAGES} from '../../constants';
 
 interface EditPasswordModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (updatedData: {password: string}) => void;
+  onSave: (updatedData: {oldPassword: string; newPassword: string}) => void;
 }
 
 const EditPasswordModal = ({
@@ -29,68 +24,38 @@ const EditPasswordModal = ({
   onClose,
   onSave,
 }: EditPasswordModalProps) => {
-  const [password, setPassword] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [newPasswordError, setNewPasswordError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-
-  const {userPhone} = useContext(AuthContext);
+  const [errorOld, setErrorOld] = useState('');
+  const [errorNew, setErrorNew] = useState('');
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
 
   useEffect(() => {
     if (!visible) {
-      setPassword('');
+      setOldPassword('');
       setNewPassword('');
-      setShowPassword(false);
-      setShowNewPassword(false);
-      setPasswordError('');
-      setNewPasswordError('');
+      setErrorOld('');
+      setErrorNew('');
+      setShowOld(false);
+      setShowNew(false);
     }
   }, [visible]);
 
-  const handleSave = async () => {
-    setPasswordError('');
-    setNewPasswordError('');
+  const handleSave = () => {
+    setErrorOld('');
+    setErrorNew('');
 
-    let hasError = false;
-
-    if (!password) {
-      setPasswordError(VALIDATION_MESSAGES.oldPasswordRequired);
-      hasError = true;
+    if (!oldPassword) {
+      setErrorOld(VALIDATION_MESSAGES.oldPasswordRequired);
+      return;
     }
     if (!newPassword) {
-      setNewPasswordError(VALIDATION_MESSAGES.newPasswordRequired);
-      hasError = true;
-    }
-
-    if (userPhone && password) {
-      const user = await getUserByPhone(userPhone);
-      const hashedInputPassword = await hashText(password);
-      if (!user || user.password !== hashedInputPassword) {
-        setPasswordError(VALIDATION_MESSAGES.oldPasswordInvalid);
-        hasError = true;
-      }
-    }
-
-    if (newPassword) {
-      const {passwordError: newPasswordValidationError} = validateRegisterInput(
-        '',
-        '',
-        newPassword,
-      );
-      if (newPasswordValidationError) {
-        setNewPasswordError(newPasswordValidationError);
-        hasError = true;
-      }
-    }
-
-    if (hasError) {
+      setErrorNew(VALIDATION_MESSAGES.newPasswordRequired);
       return;
     }
 
-    const hashedNewPassword = await hashText(newPassword);
-    onSave({password: hashedNewPassword});
+    onSave({oldPassword, newPassword});
   };
 
   return (
@@ -113,37 +78,39 @@ const EditPasswordModal = ({
           <FormField
             label="Kata Sandi Lama"
             placeholder="Masukkan kata sandi lama"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
+            value={oldPassword}
+            onChangeText={setOldPassword}
+            secureTextEntry={!showOld}
             rightIcon={
-              <TouchableOpacity onPress={() => setShowPassword(v => !v)}>
+              <TouchableOpacity onPress={() => setShowOld(v => !v)}>
                 <Icon
-                  name={showPassword ? 'eye-off' : 'eye'}
+                  name={showOld ? 'eye-off' : 'eye'}
                   size={20}
                   color="#888"
                 />
               </TouchableOpacity>
             }
-            error={passwordError}
+            error={errorOld}
           />
+
           <FormField
             label="Kata Sandi Baru"
             placeholder="Masukkan kata sandi baru"
             value={newPassword}
             onChangeText={setNewPassword}
-            secureTextEntry={!showNewPassword}
+            secureTextEntry={!showNew}
             rightIcon={
-              <TouchableOpacity onPress={() => setShowNewPassword(v => !v)}>
+              <TouchableOpacity onPress={() => setShowNew(v => !v)}>
                 <Icon
-                  name={showNewPassword ? 'eye-off' : 'eye'}
+                  name={showNew ? 'eye-off' : 'eye'}
                   size={20}
                   color="#888"
                 />
               </TouchableOpacity>
             }
-            error={newPasswordError}
+            error={errorNew}
           />
+
           <Button title="Simpan" onPress={handleSave} variant="primary" />
         </View>
       </KeyboardAvoidingView>
@@ -154,7 +121,7 @@ const EditPasswordModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },

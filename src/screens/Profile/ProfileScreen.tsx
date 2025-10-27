@@ -1,39 +1,47 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React from 'react';
 import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import {COLORS} from '../../constants';
-import {AuthContext} from '../../context/AuthContext';
-import {getUserByPhone} from '../../database/users/userQueries';
-import type {User} from '../../types/user';
 import CustomText from '../../components/Text/CustomText';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../types/navigation';
 import InitialAvatar from '../../components/Avatar/InitialAvatar';
+import {useAuth} from '../../context/AuthContext';
 
 const ProfileScreen = () => {
-  const {userPhone, userName} = useContext(AuthContext);
-  const [_user, setUser] = useState<User | null>(null);
-
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (userPhone) {
-        const userData = await getUserByPhone(userPhone);
-        setUser(userData);
-      }
-    };
-    fetchUser();
-  }, [userPhone]);
+  const {companyId, role, profile} = useAuth();
+  const isOwner = role === 'OWNER';
+  const displayName = profile?.name || '-';
+  const displayPhone = profile?.phone || '-';
 
   return (
     <View style={styles.container}>
       <View style={styles.profile}>
-        <InitialAvatar name={userName} style={styles.avatar} />
-        <CustomText variant="title">{userName || '-'}</CustomText>
-        <CustomText variant="body">{userPhone || '-'}</CustomText>
+        <InitialAvatar name={displayName} style={styles.avatar} />
+
+        <CustomText variant="title" style={styles.name}>
+          {displayName}
+        </CustomText>
+        <CustomText variant="body" style={styles.email}>
+          {displayPhone}
+        </CustomText>
+
+        {/* Info tambahan opsional */}
+        <View style={{marginTop: 8}}>
+          <CustomText
+            variant="caption"
+            style={{textAlign: 'center', color: COLORS.gray}}>
+            Role: {role ?? '-'}
+          </CustomText>
+          <CustomText
+            variant="caption"
+            style={{textAlign: 'center', color: COLORS.gray}}>
+            Company: {companyId ?? '-'}
+          </CustomText>
+        </View>
       </View>
 
       <TouchableOpacity
@@ -43,14 +51,16 @@ const ProfileScreen = () => {
         <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.menu}
-        onPress={() =>
-          navigation.navigate('App', {screen: 'TransactionReport'})
-        }>
-        <CustomText variant="body">Laporan keuangan</CustomText>
-        <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
-      </TouchableOpacity>
+      {isOwner && (
+        <TouchableOpacity
+          style={styles.menu}
+          onPress={() =>
+            navigation.navigate('App', {screen: 'TransactionReport'})
+          }>
+          <CustomText variant="body">Laporan keuangan</CustomText>
+          <Icon name="chevron-forward" size={20} color={COLORS.darkBlue} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

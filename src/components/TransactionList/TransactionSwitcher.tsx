@@ -1,19 +1,25 @@
 import React, {useState, useCallback} from 'react';
-import {View, StyleSheet, TouchableOpacity, Text} from 'react-native';
+import {View, StyleSheet, TouchableOpacity} from 'react-native';
 import CustomText from '../Text/CustomText';
 import IncomeList from '../../screens/Wallet/IncomeList';
 import ExpenseList from '../../screens/Wallet/ExpenseList';
-import {IncomeData, ExpenseData} from '../../types/transaction';
 import DateFilterRow from '../DateFilterRow';
 import {MONTHS} from '../../constants/months';
+import type {
+  IncomeData,
+  ExpenseData,
+} from '../../database/transactions/unifiedForWallet';
+import {ID} from '../../types/menu';
+
+type AnyTx = IncomeData | ExpenseData;
 
 interface TransactionSwitcherProps {
   activeTab: 'income' | 'expense';
   onTabChange: (tab: 'income' | 'expense') => void;
-  getDataFn: () => Promise<any[]>;
-  onDataLoaded: (data: (IncomeData | ExpenseData)[]) => void;
-  onEdit: (item: IncomeData | ExpenseData) => void;
-  onDelete: (id: number) => void;
+  getDataFn: () => Promise<AnyTx[]>;
+  onDataLoaded: (data: AnyTx[]) => void;
+  onEdit: (item: AnyTx) => void;
+  onDelete: (id: ID) => void;
   refreshKey: number;
 }
 
@@ -35,7 +41,6 @@ const TransactionSwitcher = ({
   refreshKey,
 }: TransactionSwitcherProps) => {
   const {currentMonthName, currentYear} = getCurrentDateInfo();
-
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthName);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
@@ -80,7 +85,7 @@ const TransactionSwitcher = ({
               styles.tabText,
               activeTab === 'income' && styles.activeTabText,
             ]}>
-            <Text>Pendapatan</Text>
+            Pendapatan
           </CustomText>
         </TouchableOpacity>
         <TouchableOpacity
@@ -91,7 +96,7 @@ const TransactionSwitcher = ({
               styles.tabText,
               activeTab === 'expense' && styles.activeTabText,
             ]}>
-            <Text>Pengeluaran</Text>
+            Pengeluaran
           </CustomText>
         </TouchableOpacity>
       </View>
@@ -112,8 +117,8 @@ const TransactionSwitcher = ({
         selectedYear={selectedYear}
         onMonthChange={setSelectedMonth}
         onYearChange={setSelectedYear}
-        showMonth={true}
-        showYear={true}
+        showMonth
+        showYear
       />
 
       <View style={styles.listContainer}>{listComponent}</View>
@@ -141,19 +146,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
     marginBottom: 6,
   },
-  tabButton: {
-    paddingBottom: 6,
-    flex: 1,
-  },
+  tabButton: {paddingBottom: 6, flex: 1},
   tabText: {
     fontSize: 16,
     fontFamily: 'Montserrat-SemiBold',
     color: '#A0A0A0',
     textAlign: 'center',
   },
-  activeTabText: {
-    color: '#0E3345',
-  },
+  activeTabText: {color: '#0E3345'},
   underlineTrack: {
     height: 2,
     backgroundColor: '#EEEEEE',
@@ -168,24 +168,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#375A93',
     bottom: 0,
   },
-  leftUnderline: {
-    left: 0,
-  },
-  rightUnderline: {
-    right: 0,
-  },
-  placeholderStyle: {
-    fontSize: 15,
-    color: '#888',
-  },
-  selectedTextStyle: {
-    fontSize: 15,
-    color: '#0E3345',
-  },
-  listContainer: {
-    flex: 1,
-    paddingTop: 4,
-  },
+  leftUnderline: {left: 0},
+  rightUnderline: {right: 0},
+  listContainer: {flex: 1, paddingTop: 4},
 });
 
 export default TransactionSwitcher;

@@ -1,12 +1,33 @@
 {
-  "java.project.sourcePaths": [],
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.lint": true,
+  "deno.unstable": [
+    "bare-node-builtins",
+    "byonm",
+    "sloppy-imports",
+    "unsafe-proto",
+    "webgpu",
+    "broadcast-channel",
+    "worker-options",
+    "cron",
+    "kv",
+    "ffi",
+    "fs",
+    "http",
+    "net"
+  ],
+  "java.configuration.runtimes": [],
+  "java.configuration.updateBuildConfiguration": "disabled",
   "java.project.excludePaths": [
     "**/node_modules/**",
     "**/android/**/node_modules/**",
     "**/android/build/**"
   ],
-  "java.configuration.runtimes": [],
-  "java.project.importOnFirstTimeStartup": "disabled",
   "java.project.importHint.enabled": false,
-  "java.configuration.updateBuildConfiguration": "disabled"
+  "java.project.importOnFirstTimeStartup": "disabled",
+  "java.project.sourcePaths": [],
+  "deno.enable": true
 }

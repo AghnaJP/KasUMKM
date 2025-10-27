@@ -6,6 +6,7 @@ import React, {
   useState,
   useLayoutEffect,
 } from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {
   View,
   StyleSheet,
@@ -22,8 +23,8 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import SwitchBar from '../../components/AddTransaction/SwitchBar';
 import MenuItemRow from '../../components/Menu/MenuItemRow';
-import HiddenMenuActions from '../../components/Menu/HiddenMenuAction';
-import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
+import HiddenActions from '../../components/Menu/HiddenAction';
+import EditMenuModal from '../../components/Modal/EditmenuModal';
 import CustomText from '../../components/Text/CustomText';
 import Button from '../../components/Button/Button';
 import DropdownField from '../../components/Form/DropDownField';
@@ -34,16 +35,16 @@ import {formatRupiah} from '../../utils/formatIDR';
 
 import {
   insertMenu,
-  deleteMenuById,
   updateMenuById,
 } from '../../database/menus/menuQueries';
-import {getIncomeCountByMenuId} from '../../database/Incomes/incomeQueries';
+
+import {softDeleteMenu} from '../../database/menus/menuUnified';
 import {fetchAndFormatMenus} from '../../services/menuService';
 
 import type {AppStackParamList} from '../../types/navigation';
-import {CategoryWithEmpty, MenuItem, CATEGORIES} from '../../types/menu';
+import {CategoryWithEmpty, MenuItem, CATEGORIES, ID} from '../../types/menu';
 
-import {COLORS, MENU_ALERTS} from '../../constants';
+import {COLORS} from '../../constants';
 
 type Nav = NativeStackNavigationProp<AppStackParamList>;
 interface FieldErrors {
@@ -63,7 +64,6 @@ const DocumentsScreen: React.FC = () => {
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryWithEmpty>('');
   const [loading, setLoading] = useState(false);
-
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [editVisible, setEditVisible] = useState(false);
 
@@ -74,16 +74,24 @@ const DocumentsScreen: React.FC = () => {
   const [addDisplayPrice, setAddDisplayPrice] = useState('');
   const [addErrors, setAddErrors] = useState<FieldErrors>({});
 
-  const rowMapRef = useRef<{[key: number]: any}>({});
+  const rowMapRef = useRef<Record<string, any>>({});
 
   useEffect(() => {
     fetchMenus();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchMenus();
+      return () => {};
+    }, []),
+  );
+
   const fetchMenus = async () => {
     setLoading(true);
     try {
       const mapped = await fetchAndFormatMenus();
+      Object.values(rowMapRef.current).forEach(row => row?.closeRow?.());
       setMenus(mapped);
     } finally {
       setLoading(false);
@@ -130,7 +138,8 @@ const DocumentsScreen: React.FC = () => {
   };
 
   const handleEditPress = (item: MenuItem) => {
-    const row = rowMapRef.current[item.id];
+    const sid = String(item.id);
+    const row = rowMapRef.current[sid];
     if (row) {
       row.closeRow();
     }
@@ -138,59 +147,45 @@ const DocumentsScreen: React.FC = () => {
     setEditVisible(true);
   };
 
-  const handleSaveEdit = async (updated: {
-    description: string;
-    price: string;
-    quantity: string;
-    date: string;
-  }) => {
+  const handleSaveEdit = async (updated: {name: string; price: string}) => {
     if (!selectedMenu) {
       return;
     }
 
-    const count = await getIncomeCountByMenuId(selectedMenu.id);
-    const name = updated.description;
+    const name = updated.name?.trim();
     const price = Number(updated.price);
 
-    const doUpdate = async () => {
+    if (!name) {
+      Alert.alert('Validasi', 'Nama menu wajib diisi.');
+      return;
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      Alert.alert('Validasi', 'Harga harus lebih dari 0.');
+      return;
+    }
+
+    try {
       await updateMenuById(selectedMenu.id, name, price);
-      await fetchMenus();
       setEditVisible(false);
       setSelectedMenu(null);
-      Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
-    };
-
-    if (count > 0) {
-      Alert.alert(
-        'Edit Menu',
-        MENU_ALERTS.editWithTransaction(count, selectedMenu.name),
-        [
-          {text: 'Batal', style: 'cancel'},
-          {text: 'Lanjut Edit', onPress: doUpdate},
-        ],
-      );
-    } else {
-      await doUpdate();
+      fetchMenus();
+      Alert.alert('Sukses', 'Menu berhasil diperbarui.');
+    } catch (error) {
+      Alert.alert('Error', 'Gagal memperbarui menu.');
     }
   };
 
-  const handleDelete = useCallback(async (id: number, name: string) => {
-    const count = await getIncomeCountByMenuId(id);
-    const message =
-      count > 0
-        ? MENU_ALERTS.deleteWithTransaction(count, name)
-        : MENU_ALERTS.deleteWithoutTransaction(name);
-
+  const handleDelete = useCallback(async (id: ID, name: string) => {
     Alert.alert(
       'Hapus Menu',
-      message,
+      `Apakah Anda yakin ingin menghapus menu "${name}"?`,
       [
         {text: 'Batal', style: 'cancel'},
         {
           text: 'Hapus',
           style: 'destructive',
           onPress: async () => {
-            await deleteMenuById(id);
+            await softDeleteMenu(String(id));
             await fetchMenus();
             Alert.alert('Berhasil', 'Menu berhasil dihapus.');
           },
@@ -214,8 +209,12 @@ const DocumentsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.wrapper}>
-
-      <Button title="Tambah Menu" onPress={()=>setAddVisible(true)} customStyle={styles.addCornerBtn} variant="primary"/>
+      <Button
+        title="Tambah Menu"
+        onPress={() => setAddVisible(true)}
+        customStyle={styles.addCornerBtn}
+        variant="primary"
+      />
 
       <View style={styles.topRow}>
         <SwitchBar
@@ -225,11 +224,11 @@ const DocumentsScreen: React.FC = () => {
         />
       </View>
 
-      {/* List */}
       <View style={styles.cardWrapper}>
         <SwipeListView
           data={filteredMenus}
-          keyExtractor={item => item.id.toString()}
+          extraData={{menus, selectedCategory}}
+          keyExtractor={item => String(item.id)}
           renderItem={({item}) => (
             <MenuItemRow
               name={item.name}
@@ -238,9 +237,10 @@ const DocumentsScreen: React.FC = () => {
             />
           )}
           renderHiddenItem={(data, rowMap) => {
-            rowMapRef.current[data.item.id] = rowMap[data.item.id];
+            const sid = String(data.item.id);
+            rowMapRef.current[sid] = rowMap[sid];
             return (
-              <HiddenMenuActions
+              <HiddenActions
                 item={data.item}
                 onEdit={handleEditPress}
                 onDelete={() => handleDelete(data.item.id, data.item.name)}
@@ -267,20 +267,15 @@ const DocumentsScreen: React.FC = () => {
         />
       </View>
 
-      <EditTransactionModal
+      <EditMenuModal
         visible={editVisible}
         onClose={() => {
           setEditVisible(false);
           setSelectedMenu(null);
         }}
-        transactionData={
+        menuData={
           selectedMenu
-            ? {
-                description: selectedMenu.name,
-                price: selectedMenu.price,
-                quantity: 1,
-                date: new Date().toISOString().split('T')[0],
-              }
+            ? {name: selectedMenu.name, price: selectedMenu.price}
             : null
         }
         onSave={handleSaveEdit}

@@ -32,14 +32,14 @@ export const insertExpense = async (
   quantity: number,
   createdAt: string,
   updatedAt: string,
-): Promise<void> => {
-  const database: SQLiteDatabase = await getDBConnection();
-  return new Promise<void>((resolve, reject) => {
+): Promise<number> => {
+  const database = await getDBConnection();
+  return new Promise<number>((resolve, reject) => {
     database.transaction((tx: Transaction) => {
       tx.executeSql(
         'INSERT INTO expenses (description, price, quantity, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
         [description, price, quantity, createdAt, updatedAt],
-        () => resolve(),
+        (_, res) => resolve(Number(res.insertId)),
         (_, error) => {
           reject(error);
           return false;

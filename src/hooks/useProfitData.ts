@@ -1,47 +1,64 @@
 import {useEffect, useState} from 'react';
 import {useIsFocused} from '@react-navigation/native';
-import {MenuItem} from '../types/menu';
-import {IncomeData, ExpenseData} from '../types/transaction';
-import {getExpenseDetails} from '../database/Expense/expenseQueries';
-import {getIncomeDetails} from '../database/Incomes/incomeQueries';
+import {
+  getUnifiedIncomeDetails,
+  getUnifiedExpenseDetails,
+} from '../database/transactions/unifiedForWallet';
 
-export const useProfitData = () => {
-  const [menuList, _setMenuList] = useState<MenuItem[]>([]);
-  const [incomeList, setIncomeList] = useState<IncomeData[]>([]);
-  const [expenseList, setExpenseList] = useState<ExpenseData[]>([]);
-  const [loading, setLoading] = useState(true);
+export const useProfitData = (refreshKey: number = 0) => {
   const isFocused = useIsFocused();
+  const [loading, setLoading] = useState(true);
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalExpense, setTotalExpense] = useState(0);
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchProfitData = async () => {
       try {
-        const [incomes, expenses] = await Promise.all([
-          getIncomeDetails(),
-          getExpenseDetails(),
+        setLoading(true);
+
+        const [incomeData, expenseData] = await Promise.all([
+          getUnifiedIncomeDetails(),
+          getUnifiedExpenseDetails(),
         ]);
 
-        if (isMounted) {
-          setIncomeList(incomes);
-          setExpenseList(expenses);
+        const totalAllTimeIncome = incomeData.reduce(
+          (sum, item) => sum + (item.amount || 0),
+          0,
+        );
+
+        const totalAllTimeExpense = expenseData.reduce(
+          (sum, item) => sum + (item.amount || 0),
+          0,
+        );
+
+        if (mounted) {
+          setTotalIncome(totalAllTimeIncome);
+          setTotalExpense(totalAllTimeExpense);
+          setLoading(false);
         }
       } catch (error) {
-        console.error('Fetch error in useProfitData:', error);
-      } finally {
-        if (isMounted) {
+        console.error('Failed to fetch profit data:', error);
+        if (mounted) {
+          setTotalIncome(0);
+          setTotalExpense(0);
           setLoading(false);
         }
       }
     };
 
-    fetchData();
+    fetchProfitData();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [isFocused]);
+  }, [isFocused, refreshKey]);
 
-  return {menuList, incomeList, expenseList, loading};
+  return {
+    loading,
+    totalIncome,
+    totalExpense,
+    profit: totalIncome - totalExpense,
+  };
 };

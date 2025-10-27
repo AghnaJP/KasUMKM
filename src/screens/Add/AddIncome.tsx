@@ -20,10 +20,12 @@ import {useIsFocused} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {AppTabParamList} from '../../types/navigation';
+import {addTransaction} from '../../database/transactions/transactionUnified';
+import {linkLocalIncomeToRemote} from '../../database/sync/legacyMirror';
 
 const AddIncome = () => {
   const navigation =
-      useNavigation<BottomTabNavigationProp<AppTabParamList, 'Add'>>();
+    useNavigation<BottomTabNavigationProp<AppTabParamList, 'Add'>>();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [selectedMenus, setSelectedMenus] = useState<
@@ -46,11 +48,25 @@ const AddIncome = () => {
   const handleSubmit = async () => {
     try {
       const now = selectedDate.toISOString();
+
       for (const {item, quantity} of selectedMenus) {
-        await insertIncome(item.id, quantity, now, now);
-        Alert.alert('Berhasil', 'Pendapatan berhasil disimpan');
-        setSelectedMenus([]);
+        const txId = await addTransaction({
+          name: item.name ?? `Menu #${item.id}`,
+          type: 'INCOME',
+          quantity,
+          unit_price: item.price,
+          menu_id: String(item.id),
+          amount: item.price * quantity,
+          occurred_at: now,
+        });
+
+        const localId = await insertIncome(String(item.id), quantity, now, now);
+
+        await linkLocalIncomeToRemote(txId, localId);
       }
+
+      Alert.alert('Berhasil', 'Pendapatan berhasil disimpan');
+      setSelectedMenus([]);
       navigation.navigate('Wallet', {initialTab: 'income'});
     } catch (e) {
       console.error('Insert income error:', e);

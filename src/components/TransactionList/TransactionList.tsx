@@ -2,15 +2,16 @@ import React, {useCallback, useRef} from 'react';
 import {View, StyleSheet} from 'react-native';
 import {SwipeListView} from 'react-native-swipe-list-view';
 import CustomText from '../Text/CustomText';
-import HiddenTransactionActions from './HiddenTransactionActions';
+import HiddenActions from '../Menu/HiddenAction';
 import {TransactionItem} from '../../types/transaction';
+import {ID} from '../../types/menu';
 
 interface TransactionListProps {
   data: TransactionItem[];
   totalAmount?: number;
   totalLabel?: string;
   onEdit: (item: TransactionItem) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: ID) => void;
   refreshKey: number;
 }
 
@@ -82,11 +83,7 @@ const TransactionList = ({
 
   const renderHiddenItem = useCallback(
     ({item}: {item: TransactionItem}) => (
-      <HiddenTransactionActions
-        item={item}
-        onEdit={handleEdit}
-        onDelete={onDelete}
-      />
+      <HiddenActions item={item} onEdit={handleEdit} onDelete={onDelete} />
     ),
     [handleEdit, onDelete],
   );

@@ -1,4 +1,4 @@
-import React, {useContext, useState} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -6,19 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
-import {useCallback} from 'react';
-import {useNavigation} from '@react-navigation/native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import CustomText from '../../components/Text/CustomText';
 import ProfitCard from '../../components/Card/ProfitCard';
 import TransactionItem from '../../components/TransactionList/TransactionItem';
-import {AuthContext} from '../../context/AuthContext';
+import {useAuth} from '../../context/AuthContext';
 import {useTransactionList} from '../../hooks/useTransactionList';
-import {
-  getAllTransactions,
-  checkTodayTransactions,
-} from '../../database/transactions/transactionQueries';
+import {getAllTransactionsUnified} from '../../database/transactions/transactionQueriesUnified';
+import {checkTodayTransactionsUnified as checkTodayTransactions} from '../../database/transactions/checkUnified';
+import {useSync} from '../../hooks/useSync';
 import {MONTHS} from '../../constants/months';
 import {RootStackParamList} from '../../types/navigation';
 import type {TransactionData} from '../../types/transaction';
@@ -27,45 +25,144 @@ import {checkTransactions} from '../../utils/notification';
 import Toast, {ErrorToast} from 'react-native-toast-message';
 import {COLORS} from '../../constants';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {API_BASE} from '../../constants/api';
+import Button from '../../components/Button/Button';
+import EncryptedStorage from 'react-native-encrypted-storage';
+
+const lastSyncKey = (companyId?: string | null) =>
+  companyId ? `last_sync_at:${companyId}` : 'last_sync_at';
 
 const HomeScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const {userName} = useContext(AuthContext);
-  const [_, setLoaded] = useState<TransactionData[]>([]);
 
+  const {companyId, role, profile} = useAuth();
+  const isOwner = role === 'OWNER';
+  const {syncNow} = useSync();
+
+  const [_, setLoaded] = useState<TransactionData[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
 
   const currentDate = new Date();
   const selectedMonth = MONTHS[currentDate.getMonth()];
   const selectedYear = currentDate.getFullYear();
 
+  const loadUnified = useCallback(
+    () => getAllTransactionsUnified(selectedMonth, selectedYear, setLoaded),
+    [selectedMonth, selectedYear, setLoaded],
+  );
+
   const transactions = useTransactionList<TransactionData>(
-    getAllTransactions,
+    loadUnified,
     selectedMonth,
     selectedYear,
     setLoaded,
+    refreshKey,
   );
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const ts = await EncryptedStorage.getItem(lastSyncKey(companyId));
+        setLastSyncAt(ts ? new Date(ts).toLocaleString('id-ID') : null);
+      } catch {}
+    })();
+  }, [companyId]);
+
+  const handleSyncNow = useCallback(async () => {
+    try {
+      if (!companyId) {
+        Toast.show({type: 'error', text1: 'Company tidak ditemukan.'});
+        return;
+      }
+      setIsSyncing(true);
+
+      await syncNow();
+
+      const ts = new Date().toISOString();
+      setLastSyncAt(new Date(ts).toLocaleString('id-ID'));
+      setRefreshKey(prev => prev + 1);
+
+      Toast.show({
+        type: 'infoCustom',
+        text1: 'Sinkronisasi selesai',
+        position: 'top',
+      });
+    } catch (e) {
+      console.log('syncNow error', e);
+      Toast.show({type: 'error', text1: 'Gagal sinkronisasi'});
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [companyId, syncNow]);
+
+  const handleCreateInvite = useCallback(async () => {
+    try {
+      if (!isOwner) {
+        Toast.show({
+          type: 'error',
+          text1: 'Hanya Owner yang bisa membuat kode.',
+        });
+        return;
+      }
+
+      if (!companyId) {
+        Toast.show({type: 'error', text1: 'Company tidak ditemukan.'});
+        return;
+      }
+
+
+      const r = await fetch(`${API_BASE}/invite/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ttl_hours: 24, company_id: companyId}),
+      });
+
+      const raw = await r.text();
+      let data: any = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {}
+
+      if (!r.ok) {
+        console.log('invite/create failed raw:', raw);
+        Toast.show({
+          type: 'error',
+          text1: (data && data.error) || 'Gagal membuat undangan',
+        });
+        return;
+      }
+
+      const code = data?.code;
+      if (!code) {
+        Toast.show({type: 'error', text1: 'Server tidak mengembalikan kode.'});
+        return;
+      }
+
+      try {
+        Clipboard.setString(code);
+      } catch {}
+      Toast.show({
+        type: 'infoCustom',
+        text1: `Kode Kasir: ${code} (tersalin)`,
+        autoHide: true,
+        position: 'top',
+      });
+    } catch (e) {
+      console.error(e);
+      Toast.show({
+        type: 'error',
+        text1: 'Terjadi kesalahan saat membuat undangan',
+      });
+    }
+  }, [isOwner, companyId]);
+
   const InfoToast = (props: any) => (
-    <View
-      style={{
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 16,
-        width: 350,
-        shadowColor: '#000',
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
-        elevation: 4,
-        position: 'absolute',
-        zIndex: 9999,
-        borderLeftWidth: 4,
-        borderLeftColor: '#3498DB',
-      }}>
+    <View style={styles.toastCard}>
       <Ionicons
         name="information-circle-outline"
         size={24}
@@ -76,6 +173,11 @@ const HomeScreen = () => {
         <CustomText variant="body" color={COLORS.darkBlue}>
           {props.text1}
         </CustomText>
+        {!!props.text2 && (
+          <CustomText variant="caption" color="#5d6d7e">
+            {props.text2}
+          </CustomText>
+        )}
       </View>
       <TouchableOpacity onPress={() => Toast.hide()} style={{marginLeft: 8}}>
         <Ionicons name="close" size={20} color="#888" />
@@ -100,8 +202,6 @@ const HomeScreen = () => {
       async function showTransactionToast() {
         try {
           const {hasIncome, hasExpense} = await checkTodayTransactions();
-          console.log('hasIncome:', hasIncome, 'hasExpense:', hasExpense);
-
           if (!hasIncome && !hasExpense) {
             Toast.show({
               type: 'infoCustom',
@@ -126,14 +226,10 @@ const HomeScreen = () => {
           } else {
             Toast.hide();
           }
-        } catch (err) {
-          Toast.show({
-            type: 'error',
-            text1: 'Gagal cek transaksi hari ini',
-          });
+        } catch {
+          Toast.show({type: 'error', text1: 'Gagal cek transaksi hari ini'});
         }
       }
-
       showTransactionToast();
     }, []),
   );
@@ -147,13 +243,40 @@ const HomeScreen = () => {
         <CustomText variant="subtitle" style={styles.title}>
           Selamat Datang,
         </CustomText>
-        <CustomText variant="title">{userName}</CustomText>
+        <CustomText variant="title">{profile?.name || 'Pengguna'}</CustomText>
 
-        <ProfitCard />
+        {isOwner && (
+          <View style={{marginTop: 12}}>
+            <Button
+              title="Buat Kode Kasir"
+              variant="primary"
+              onPress={handleCreateInvite}
+            />
+          </View>
+        )}
 
-        <View style={styles.chartWrapper}>
-          <TransactionChart refreshKey={refreshKey} />
+        <View style={{marginTop: 12}}>
+          <Button
+            title={isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Sekarang'}
+            variant="secondary"
+            onPress={handleSyncNow}
+            disabled={isSyncing}
+          />
+          {lastSyncAt && (
+            <CustomText variant="caption" style={{marginTop: 6, color: '#666'}}>
+              Terakhir sinkron: {lastSyncAt}
+            </CustomText>
+          )}
         </View>
+
+        {isOwner && (
+          <>
+            <ProfitCard refreshKey={refreshKey} />
+            <View style={styles.chartWrapper}>
+              <TransactionChart refreshKey={refreshKey} />
+            </View>
+          </>
+        )}
 
         <View style={styles.transactionHeader}>
           <CustomText variant="subtitle">Transaksi Terkini</CustomText>
@@ -161,9 +284,7 @@ const HomeScreen = () => {
             onPress={() =>
               navigation.navigate('App', {
                 screen: 'AppTabs',
-                params: {
-                  screen: 'Wallet',
-                },
+                params: {screen: 'Wallet'},
               })
             }>
             <CustomText variant="caption" color="#007bff" uppercase>
@@ -199,32 +320,16 @@ const HomeScreen = () => {
           </ScrollView>
         </View>
       </ScrollView>
-      <Toast
-        config={{
-          infoCustom: InfoToast,
-          error: ErrorToast,
-        }}
-      />
+      <Toast config={{infoCustom: InfoToast, error: ErrorToast}} />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  title: {
-    marginTop: 16,
-  },
-  chartWrapper: {
-    marginBottom: 5,
-    marginTop: 20,
-  },
+  safeArea: {flex: 1, backgroundColor: 'white'},
+  scrollContent: {padding: 16, paddingBottom: 40},
+  title: {marginTop: 16},
+  chartWrapper: {marginBottom: 5, marginTop: 20},
   transactionHeader: {
     marginTop: 24,
     flexDirection: 'row',
@@ -241,11 +346,23 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-
-  emptyText: {
-    color: '#888',
-    fontSize: 13,
-    textAlign: 'center',
+  emptyText: {color: '#888', fontSize: 13, textAlign: 'center'},
+  toastCard: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    width: 350,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+    position: 'absolute',
+    zIndex: 9999,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3498DB',
   },
 });
 

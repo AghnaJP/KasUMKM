@@ -12,6 +12,7 @@ import {
 import CustomText from '../Text/CustomText';
 import Button from '../Button/Button';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {formatRupiah, parseRupiah} from '../../utils/formatIDR';
 
 interface EditMenuModalProps {
   visible: boolean;
@@ -32,42 +33,59 @@ const EditMenuModal = ({
   useEffect(() => {
     if (menuData) {
       setName(menuData.name);
-      setPrice(menuData.price.toString());
+      setPrice(formatRupiah(menuData.price));
     }
   }, [menuData]);
 
   const handleSave = () => {
-    if (!name || !price) {
-      Alert.alert('Error', 'Nama dan harga wajib diisi.');
+    const trimmed = name.trim();
+    if (!trimmed) {
+      Alert.alert('Validasi', 'Nama menu wajib diisi.');
       return;
     }
-    onSave({name, price});
+    const numericPrice = parseRupiah(price);
+    if (!numericPrice || numericPrice <= 0) {
+      Alert.alert('Validasi', 'Harga harus lebih dari 0.');
+      return;
+    }
+    onSave({name: trimmed, price: String(numericPrice)});
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.wrapper}>
-        <View style={styles.modal}>
-          <TouchableOpacity onPress={onClose} style={styles.closeIcon}>
-            <Icon name="close" size={24} color="#444" />
-          </TouchableOpacity>
-          <CustomText variant="title">Edit Menu</CustomText>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.overlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.header}>
+            <CustomText variant="subtitle">Edit Menu</CustomText>
+            <TouchableOpacity onPress={onClose}>
+              <Icon name="close" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          <CustomText style={styles.label}>Nama Menu</CustomText>
           <TextInput
-            placeholder="Nama Menu"
             style={styles.input}
+            placeholder="cth: Nasi Goreng"
             value={name}
             onChangeText={setName}
           />
+
+          <CustomText style={styles.label}>Harga</CustomText>
           <TextInput
-            placeholder="Harga"
             style={styles.input}
+            placeholder="0"
             value={price}
+            onChangeText={text => setPrice(formatRupiah(text))}
             keyboardType="numeric"
-            onChangeText={setPrice}
           />
-          <Button title="Simpan" onPress={handleSave} />
+
+          <Button title="Simpan" onPress={handleSave} variant="primary" />
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -75,27 +93,39 @@ const EditMenuModal = ({
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
+  overlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
-    padding: 24,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
   },
-  modal: {
+  modalContainer: {
+    width: '90%',
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
   },
-  input: {
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 16,
-    fontSize: 16,
-    paddingVertical: 4,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  closeIcon: {
-    alignSelf: 'flex-end',
-    marginBottom: 12,
+  label: {
+    fontSize: 15,
+    color: '#0E3345',
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    marginBottom: 8,
+    color: '#333',
   },
 });
 

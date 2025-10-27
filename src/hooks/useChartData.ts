@@ -1,6 +1,8 @@
 import {useEffect, useState, useMemo} from 'react';
-import {getIncomeDetails} from '../database/Incomes/incomeQueries';
-import {getExpenseDetails} from '../database/Expense/expenseQueries';
+import {
+  getUnifiedIncomeDetails,
+  getUnifiedExpenseDetails,
+} from '../database/transactions/unifiedForWallet';
 import {MONTHS} from '../constants/months';
 
 interface ChartData {
@@ -23,23 +25,31 @@ export function useChartData(
 
   useEffect(() => {
     const fetchData = async () => {
-      const data =
-        type === 'income'
-          ? await getIncomeDetails()
-          : await getExpenseDetails();
-      const parsed = data.map(item => {
-        const date = new Date(item.date);
-        return {
-          ...item,
-          _year: date.getFullYear(),
-          _month: date.getMonth(),
-          _day: date.getDate(),
-          _dayOfWeek: date.getDay(),
-          _time: date.getTime(),
-        };
-      });
-      setRawData(parsed);
+      try {
+        const data =
+          type === 'income'
+            ? await getUnifiedIncomeDetails()
+            : await getUnifiedExpenseDetails();
+
+        const parsed = data.map(item => {
+          const date = new Date(item.date);
+          return {
+            ...item,
+            _year: date.getFullYear(),
+            _month: date.getMonth(),
+            _day: date.getDate(),
+            _dayOfWeek: date.getDay(),
+            _time: date.getTime(),
+          };
+        });
+
+        setRawData(parsed);
+      } catch (error) {
+        console.error('Chart data fetch error:', error);
+        setRawData([]);
+      }
     };
+
     fetchData();
   }, [type, refreshKey]);
 
@@ -101,38 +111,43 @@ export function useChartData(
     }
 
     if (period === 'Bulan') {
-     const labels = [
-       'Jan',
-       'Feb',
-       'Mar',
-       'Apr',
-       'Mei',
-       'Jun',
-       'Jul',
-       'Agu',
-       'Sep',
-       'Okt',
-       'Nov',
-       'Des',
-     ];
+      const labels = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des',
+      ];
       const data = new Array(12).fill(0);
+
       rawData.forEach(item => {
         if (item._year === filterYear) {
           data[item._month] += item.amount || 0;
         }
       });
+
       return {labels, data};
     }
 
     if (period === 'Tahun') {
       const yearMap: Record<number, number> = {};
+
       rawData.forEach(item => {
         yearMap[item._year] = (yearMap[item._year] || 0) + (item.amount || 0);
       });
+
       const sortedYears = Object.keys(yearMap)
         .map(Number)
         .sort((a, b) => a - b);
       const data = sortedYears.map(y => yearMap[y]);
+
       return {labels: sortedYears.map(String), data};
     }
 

@@ -95,3 +95,30 @@ export const deleteUser = async (phone: string) => {
     });
   });
 };
+
+export const insertUserWithId = async (
+  id: string,
+  name: string,
+  phone: string,
+  password: string,
+) => {
+  const database: SQLiteDatabase = await getDBConnection();
+
+  return new Promise((resolve, reject) => {
+    database.transaction((tx: Transaction) => {
+      tx.executeSql(
+        'INSERT OR REPLACE INTO users (id, name, phone, password) VALUES (?, ?, ?, ?)',
+        [id, name, phone, password],
+        (_, result) => {
+          console.log('[DEBUG] Insert result:', result);
+          resolve(result);
+        },
+        (_, error) => {
+          console.log('[DEBUG] SQLite error object:', error);
+          reject(new Error(error?.message || JSON.stringify(error)));
+          return false;
+        },
+      );
+    });
+  });
+};

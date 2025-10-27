@@ -1,36 +1,33 @@
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import Button from '../Button/Button';
-import {IncomeData, ExpenseData} from '../../types/transaction';
 
-interface Props {
-  item: IncomeData | ExpenseData;
-  onEdit: (item: IncomeData | ExpenseData) => void;
-  onDelete: (id: number) => void;
+interface Props<T extends {id: string | number}> {
+  item: T;
+  onEdit: (item: T) => void;
+  onDelete: (id: string | number) => void;
 }
 
-const HiddenTransactionActions: React.FC<Props> = ({
+const HiddenActions = <T extends {id: string | number}>({
   item,
   onEdit,
   onDelete,
-}) => {
+}: Props<T>) => {
   return (
     <View style={styles.hiddenRow}>
       <Button
-        title="Edit"
+        title="Ubah"
         onPress={() => onEdit(item)}
         variant="edit"
         fullWidth={false}
         customStyle={styles.actionBtn}
-        textStyle={styles.actionText}
       />
       <Button
-        title="Delete"
+        title="Hapus"
         onPress={() => onDelete(item.id)}
         variant="delete"
         fullWidth={false}
         customStyle={styles.actionBtn}
-        textStyle={styles.actionText}
       />
     </View>
   );
@@ -48,17 +45,13 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   actionBtn: {
-    width: 64,
-    borderRadius: 6,
-    marginLeft: 6,
+    width: 72,
+    borderRadius: 8,
+    marginLeft: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 6,
-  },
-  actionText: {
-    fontSize: 14,
-    textAlign: 'center',
+    paddingVertical: 12,
   },
 });
 
-export default HiddenTransactionActions;
+export default HiddenActions;

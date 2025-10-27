@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import {ExpenseItem} from '../../types/menu';
+import {ExpenseItem, ID} from '../../types/menu';
 import CustomText from '../../components/Text/CustomText';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {COLORS} from '../../constants';
@@ -20,6 +20,8 @@ import {useIsFocused} from '@react-navigation/native';
 import {useNavigation} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {AppTabParamList} from '../../types/navigation';
+import {addTransaction} from '../../database/transactions/transactionUnified';
+import {linkLocalExpenseToRemote} from '../../database/sync/legacyMirror';
 
 const AddExpense = () => {
   const navigation =
@@ -51,10 +53,13 @@ const AddExpense = () => {
         ),
       );
     } else {
+      const localId = `local:${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`;
       setExpenses(prev => [
         ...prev,
         {
-          id: prev.length > 0 ? prev[prev.length - 1].id + 1 : 1,
+          id: localId as unknown as ID,
           description: description.trim(),
           price: Number(amount),
           quantity: 1,
@@ -71,15 +76,28 @@ const AddExpense = () => {
   const handleSubmit = async () => {
     try {
       const now = selectedDate.toISOString();
+
       for (const item of expenses) {
-        await insertExpense(
+        const txId = await addTransaction({
+          name: item.description,
+          type: 'EXPENSE',
+          quantity: item.quantity,
+          unit_price: item.price,
+          amount: item.price * item.quantity,
+          occurred_at: now,
+        });
+
+        const localId = await insertExpense(
           item.description,
           item.price,
           item.quantity,
           now,
           now,
         );
+
+        await linkLocalExpenseToRemote(txId, localId);
       }
+
       Alert.alert('Berhasil', 'Pengeluaran berhasil disimpan');
       setExpenses([]);
       navigation.navigate('Wallet', {initialTab: 'expense'});

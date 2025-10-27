@@ -3,7 +3,8 @@ import {MenuItem} from '../types/menu';
 
 export const fetchAndFormatMenus = async (): Promise<MenuItem[]> => {
   const data = await getAllMenus();
-  return data.map((item: any) => ({
+  const activeOnly = data.filter((item: any) => !item.deleted_at);
+  return activeOnly.map((item: any) => ({
     ...item,
     category:
       item.category === 'Makanan' || item.category === 'food'

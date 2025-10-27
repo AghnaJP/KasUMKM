@@ -7,20 +7,21 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {SwipeListView} from 'react-native-swipe-list-view';
-import {deleteMenuById, updateMenuById} from '../../database/menus/menuQueries';
+import {updateMenuById} from '../../database/menus/menuQueries';
 import SwitchBar from '../../components/AddTransaction/SwitchBar';
 import MenuItemRow from '../../components/Menu/MenuItemRow';
-import HiddenMenuActions from '../../components/Menu/HiddenMenuAction';
-import EditTransactionModal from '../../components/TransactionList/EditTransactionModal';
-import {CategoryWithEmpty, MenuItem, CATEGORIES} from '../../types/menu';
+import HiddenActions from '../../components/Menu/HiddenAction';
+import EditMenuModal from '../../components/Modal/EditmenuModal';
+import {CategoryWithEmpty, MenuItem, CATEGORIES, ID} from '../../types/menu';
 import CustomText from '../../components/Text/CustomText';
-import {COLORS, MENU_ALERTS} from '../../constants';
+import {COLORS} from '../../constants';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {fetchAndFormatMenus} from '../../services/menuService';
-import {getIncomeCountByMenuId} from '../../database/Incomes/incomeQueries';
+import {useFocusEffect} from '@react-navigation/native';
+import {softDeleteMenu} from '../../database/menus/menuUnified';
 
 const categoryOptions = [{label: 'Semua', value: ''}, ...CATEGORIES];
 
@@ -33,17 +34,28 @@ const MenuList = () => {
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [editVisible, setEditVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const rowMapRef = useRef<{[key: number]: any}>({});
+  const rowMapRef = useRef<{[key: string]: any}>({});
 
   useEffect(() => {
     fetchMenus();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchMenus();
+      return () => {};
+    }, []),
+  );
+
   const fetchMenus = async () => {
     setLoading(true);
-    const mapped = await fetchAndFormatMenus();
-    setMenus(mapped);
-    setLoading(false);
+    try {
+      const mapped = await fetchAndFormatMenus();
+      Object.values(rowMapRef.current).forEach(row => row?.closeRow?.());
+      setMenus(mapped);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -55,69 +67,46 @@ const MenuList = () => {
     setEditVisible(true);
   };
 
-  const handleSaveEdit = async (updated: {
-    description: string;
-    price: string;
-    quantity: string;
-    date: string;
-  }) => {
+  const handleSaveEdit = async (updated: {name: string; price: string}) => {
     if (!selectedMenu) {
       return;
     }
 
-    const count = await getIncomeCountByMenuId(selectedMenu.id);
-
-    const name = updated.description;
-
+    const name = updated.name?.trim();
     const price = Number(updated.price);
 
-    if (count > 0) {
-      Alert.alert(
-        'Edit Menu',
-        MENU_ALERTS.editWithTransaction(count, selectedMenu.name),
-        [
-          {text: 'Batal', style: 'cancel'},
-          {
-            text: 'Lanjut Edit',
-            style: 'default',
-            onPress: async () => {
-              await updateMenuById(selectedMenu.id, name, price);
-              fetchMenus();
-              setEditVisible(false);
-              setSelectedMenu(null);
-              Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
-            },
-          },
-        ],
-      );
-    } else {
+    if (!name) {
+      Alert.alert('Validasi', 'Nama menu tidak boleh kosong.');
+      return;
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      Alert.alert('Validasi', 'Harga harus lebih dari 0.');
+      return;
+    }
+
+    try {
       await updateMenuById(selectedMenu.id, name, price);
-      fetchMenus();
       setEditVisible(false);
       setSelectedMenu(null);
-      Alert.alert('Berhasil', 'Menu berhasil diperbarui.');
+      fetchMenus();
+      Alert.alert('Sukses', 'Menu berhasil diperbarui.');
+    } catch (error) {
+      Alert.alert('Error', 'Gagal memperbarui menu.');
     }
   };
 
-  const handleDelete = useCallback(async (id: number, name: string) => {
-    const count = await getIncomeCountByMenuId(id);
-
-    const message =
-      count > 0
-        ? MENU_ALERTS.deleteWithTransaction(count, name)
-        : MENU_ALERTS.deleteWithoutTransaction(name);
-
+  const handleDelete = useCallback(async (id: ID, name: string) => {
     Alert.alert(
       'Hapus Menu',
-      message,
+      `Apakah Anda yakin ingin menghapus menu "${name}"?`,
       [
         {text: 'Batal', style: 'cancel'},
         {
           text: 'Hapus',
           style: 'destructive',
           onPress: async () => {
-            await deleteMenuById(id);
-            fetchMenus();
+            await softDeleteMenu(String(id));
+            await fetchMenus();
             Alert.alert('Berhasil', 'Menu berhasil dihapus.');
           },
         },
@@ -144,6 +133,7 @@ const MenuList = () => {
       <View style={styles.cardWrapper}>
         <SwipeListView
           data={filteredMenus}
+          extraData={{menus, selectedCategory}}
           keyExtractor={item => item.id.toString()}
           renderItem={({item}) => (
             <MenuItemRow
@@ -155,7 +145,7 @@ const MenuList = () => {
           renderHiddenItem={(data, rowMap) => {
             rowMapRef.current[data.item.id] = rowMap[data.item.id];
             return (
-              <HiddenMenuActions
+              <HiddenActions
                 item={data.item}
                 onEdit={handleEdit}
                 onDelete={() => handleDelete(data.item.id, data.item.name)}
@@ -182,20 +172,15 @@ const MenuList = () => {
         />
       </View>
 
-      <EditTransactionModal
+      <EditMenuModal
         visible={editVisible}
         onClose={() => {
           setEditVisible(false);
           setSelectedMenu(null);
         }}
-        transactionData={
+        menuData={
           selectedMenu
-            ? {
-                description: selectedMenu.name,
-                price: selectedMenu.price,
-                quantity: 1,
-                date: new Date().toISOString().split('T')[0],
-              }
+            ? {name: selectedMenu.name, price: selectedMenu.price}
             : null
         }
         onSave={handleSaveEdit}
