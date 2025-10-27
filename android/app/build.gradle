@@ -89,10 +89,10 @@ android {
         versionName "1.0"
     }
 
-    // ✅ Tambahkan flavorDimensions (WAJIB jika pakai productFlavors)
+    // Tambahkan flavorDimensions (WAJIB jika pakai productFlavors)
     flavorDimensions "role"
 
-    // ✅ Definisikan dua flavor: owner & cashier
+    // Definisikan dua flavor: owner & cashier
     productFlavors {
         owner {
             dimension "role"

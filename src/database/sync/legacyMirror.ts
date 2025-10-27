@@ -1,4 +1,3 @@
-// src/database/sync/legacyMirror.ts
 import {executeSql} from '../db';
 
 export type RemoteTx = {
@@ -28,10 +27,10 @@ async function getMap(
   remoteId: string,
 ): Promise<{table_name: 'income' | 'expense'; local_id: number} | null> {
   const rs = await executeSql(
-    `SELECT table_name, local_id FROM remote_tx_map WHERE remote_id=? LIMIT 1`,
+    'SELECT table_name, local_id FROM remote_tx_map WHERE remote_id=? LIMIT 1',
     [remoteId],
   );
-  if (rs.rows.length === 0) return null;
+  if (rs.rows.length === 0) {return null;}
   const r = rs.rows.item(0);
   return {table_name: r.table_name, local_id: Number(r.local_id)};
 }
@@ -56,7 +55,7 @@ function computeUnit(
   qty: number,
   unitFromServer?: number | null,
 ) {
-  if (unitFromServer != null) return Number(unitFromServer);
+  if (unitFromServer != null) {return Number(unitFromServer);}
   const q = Number(qty || 1);
   return q > 0 ? Number(amount) / q : Number(amount);
 }
@@ -65,13 +64,12 @@ function toNumOrNull(v: any) {
   return v == null ? null : Number(v);
 }
 
-// ===== INCOME =====
 async function upsertIncome(r: RemoteTx) {
   const existing = await getMap(r.id);
 
   if (r.deleted_at) {
     if (existing?.table_name === 'income') {
-      await executeSql(`DELETE FROM incomes WHERE id=?`, [existing.local_id]);
+      await executeSql('DELETE FROM incomes WHERE id=?', [existing.local_id]);
     }
     return;
   }
@@ -83,27 +81,26 @@ async function upsertIncome(r: RemoteTx) {
 
   let menuId: string | null = r.menu_id ?? null;
   if (menuId) {
-    const chk = await executeSql(`SELECT id FROM menus WHERE id=? LIMIT 1`, [
+    const chk = await executeSql('SELECT id FROM menus WHERE id=? LIMIT 1', [
       menuId,
     ]);
-    if (chk.rows.length === 0) menuId = null;
+    if (chk.rows.length === 0) {menuId = null;}
   }
 
   if (menuId) {
     if (existing?.table_name === 'income') {
-      // rakit SET dinamis
       const sets: string[] = [
-        `menu_id=?`,
-        `custom_description=NULL`,
-        `custom_price=NULL`,
-        `custom_quantity=NULL`,
-        `custom_created_at=NULL`,
-        `updated_at=?`,
+        'menu_id=?',
+        'custom_description=NULL',
+        'custom_price=NULL',
+        'custom_quantity=NULL',
+        'custom_created_at=NULL',
+        'updated_at=?',
       ];
       const vals: any[] = [menuId, updatedAt];
 
       if (qtyFromSrv != null) {
-        sets.splice(1, 0, `quantity=?`);
+        sets.splice(1, 0, 'quantity=?');
         vals.splice(1, 0, qtyFromSrv);
       }
 
@@ -126,17 +123,17 @@ async function upsertIncome(r: RemoteTx) {
 
   if (existing?.table_name === 'income') {
     const sets: string[] = [
-      `menu_id=NULL`,
-      `quantity=1`,
-      `custom_description=?`,
-      `custom_price=?`,
-      `custom_created_at=?`,
-      `updated_at=?`,
+      'menu_id=NULL',
+      'quantity=1',
+      'custom_description=?',
+      'custom_price=?',
+      'custom_created_at=?',
+      'updated_at=?',
     ];
     const vals: any[] = [r.name, unit, occurredAt, updatedAt];
 
     if (qtyFromSrv != null) {
-      sets.splice(3, 0, `custom_quantity=?`);
+      sets.splice(3, 0, 'custom_quantity=?');
       vals.splice(3, 0, qtyFromSrv);
     }
 
@@ -159,13 +156,12 @@ async function upsertIncome(r: RemoteTx) {
   await upsertMap(r.id, 'income', Number(ins.insertId));
 }
 
-// ===== EXPENSE =====
 async function upsertExpense(r: RemoteTx) {
   const existing = await getMap(r.id);
 
   if (r.deleted_at) {
     if (existing?.table_name === 'expense') {
-      await executeSql(`DELETE FROM expenses WHERE id=?`, [existing.local_id]);
+      await executeSql('DELETE FROM expenses WHERE id=?', [existing.local_id]);
     }
     return;
   }
@@ -177,18 +173,18 @@ async function upsertExpense(r: RemoteTx) {
 
   if (existing?.table_name === 'expense') {
     const sets: string[] = [
-      `description=?`,
-      `price=?`,
-      `custom_description=?`,
-      `custom_price=?`,
-      `custom_created_at=?`,
-      `updated_at=?`,
+      'description=?',
+      'price=?',
+      'custom_description=?',
+      'custom_price=?',
+      'custom_created_at=?',
+      'updated_at=?',
     ];
     const vals: any[] = [r.name, unit, r.name, unit, occurredAt, updatedAt];
 
     if (qtyFromSrv != null) {
-      sets.splice(2, 0, `quantity=?`);
-      sets.splice(5, 0, `custom_quantity=?`);
+      sets.splice(2, 0, 'quantity=?');
+      sets.splice(5, 0, 'custom_quantity=?');
       vals.splice(2, 0, qtyFromSrv);
       vals.splice(5, 0, qtyFromSrv);
     }
@@ -222,14 +218,13 @@ async function upsertExpense(r: RemoteTx) {
   await upsertMap(r.id, 'expense', Number(ins.insertId));
 }
 
-// ========== PUBLIC ==========
 export async function mirrorPulledTxToLegacy(rows: RemoteTx[]) {
   await ensureMapTable();
   await executeSql('BEGIN');
   try {
     for (const r of rows) {
-      if (r.type === 'INCOME') await upsertIncome(r);
-      else await upsertExpense(r);
+      if (r.type === 'INCOME') {await upsertIncome(r);}
+      else {await upsertExpense(r);}
     }
     await executeSql('COMMIT');
   } catch (e) {
@@ -277,10 +272,10 @@ export async function mirrorOneUnifiedById(remoteId: string) {
       WHERE id = ? LIMIT 1`,
     [remoteId],
   );
-  if (rs.rows.length === 0) return;
+  if (rs.rows.length === 0) {return;}
 
   const r = rs.rows.item(0) as RemoteTx;
 
-  if (r.type === 'INCOME') await upsertIncome(r);
-  else await upsertExpense(r);
+  if (r.type === 'INCOME') {await upsertIncome(r);}
+  else {await upsertExpense(r);}
 }

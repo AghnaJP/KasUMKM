@@ -1,8 +1,6 @@
-// src/database/db.ts
 import SQLite, {SQLiteDatabase} from 'react-native-sqlite-storage';
 
 SQLite.enablePromise(true);
-// SQLite.DEBUG = true; // nyalakan kalau perlu lihat log driver
 
 let dbPromise: Promise<SQLiteDatabase> | null = null;
 
@@ -25,7 +23,7 @@ export type RS = {
   rows: {
     length: number;
     item: (i: number) => any;
-    _array?: any[]; // optional; jangan andalkan ini
+    _array?: any[];
   };
 };
 
@@ -35,15 +33,13 @@ export async function executeSql(sql: string, params: any[] = []): Promise<RS> {
   return result as RS;
 }
 
-// ✅ util aman untuk konversi rows → array
 export function rowsToArray(rs: RS): any[] {
   const out: any[] = [];
   const len = rs?.rows?.length ?? 0;
-  for (let i = 0; i < len; i++) out.push(rs.rows.item(i));
+  for (let i = 0; i < len; i++) {out.push(rs.rows.item(i));}
   return out;
 }
 
-// Debug helpers (pakai rowsToArray, bukan _array)
 export async function debugDatabaseList(tag = 'DB') {
   try {
     const rs = await executeSql('PRAGMA database_list;');

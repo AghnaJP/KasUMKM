@@ -88,7 +88,7 @@ export async function updateUnifiedByRowId(
       WHERE rowid = ?`,
     [rowId],
   );
-  if (q.rows.length === 0) throw new Error('row_not_found');
+  if (q.rows.length === 0) {throw new Error('row_not_found');}
 
   const row = q.rows.item(0) as {
     id: string;
@@ -138,7 +138,7 @@ export async function getUnifiedOneByRowId(rowId: number) {
       WHERE rowid = ?`,
     [rowId],
   );
-  if (res.rows.length === 0) throw new Error('row_not_found');
+  if (res.rows.length === 0) {throw new Error('row_not_found');}
   const r = res.rows.item(0);
   const qty = Number(r.quantity ?? 1) || 1;
   const unit =
@@ -165,7 +165,7 @@ export async function softDeleteUnifiedByRowId(rowId: ID) {
   }
 
   const q = await executeSql(
-    `SELECT rowid, id FROM transactions WHERE rowid=? LIMIT 1`,
+    'SELECT rowid, id FROM transactions WHERE rowid=? LIMIT 1',
     [rid],
   );
   if (q.rows.length === 0) {
@@ -199,13 +199,12 @@ export async function softDeleteUnifiedByRowId(rowId: ID) {
       };
 
       if (map.table_name === 'income') {
-        await executeSql(`DELETE FROM incomes WHERE id=?`, [map.local_id]);
+        await executeSql('DELETE FROM incomes WHERE id=?', [map.local_id]);
       } else {
-        await executeSql(`DELETE FROM expenses WHERE id=?`, [map.local_id]);
+        await executeSql('DELETE FROM expenses WHERE id=?', [map.local_id]);
       }
 
-      // bersihkan mapping
-      await executeSql(`DELETE FROM remote_tx_map WHERE remote_id=?`, [
+      await executeSql('DELETE FROM remote_tx_map WHERE remote_id=?', [
         remoteId,
       ]);
     }

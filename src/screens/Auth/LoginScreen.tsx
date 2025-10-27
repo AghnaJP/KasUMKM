@@ -16,12 +16,10 @@ import FormField from '../../components/Form/FormField';
 import Button from '../../components/Button/Button';
 import {COLORS, STRINGS} from '../../constants';
 
-// Context & Utils
 import {AuthContext} from '../../context/AuthContext';
 import {normalizePhone} from '../../utils/phone';
 import {API_BASE} from '../../constants/api';
 
-// 🔒 Non-Expo secure storage
 import EncryptedStorage from 'react-native-encrypted-storage';
 
 type LoginResponse = {
@@ -31,7 +29,7 @@ type LoginResponse = {
   user?: {id: string; name: string; phone: string};
   memberships?: Array<{company_id: string; role: string}>;
   default_company_id?: string | null;
-  default_role?: string | null; 
+  default_role?: string | null;
   message?: string;
   error?: string;
   [k: string]: any;
@@ -85,21 +83,19 @@ const LoginScreen = () => {
       if (!r.ok) {
         const msg =
           data?.message || data?.error || 'Nomor HP atau password salah';
-        if (r.status === 401) setFormError('Nomor HP atau password salah');
-        else setFormError(msg);
+        if (r.status === 401) {setFormError('Nomor HP atau password salah');}
+        else {setFormError(msg);}
         return;
       }
 
-
       const sessionToken = data?.token ?? null;
-      const companyId = data?.default_company_id ?? null; 
+      const companyId = data?.default_company_id ?? null;
       const role = data?.default_role ?? null;
 
       if (!sessionToken) {
         setFormError('Respon server tidak valid (token kosong).');
         return;
       }
-
 
       try {
         await EncryptedStorage.setItem('session_token', String(sessionToken));
@@ -127,7 +123,6 @@ const LoginScreen = () => {
         },
       });
 
-   
     } catch (error) {
       console.error('Login failed:', error);
       setFormError('Gagal terhubung ke server. Coba lagi.');

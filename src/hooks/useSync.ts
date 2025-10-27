@@ -27,17 +27,14 @@ export function useSync() {
   async function syncNow(): Promise<void> {
     if (!companyId) {return;}
 
-    // 1) Kumpulkan perubahan lokal
     const dirtyTransactions = await getDirtyTransactions();
     const dirtyMenus = await getDirtyMenus();
 
-    // Klasifikasi payload
     const txUpsert   = dirtyTransactions.filter(t => !t.deleted_at);
     const txDelete   = dirtyTransactions.filter(t =>  t.deleted_at).map(t => t.id);
     const menuUpsert = dirtyMenus.filter(m => !m.deleted_at);
     const menuDelete = dirtyMenus.filter(m =>  m.deleted_at).map(m => m.id);
 
-    // 2) PUSH (hanya kalau ada perubahan)
     if (txUpsert.length || txDelete.length || menuUpsert.length || menuDelete.length) {
       const payload = {
         company_id: companyId,
@@ -91,7 +88,6 @@ export function useSync() {
       }
     }
 
-    // 3) PULL semenjak last_sync_at
     const since = (await EncryptedStorage.getItem(KEY(companyId))) ?? '1970-01-01T00:00:00Z';
 
     const gr = await fetch(
@@ -117,7 +113,6 @@ export function useSync() {
       await mirrorPulledTxToLegacy(pulledTx);
     }
 
-    // 4) Simpan timestamp server sebagai last_sync_at
     const serverTime = gj?.server_time || new Date().toISOString();
     await EncryptedStorage.setItem(KEY(companyId), String(serverTime));
   }

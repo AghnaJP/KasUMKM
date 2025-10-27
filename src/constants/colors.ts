@@ -13,13 +13,13 @@ export const COLORS = {
 };
 
 export const BUTTON_COLORS = {
-  primary: {bg: '#163CAA', text: '#ffffff'}, // Deep Light Blue
-  secondary: {bg: '#E0E7FF', text: '#163CAA'}, // Soft blue background, dark blue text
-  danger: {bg: '#EF4444', text: '#ffffff'}, // Red (Alert)
+  primary: {bg: '#163CAA', text: '#ffffff'},
+  secondary: {bg: '#E0E7FF', text: '#163CAA'},
+  danger: {bg: '#EF4444', text: '#ffffff'},
   outline: {bg: '#ffffff', text: '#163CAA'},
-  success: {bg: '#22c55e', text: '#fff'}, // Green, White Text
+  success: {bg: '#22c55e', text: '#fff'},
   edit: {bg: '#e2f4e8', text: '#1e5631'},
-  delete: {bg: '#fde7e9', text: '#d32f2f'}, // kuning peringatan
+  delete: {bg: '#fde7e9', text: '#d32f2f'},
 };
 
 export const AVATAR_COLORS = [

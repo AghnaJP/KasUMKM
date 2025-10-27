@@ -7,24 +7,19 @@ import {
   ScrollView,
   View,
 } from 'react-native';
-// Navigation
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../types/navigation';
-// UI Components
 import CustomText from '../../components/Text/CustomText';
 import Button from '../../components/Button/Button';
 import FormField from '../../components/Form/FormField';
 import PhoneInputField from '../../components/Form/PhoneInputField';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-// Modal & Colors
 import SuccessModal from '../../components/Modal/SuccessModal';
 import {COLORS, STRINGS} from '../../constants';
-// Utils & Context
 import {validateRegisterInput} from '../../utils/form';
 import {normalizePhone} from '../../utils/phone';
 import {AuthContext} from '../../context/AuthContext';
-// 🔒 Encrypted storage (non-Expo)
 import EncryptedStorage from 'react-native-encrypted-storage';
 import {API_BASE} from '../../constants/api';
 import {insertUserWithId} from '../../database/users/userQueries';
@@ -39,7 +34,7 @@ type RegisterResponse = {
   membership?: {
     id: string;
     company_id: string;
-    role: string; // 'OWNER' | 'CASHIER'
+    role: string;
     created_at: string;
   };
   error?: string;
@@ -62,7 +57,7 @@ const RegisterScreen = () => {
   const [formError, setFormError] = useState('');
 
   const [isPasswordVisible, setPasswordVisible] = useState(false);
-  const [showModal, setShowModal] = useState(false); // optional flow
+  const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const {login} = useContext(AuthContext);
@@ -127,7 +122,6 @@ const RegisterScreen = () => {
         return;
       }
 
-      // ✅ Setelah register sukses, langsung LOGIN pakai kredensial yang sama
       const loginRes = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -151,19 +145,17 @@ const RegisterScreen = () => {
       const companyId = loginJson?.default_company_id ?? null;
       const role = loginJson?.default_role ?? null;
 
-      // persist secure fields
       try {
         await EncryptedStorage.setItem('session_token', String(sessionToken));
         if (companyId != null)
-          await EncryptedStorage.setItem('company_id', String(companyId));
-        else await EncryptedStorage.removeItem('company_id');
-        if (role != null) await EncryptedStorage.setItem('role', String(role));
-        else await EncryptedStorage.removeItem('role');
+          {await EncryptedStorage.setItem('company_id', String(companyId));}
+        else {await EncryptedStorage.removeItem('company_id');}
+        if (role != null) {await EncryptedStorage.setItem('role', String(role));}
+        else {await EncryptedStorage.removeItem('role');}
       } catch (e) {
         console.warn('Failed to persist secure data:', e);
       }
 
-      // masukkan ke AuthContext (ini yang akan save ke SQLite juga)
       await (login as any)({
         token: sessionToken,
         companyId,
@@ -174,7 +166,6 @@ const RegisterScreen = () => {
         },
       });
 
-      // opsional: simpan user lokal
       try {
         await insertUserWithId(
           loginJson?.user?.id ?? '',
@@ -187,7 +178,6 @@ const RegisterScreen = () => {
         console.warn('Failed to insert user locally:', err);
       }
 
-      // navigasi ke app
       navigation.replace('App', {screen: 'AppTabs', params: {screen: 'Home'}});
 
       try {
@@ -247,7 +237,6 @@ const RegisterScreen = () => {
           error={phoneError}
         />
 
-        {/* Opsional: Kode undangan */}
         <FormField
           label="Kode Undangan (opsional)"
           placeholder="Masukkan kode jika ada"

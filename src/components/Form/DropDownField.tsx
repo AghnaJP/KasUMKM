@@ -42,7 +42,6 @@ const DropdownField = <T extends string>({
     [value, items],
   );
 
-  // iOS rendering
   if (Platform.OS === 'ios') {
     return (
       <View style={[styles.wrapper, containerStyle]}>
@@ -114,7 +113,6 @@ const DropdownField = <T extends string>({
     );
   }
 
-  // Android rendering
   return (
     <View style={[styles.wrapper, containerStyle]}>
       <CustomText variant="body" style={styles.label}>
@@ -187,7 +185,6 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
 
-  // iOS Only
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

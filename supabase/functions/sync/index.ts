@@ -1,12 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Supabase client
 const sb = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
-
-// ===================== Helpers =====================
 
 function getSessionId(req: Request) {
   const h = req.headers.get('authorization') || req.headers.get('Authorization');
@@ -49,8 +46,6 @@ async function assertMembership(user_id: string, company_id: string) {
   if (!m) {throw new Error('not_member_of_company');}
 }
 
-// ===================== Handlers =====================
-
 async function handlePull(req: Request) {
   try {
     const { session, error } = await getUserFromSession(req);
@@ -61,8 +56,6 @@ async function handlePull(req: Request) {
     const since = String((isPost ? body?.since : url.searchParams.get('since')) || '').trim() || '1970-01-01T00:00:00Z';
 
     if (!company_id) {return new Response(JSON.stringify({ error: 'missing_company_id' }), { status: 400 });}
-
-    //await assertMembership(session.user_id, company_id);
 
     if (!error && session?.user_id) {
       await assertMembership(session.user_id, company_id);
@@ -191,18 +184,16 @@ async function handlePush(req: Request) {
   }
 }
 
-// ===================== Main Handler =====================
-
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const path = url.pathname;
 
     if (path.endsWith('/sync/pull')) {
-      return await handlePull(req); // dukung GET atau POST
+      return await handlePull(req);
     }
     if (path.endsWith('/sync/push')) {
-      return await handlePush(req); // khusus POST
+      return await handlePush(req);
     }
 
     return new Response(JSON.stringify({ error: 'not_found' }), { status: 404 });

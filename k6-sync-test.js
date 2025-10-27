@@ -259,7 +259,7 @@ export default function () {
       failureRate.add(1);
     }
   } else {
-    console.log(`[${iterationId}] ⚠️ No company_id found — skipping sync`);
+    console.log(`[${iterationId}] No company_id found — skipping sync`);
   }
 
   if (companyId) {
@@ -364,7 +364,7 @@ export default function () {
       failureRate.add(1);
     }
   } else {
-    console.log(`[${iterationId}] ⚠️ No company_id found — skipping sync`);
+    console.log(`[${iterationId}] No company_id found — skipping sync`);
   }
 
   if (companyId) {
@@ -469,6 +469,6 @@ export default function () {
       failureRate.add(1);
     }
   } else {
-    console.log(`[${iterationId}] ⚠️ No company_id found — skipping sync`);
+    console.log(`[${iterationId}] No company_id found — skipping sync`);
   }
 }

@@ -19,7 +19,6 @@ if (origMultiSet) {
       v === undefined || v === null ? '' : String(v),
     ]);
 
-    // TypeScript expects readonly (readonly [string, string])[]:
     return origMultiSet(fixed as readonly [string, string][]);
   };
 }

@@ -14,5 +14,5 @@ export async function initSessionTable() {
       sync_cursor TEXT
     );
   `);
-  await executeSql(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`);
+  await executeSql('CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);');
 }

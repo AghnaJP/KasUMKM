@@ -32,7 +32,7 @@ declare module 'react-native-sqlite-storage' {
 
     enablePromise: (flag: boolean) => void;
 
-    DEBUG: (flag: boolean) => void; // ✅ Tambahkan ini
+    DEBUG: (flag: boolean) => void;
   };
 
   export default SQLite;

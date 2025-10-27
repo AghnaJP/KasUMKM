@@ -21,7 +21,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'missing_phone' }), { status: 400, headers: ct });
     }
 
-    // 1) get user
     const { data: user, error: eUser } = await sb
       .from('users')
       .select('id')
@@ -32,7 +31,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'user_not_found' }), { status: 404, headers: ct });
     }
 
-    // 2) delete memberships first
     const { error: eMem } = await sb.from('memberships').delete().eq('user_id', user.id);
     if (eMem) {
       console.warn('[delete] memberships delete error:', eMem);
@@ -41,7 +39,6 @@ serve(async (req) => {
       });
     }
 
-    // 4) delete user
     const { error: eDel } = await sb.from('users').delete().eq('id', user.id);
     if (eDel) {
       return new Response(JSON.stringify({ error: 'delete_failed', message: eDel.message }), {

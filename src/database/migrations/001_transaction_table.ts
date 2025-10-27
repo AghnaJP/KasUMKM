@@ -1,4 +1,3 @@
-// src/database/migrations/001_transaction_table.ts
 import {executeSql, debugDatabaseList, tableExists} from '../db';
 
 export async function migrateCreateTransactionsTable() {
@@ -21,18 +20,18 @@ export async function migrateCreateTransactionsTable() {
     );
   `);
   await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_tx_updated ON transactions(updated_at);`,
+    'CREATE INDEX IF NOT EXISTS idx_tx_updated ON transactions(updated_at);',
   );
   await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_tx_deleted ON transactions(deleted_at);`,
+    'CREATE INDEX IF NOT EXISTS idx_tx_deleted ON transactions(deleted_at);',
   );
   await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_tx_type_date ON transactions(type, occurred_at);`,
+    'CREATE INDEX IF NOT EXISTS idx_tx_type_date ON transactions(type, occurred_at);',
   );
 
   const ok = await tableExists('transactions');
   console.log(
-    '✅ Migration completed:',
+    'Migration completed:',
     ok ? 'transactions table created.' : 'WARNING: table still not visible',
   );
 }

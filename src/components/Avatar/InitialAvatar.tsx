@@ -1,7 +1,7 @@
 import React from 'react';
 import {View, StyleSheet, ViewStyle} from 'react-native';
 import CustomText from '../../components/Text/CustomText';
-import {AVATAR_COLORS} from '../../constants/colors'; // <--- import di sini
+import {AVATAR_COLORS} from '../../constants/colors';
 
 type Props = {
   name?: string | null;
@@ -9,13 +9,13 @@ type Props = {
 };
 
 function getInitial(name?: string | null) {
-  if (!name || !name.trim()) return '?';
+  if (!name || !name.trim()) {return '?';}
   const firstWord = name.trim().split(/\s+/)[0];
   return firstWord[0].toUpperCase();
 }
 
 function colorFromName(name?: string | null) {
-  if (!name) return AVATAR_COLORS[0];
+  if (!name) {return AVATAR_COLORS[0];}
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);

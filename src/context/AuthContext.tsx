@@ -87,27 +87,33 @@ export function AuthProvider({children}: PropsWithChildren) {
     profile: defaultProfile,
   });
 
-  // 🔹 Simpan sesi ke storage
   const persist = useCallback(async (s: AuthState) => {
-    if (s.token) {await EncryptedStorage.setItem(K.TOKEN, s.token);}
-    else {await EncryptedStorage.removeItem(K.TOKEN);}
+    if (s.token) {
+      await EncryptedStorage.setItem(K.TOKEN, s.token);
+    } else {
+      await EncryptedStorage.removeItem(K.TOKEN);
+    }
 
-    if (s.companyId) {await EncryptedStorage.setItem(K.COMPANY, s.companyId);}
-    else {await EncryptedStorage.removeItem(K.COMPANY);}
+    if (s.companyId) {
+      await EncryptedStorage.setItem(K.COMPANY, s.companyId);
+    } else {
+      await EncryptedStorage.removeItem(K.COMPANY);
+    }
 
-    if (s.role) {await EncryptedStorage.setItem(K.ROLE, String(s.role));}
-    else {await EncryptedStorage.removeItem(K.ROLE);}
+    if (s.role) {
+      await EncryptedStorage.setItem(K.ROLE, String(s.role));
+    } else {
+      await EncryptedStorage.removeItem(K.ROLE);
+    }
 
     await EncryptedStorage.setItem(K.PHONE, s.profile.phone ?? '');
     await EncryptedStorage.setItem('profile_name', s.profile.name ?? '');
 
-    // bersihkan legacy
     try {
       await AsyncStorage.multiRemove(['userPhone', 'userName']);
     } catch {}
   }, []);
 
-  // 🔹 Restore sesi user
   const restore = useCallback(async () => {
     try {
       const tokenInEncrypted = await EncryptedStorage.getItem(K.TOKEN);
@@ -137,7 +143,6 @@ export function AuthProvider({children}: PropsWithChildren) {
     restore();
   }, [restore]);
 
-  // 🔹 Login handler
   const login = useCallback(
     async (a: any, b?: any) => {
       let next: AuthState;
@@ -179,7 +184,6 @@ export function AuthProvider({children}: PropsWithChildren) {
     [persist, state],
   );
 
-  // 🔹 Logout handler
   const logout = useCallback(async () => {
     await clearSession();
     setState({
@@ -198,22 +202,24 @@ export function AuthProvider({children}: PropsWithChildren) {
     ]);
   }, []);
 
-  // 🔹 Get Authorization header
   const getAuthHeaders = useCallback(async () => {
     const token = state.token ?? (await getAccessToken());
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) {headers.Authorization = `Bearer ${token}`;}
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
     return headers;
   }, [state.token]);
 
-  // 🔹 Update nama user
   const updateUserName = useCallback(
     async (name: string) => {
-      if (!state.profile.phone) {throw new Error('Nomor telepon tidak tersedia');}
+      if (!state.profile.phone) {
+        throw new Error('Nomor telepon tidak tersedia');
+      }
       try {
-        console.log('📝 Updating user name to:', name);
+        console.log('Updating user name to:', name);
         const res = await fetch(`${API_BASE}/me`, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
@@ -234,7 +240,7 @@ export function AuthProvider({children}: PropsWithChildren) {
         await editUsername(name, state.profile.phone);
         await EncryptedStorage.setItem('profile_name', name);
         setState(s => ({...s, profile: {...s.profile, name}}));
-        console.log('✅ Username updated');
+        console.log('Username updated');
       } catch (err) {
         console.error('Failed to update user name:', err);
         throw err;
@@ -243,12 +249,13 @@ export function AuthProvider({children}: PropsWithChildren) {
     [state.profile.phone],
   );
 
-  // 🔹 Hapus akun user (Supabase + SQLite)
   const deleteAccount = useCallback(async () => {
-    if (!state.profile.phone) {throw new Error('Nomor telepon tidak tersedia');}
+    if (!state.profile.phone) {
+      throw new Error('Nomor telepon tidak tersedia');
+    }
 
     try {
-      console.log('🗑️ Starting account deletion for:', state.profile.phone);
+      console.log('Starting account deletion for:', state.profile.phone);
 
       const res = await fetch(
         `${API_BASE}/delete?user_phone=${encodeURIComponent(
@@ -269,18 +276,17 @@ export function AuthProvider({children}: PropsWithChildren) {
         );
       }
 
-      console.log('✅ User deleted from server:', json);
+      console.log('User deleted from server:', json);
 
-      // 🧹 Hapus juga dari SQLite
       try {
         await deleteUser(state.profile.phone);
-        console.log('🧹 Local user deleted from SQLite');
+        console.log('Local user deleted from SQLite');
       } catch (e) {
         console.warn('Skip local delete:', e);
       }
 
       await logout();
-      console.log('👋 Account deletion completed and logged out');
+      console.log('Account deletion completed and logged out');
     } catch (err) {
       console.error('Failed to delete account:', err);
       throw err;

@@ -1,4 +1,3 @@
-// src/database/transactions/checkUnified.ts
 import {getDBConnection} from '../db';
 
 export async function checkTodayTransactionsUnified(): Promise<{
@@ -7,7 +6,6 @@ export async function checkTodayTransactionsUnified(): Promise<{
 }> {
   const db = await getDBConnection();
 
-  // Hitung rentang hari ini dalam UTC (pakai occurred_at ISO string)
   const now = new Date();
   const yyyy = now.getUTCFullYear();
   const mm = now.getUTCMonth();
@@ -19,7 +17,6 @@ export async function checkTodayTransactionsUnified(): Promise<{
   return new Promise((resolve, reject) => {
     db.transaction(tx => {
       tx.executeSql(
-        // income
         `SELECT COUNT(*) AS c
            FROM transactions
           WHERE deleted_at IS NULL
@@ -30,7 +27,6 @@ export async function checkTodayTransactionsUnified(): Promise<{
           const incomeCount = incomeRes.rows.item(0).c ?? 0;
 
           tx.executeSql(
-            // expense
             `SELECT COUNT(*) AS c
                FROM transactions
               WHERE deleted_at IS NULL

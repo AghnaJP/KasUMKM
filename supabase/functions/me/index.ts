@@ -17,7 +17,6 @@ serve(async (req) => {
   const pathname = url.pathname;
 
   try {
-    // ===== GET /me (versi standar: wajib Authorization) =====
     if (pathname === '/me' && req.method === 'GET') {
       const sid = getSessionId(req);
       if (!sid) {
@@ -66,7 +65,6 @@ serve(async (req) => {
       }), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    // ===== PUT /me (boleh Authorization ATAU fallback by phone) =====
     if (pathname === '/me' && req.method === 'PUT') {
       const sid = getSessionId(req);
       const body = await req.json().catch(() => ({}));
@@ -81,7 +79,6 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: 'name_too_long' }), { status: 400 });
       }
 
-      // Mode 1: ada Authorization -> verifikasi session dan update by user_id
       if (sid) {
         const now = new Date().toISOString();
         const { data: session } = await supabase
@@ -117,7 +114,6 @@ serve(async (req) => {
         }), { headers: { 'Content-Type': 'application/json' } });
       }
 
-      // Mode 2: TANPA Authorization -> langsung update by phone
       if (!phone) {
         return new Response(JSON.stringify({ error: 'missing_token_or_phone' }), { status: 401 });
       }

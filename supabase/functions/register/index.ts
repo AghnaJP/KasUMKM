@@ -2,7 +2,6 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import bcrypt from 'https://esm.sh/bcryptjs';
 
-// ⚙️ pakai env BARU, bukan SUPABASE_*
 const url = Deno.env.get('SUPABASE_URL')!;
 const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const sb = createClient(url, serviceRole, { auth: { persistSession: false } });
@@ -19,7 +18,6 @@ serve(async (req) => {
     const password_hash = await bcrypt.hash(password, 10);
     let invite: any = null;
 
-    // cek kode undangan (optional)
     if (invite_code?.trim()) {
       const now = new Date().toISOString();
       const { data, error } = await sb
@@ -33,7 +31,6 @@ serve(async (req) => {
       invite = data;
     }
 
-    // buat user baru
     const { data: user, error: eUser } = await sb
       .from('users')
       .insert({ name, phone, password_hash })
@@ -45,7 +42,6 @@ serve(async (req) => {
       throw eUser;
     }
 
-    // assign membership & company
     let company: any = null;
     let membership: any = null;
 
@@ -82,9 +78,6 @@ serve(async (req) => {
         .single();
       membership = mem;
     }
-
-    // 🚫 tidak ada insert ke tabel sessions di sini
-    // token akan dibuat di client (app) pakai JWT Supabase Auth nanti
 
     return new Response(
       JSON.stringify({

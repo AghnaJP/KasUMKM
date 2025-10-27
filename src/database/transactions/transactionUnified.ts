@@ -102,7 +102,7 @@ export async function softDeleteTransaction(id: string) {
 }
 
 export async function hardDeleteTransactions(ids: string[]) {
-  if (!ids.length) return;
+  if (!ids.length) {return;}
   const ph = ids.map(() => '?').join(',');
   await executeSql(`DELETE FROM transactions WHERE id IN (${ph})`, ids);
 }
@@ -134,7 +134,7 @@ export async function markTransactionsSynced(
   ids: string[],
   serverTimeISO: string,
 ) {
-  if (!ids.length) return;
+  if (!ids.length) {return;}
   const placeholders = ids.map(() => '?').join(',');
   await executeSql(
     `UPDATE transactions SET dirty=0, updated_at=? WHERE id IN (${placeholders})`,
@@ -158,7 +158,7 @@ export async function applyPulledTransactions(rows: Array<{
   try {
     for (const r of rows) {
       if (r.deleted_at) {
-        await executeSql(`DELETE FROM transactions WHERE id=?`, [r.id]);
+        await executeSql('DELETE FROM transactions WHERE id=?', [r.id]);
         continue;
       }
       await executeSql(

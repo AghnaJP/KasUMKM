@@ -1,4 +1,3 @@
-// HomeScreen.tsx
 import React, {useState, useCallback, useEffect} from 'react';
 import {
   StyleSheet,
@@ -10,30 +9,22 @@ import {
 import Clipboard from '@react-native-clipboard/clipboard';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-
 import CustomText from '../../components/Text/CustomText';
 import ProfitCard from '../../components/Card/ProfitCard';
 import TransactionItem from '../../components/TransactionList/TransactionItem';
-
 import {useAuth} from '../../context/AuthContext';
 import {useTransactionList} from '../../hooks/useTransactionList';
-
-// 🔁 Sumber data unified (sinkron)
 import {getAllTransactionsUnified} from '../../database/transactions/transactionQueriesUnified';
 import {checkTodayTransactionsUnified as checkTodayTransactions} from '../../database/transactions/checkUnified';
 import {useSync} from '../../hooks/useSync';
-
 import {MONTHS} from '../../constants/months';
 import {RootStackParamList} from '../../types/navigation';
 import type {TransactionData} from '../../types/transaction';
-
 import TransactionChart from '../../components/Chart/TransactionChart';
 import {checkTransactions} from '../../utils/notification';
-
 import Toast, {ErrorToast} from 'react-native-toast-message';
 import {COLORS} from '../../constants';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
 import {API_BASE} from '../../constants/api';
 import Button from '../../components/Button/Button';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -58,13 +49,11 @@ const HomeScreen = () => {
   const selectedMonth = MONTHS[currentDate.getMonth()];
   const selectedYear = currentDate.getFullYear();
 
-  // ✅ Bungkus fetcher jadi fungsi TANPA argumen (sesuai tipe useTransactionList)
   const loadUnified = useCallback(
     () => getAllTransactionsUnified(selectedMonth, selectedYear, setLoaded),
     [selectedMonth, selectedYear, setLoaded],
   );
 
-  // ⛳️ List transaksi untuk UI sekarang diambil dari tabel unified
   const transactions = useTransactionList<TransactionData>(
     loadUnified,
     selectedMonth,
@@ -82,7 +71,6 @@ const HomeScreen = () => {
     })();
   }, [companyId]);
 
-  // === SYNC NOW manual ===
   const handleSyncNow = useCallback(async () => {
     try {
       if (!companyId) {
@@ -95,7 +83,7 @@ const HomeScreen = () => {
 
       const ts = new Date().toISOString();
       setLastSyncAt(new Date(ts).toLocaleString('id-ID'));
-      setRefreshKey(prev => prev + 1); // segarkan chart/list
+      setRefreshKey(prev => prev + 1);
 
       Toast.show({
         type: 'infoCustom',
@@ -110,7 +98,6 @@ const HomeScreen = () => {
     }
   }, [companyId, syncNow]);
 
-  // === FUNGSI BUAT KODE KASIR (OWNER SAJA) ===
   const handleCreateInvite = useCallback(async () => {
     try {
       if (!isOwner) {
@@ -126,12 +113,10 @@ const HomeScreen = () => {
         return;
       }
 
-      //const headers = await getAuthHeaders();
 
       const r = await fetch(`${API_BASE}/invite/create`, {
         method: 'POST',
         headers: {
-          //...headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ttl_hours: 24, company_id: companyId}),
@@ -176,27 +161,6 @@ const HomeScreen = () => {
     }
   }, [isOwner, companyId]);
 
-  // const addDummyUnified = useCallback(async () => {
-  //   try {
-  //     // insert 1 baris ke SQLite unified
-  //     const id = await addTransaction({
-  //       name: 'Tes dari unified',
-  //       type: 'INCOME', // atau 'EXPENSE'
-  //       amount: 12000,
-  //       occurred_at: new Date().toISOString(),
-  //     });
-
-  //     // segarkan UI supaya kebaca di chart/list (kalau masuk bulan berjalan)
-  //     setRefreshKey(prev => prev + 1);
-
-  //     Toast.show({type: 'infoCustom', text1: `Dummy dibuat: ${id}`});
-  //   } catch (e) {
-  //     console.log('addDummyUnified error', e);
-  //     Toast.show({type: 'error', text1: 'Gagal membuat dummy unified tx'});
-  //   }
-  // }, []);
-
-  // ======= toast helper =======
   const InfoToast = (props: any) => (
     <View style={styles.toastCard}>
       <Ionicons
@@ -221,21 +185,18 @@ const HomeScreen = () => {
     </View>
   );
 
-  // refresh list ketika kembali ke Home (tanpa auto-sync)
   useFocusEffect(
     useCallback(() => {
       setRefreshKey(prev => prev + 1);
     }, []),
   );
 
-  // cek notifikasi (tetap)
   useFocusEffect(
     useCallback(() => {
       checkTransactions();
     }, []),
   );
 
-  // cek transaksi hari ini (pakai unified)
   useFocusEffect(
     useCallback(() => {
       async function showTransactionToast() {
@@ -284,7 +245,6 @@ const HomeScreen = () => {
         </CustomText>
         <CustomText variant="title">{profile?.name || 'Pengguna'}</CustomText>
 
-        {/* === TOMBOL OWNER-ONLY === */}
         {isOwner && (
           <View style={{marginTop: 12}}>
             <Button
@@ -295,7 +255,6 @@ const HomeScreen = () => {
           </View>
         )}
 
-        {/* === TOMBOL SYNC NOW (untuk semua role) === */}
         <View style={{marginTop: 12}}>
           <Button
             title={isSyncing ? 'Menyinkronkan...' : 'Sinkronisasi Sekarang'}

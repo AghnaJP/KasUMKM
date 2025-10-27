@@ -1,23 +1,14 @@
-// src/database/transactions/transactionQueriesUnified.ts
 import {executeSql, rowsToArray} from '../db';
 import {MONTHS} from '../../constants/months';
 import type {TransactionData} from '../../types/transaction';
 
-/**
- * Ambil transaksi dari tabel unified (transactions) untuk 1 bulan,
- * tetapi dikembalikan dalam shape lama { id:number, name, amount, date, type }
- * dengan `id` diisi dari SQLite `rowid` (numeric) agar kompatibel.
- */
 export async function getAllTransactionsByMonth(
-  month0: number, // 0..11
+  month0: number,
   year: number,
 ): Promise<TransactionData[]> {
   const start = new Date(Date.UTC(year, month0, 1, 0, 0, 0)).toISOString();
   const end = new Date(Date.UTC(year, month0 + 1, 1, 0, 0, 0)).toISOString();
 
-  // NOTE:
-  // - `rowid AS id` -> numeric id untuk kompatibilitas tipe lama
-  // - CAST type ke lowercase 'income'/'expense' agar cocok UI lama
   const rs = await executeSql(
     `SELECT 
         rowid AS id,
@@ -32,14 +23,9 @@ export async function getAllTransactionsByMonth(
     [start, end],
   );
 
-  // rows sudah sesuai shape TransactionData lama
   return rowsToArray(rs) as TransactionData[];
 }
 
-/**
- * Adapter supaya signature tetap sama dengan hook lama:
- * terima (monthName, year, setLoadedCb) dan balikan TransactionData[]
- */
 export async function getAllTransactionsUnified(
   monthName: string,
   year: number,
@@ -51,7 +37,7 @@ export async function getAllTransactionsUnified(
   const idx = month0 >= 0 ? month0 : new Date().getMonth();
 
   const list = await getAllTransactionsByMonth(idx, year);
-  if (setLoadedCb) setLoadedCb(list);
+  if (setLoadedCb) {setLoadedCb(list);}
   return list;
 }
 
@@ -126,7 +112,7 @@ export async function getSeriesUnified(
     const rows = rowsToArray(rs) as Array<{d: string; total: number}>;
     rows.forEach(r => {
       const idx = Number(r.d) - 1;
-      if (idx >= 0 && idx < data.length) data[idx] = r.total || 0;
+      if (idx >= 0 && idx < data.length) {data[idx] = r.total || 0;}
     });
 
     return {labels, data};
@@ -201,7 +187,7 @@ export async function getSeriesUnified(
     const rows = rowsToArray(rs) as Array<{m: string; total: number}>;
     rows.forEach(r => {
       const idx = Number(r.m) - 1;
-      if (idx >= 0 && idx < 12) data[idx] = r.total || 0;
+      if (idx >= 0 && idx < 12) {data[idx] = r.total || 0;}
     });
 
     return {labels, data};

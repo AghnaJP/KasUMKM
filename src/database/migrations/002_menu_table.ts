@@ -17,18 +17,18 @@ export async function migrateCreateMenuTable() {
   `);
 
   await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_menu_updated ON menus(updated_at);`,
+    'CREATE INDEX IF NOT EXISTS idx_menu_updated ON menus(updated_at);',
   );
   await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_menu_deleted ON menus(deleted_at);`,
+    'CREATE INDEX IF NOT EXISTS idx_menu_deleted ON menus(deleted_at);',
   );
   await executeSql(
-    `CREATE INDEX IF NOT EXISTS idx_menu_category ON menus(category, occurred_at);`,
+    'CREATE INDEX IF NOT EXISTS idx_menu_category ON menus(category, occurred_at);',
   );
 
   const ok = await tableExists('menus');
   console.log(
-    '✅ Menu migration completed:',
+    'Menu migration completed:',
     ok ? 'menus table created.' : 'WARNING: menus table still not visible',
   );
 }

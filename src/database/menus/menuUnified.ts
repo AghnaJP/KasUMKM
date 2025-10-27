@@ -1,4 +1,3 @@
-// src/database/menus/menuUnified.ts
 import {executeSql, rowsToArray} from '../db';
 import {newId} from '../../utils/id';
 
@@ -58,7 +57,6 @@ export async function updateMenu(
     vals.push(patch.occurred_at);
   }
 
-  // tandai kotor + update timestamp
   sets.push('updated_at=?');
   vals.push(now);
   sets.push('dirty=1');
@@ -80,7 +78,7 @@ export async function softDeleteMenu(id: string) {
 }
 
 export async function hardDeleteMenus(ids: string[]) {
-  if (!ids.length) return;
+  if (!ids.length) {return;}
   const ph = ids.map(() => '?').join(',');
   await executeSql(`DELETE FROM menus WHERE id IN (${ph})`, ids);
 }
@@ -116,7 +114,7 @@ export async function getDirtyMenus(): Promise<MenuRow[]> {
 }
 
 export async function markMenusSynced(ids: string[], serverTimeISO: string) {
-  if (!ids.length) return;
+  if (!ids.length) {return;}
   const placeholders = ids.map(() => '?').join(',');
   await executeSql(
     `UPDATE menus SET dirty=0, updated_at=? WHERE id IN (${placeholders})`,
@@ -137,7 +135,7 @@ export async function applyPulledMenus(rows: Array<{
   try {
     for (const r of rows) {
       if (r.deleted_at) {
-        await executeSql(`DELETE FROM menus WHERE id=?`, [r.id]);
+        await executeSql('DELETE FROM menus WHERE id=?', [r.id]);
         continue;
       }
       await executeSql(

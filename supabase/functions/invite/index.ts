@@ -1,13 +1,11 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Supabase client
 const sb = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-// --- Helper ---
 function getSessionId(req: Request) {
   const h = req.headers.get('authorization') || '';
   const m = /^Bearer\s+(.+)$/i.exec(h.trim());
@@ -66,16 +64,13 @@ async function resolveOwnerCompanyId(user_id: string) {
   return owner.company_id;
 }
 
-// --- Edge Function ---
 serve(async (req) => {
   try {
     const url = new URL(req.url);
     const pathname = url.pathname;
     const method = req.method;
 
-    // POST /invite/create
 if (pathname === '/invite/create' && method === 'POST') {
-  // coba pakai session seperti biasa
   const { user, error } = await getUserFromSession(req);
 
   const body = await req.json().catch(() => ({}));
@@ -85,10 +80,8 @@ if (pathname === '/invite/create' && method === 'POST') {
   let company_id: string | null = null;
 
   if (!error && user) {
-    // jalur normal: resolve company dari OWNER membership
     company_id = await resolveOwnerCompanyId(user.id);
   } else {
-    // fallback sementara: terima company_id dari client
     const cid = String(body?.company_id || '').trim();
     if (!cid) {
       return new Response(
@@ -125,8 +118,6 @@ if (pathname === '/invite/create' && method === 'POST') {
   );
 }
 
-
-    // GET /invite/verify/:code
     if (pathname.startsWith('/invite/verify/') && method === 'GET') {
       const code = pathname.replace('/invite/verify/', '').trim().toUpperCase();
       const now = new Date().toISOString();

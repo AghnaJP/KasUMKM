@@ -33,7 +33,7 @@ const WalletScreen = () => {
 
   React.useEffect(() => {
     const tab = route.params?.initialTab;
-    if (tab && tab !== activeTab) setActiveTab(tab);
+    if (tab && tab !== activeTab) {setActiveTab(tab);}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.initialTab]);
 
@@ -68,7 +68,7 @@ const WalletScreen = () => {
     quantity: string;
     date: string;
   }) => {
-    if (!transactionToEdit) return;
+    if (!transactionToEdit) {return;}
 
     try {
       const rowId = Number(transactionToEdit.id);
