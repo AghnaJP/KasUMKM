@@ -25,7 +25,7 @@ export function useSync() {
   const { companyId } = useAuth();
 
   async function syncNow(): Promise<void> {
-    if (!companyId) return;
+    if (!companyId) {return;}
 
     // 1) Kumpulkan perubahan lokal
     const dirtyTransactions = await getDirtyTransactions();
@@ -80,8 +80,8 @@ export function useSync() {
 
       const markTime = pushJson?.server_time || new Date().toISOString();
 
-      if (txUpsert.length)  await markTransactionsSynced(txUpsert.map(t => t.id), markTime);
-      if (menuUpsert.length) await markMenusSynced(menuUpsert.map(m => m.id), markTime);
+      if (txUpsert.length)  {await markTransactionsSynced(txUpsert.map(t => t.id), markTime);}
+      if (menuUpsert.length) {await markMenusSynced(menuUpsert.map(m => m.id), markTime);}
 
       if (txDelete.length) {
         await hardDeleteTransactions(txDelete);
@@ -106,10 +106,10 @@ export function useSync() {
     } catch {
       throw new Error(`pull_parse_failed: ${pullRaw?.slice(0, 200)}`);
     }
-    if (!gr.ok) throw new Error(gj?.error || `pull_failed_${gr.status}`);
+    if (!gr.ok) {throw new Error(gj?.error || `pull_failed_${gr.status}`);}
 
     const pulledMenus = Array.isArray(gj?.menus) ? gj.menus : [];
-    if (pulledMenus.length) await applyPulledMenus(pulledMenus);
+    if (pulledMenus.length) {await applyPulledMenus(pulledMenus);}
 
     const pulledTx = Array.isArray(gj?.transactions) ? gj.transactions : [];
     if (pulledTx.length) {

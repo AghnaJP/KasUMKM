@@ -41,21 +41,6 @@ serve(async (req) => {
       });
     }
 
-    // 3) try delete sessions — ignore if table missing (404 / 42P01 / PGRST114)
-    // const { error: eSess } = await sb.from('sessions').delete().eq('user_id', user.id);
-    // if (
-    //   eSess &&
-    //     String(eSess.code).includes('PGRST114') ||
-    //     String(eSess.code).includes('42P01') ||
-    //     (eSess.message || '').toLowerCase().includes('does not exist') ||
-    //     (eSess.details || '').toLowerCase().includes('not exist')
-    //   )
-    // ) {
-    //   console.warn('[delete] sessions delete error (not fatal):', eSess);
-    //   // kalau errornya bukan "table not exist", kamu boleh throw:
-    //   // return new Response(JSON.stringify({ error: 'delete_failed', message: eSess.message }), { status: 500, headers: ct });
-    // }
-
     // 4) delete user
     const { error: eDel } = await sb.from('users').delete().eq('id', user.id);
     if (eDel) {

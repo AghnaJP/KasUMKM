@@ -16,7 +16,7 @@ function getSessionId(req: Request) {
 
 async function getUserFromSession(req: Request) {
   const sid = getSessionId(req);
-  if (!sid) return { error: 'missing_token' };
+  if (!sid) {return { error: 'missing_token' };}
 
   const now = new Date().toISOString();
   const { data: session } = await sb
@@ -26,7 +26,7 @@ async function getUserFromSession(req: Request) {
     .gt('expires_at', now)
     .single();
 
-    if (!session) return { error: 'invalid_or_expired_session' };
+    if (!session) {return { error: 'invalid_or_expired_session' };}
 
   const { data: user } = await sb
     .from('users')

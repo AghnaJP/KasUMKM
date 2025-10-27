@@ -89,14 +89,14 @@ export function AuthProvider({children}: PropsWithChildren) {
 
   // 🔹 Simpan sesi ke storage
   const persist = useCallback(async (s: AuthState) => {
-    if (s.token) await EncryptedStorage.setItem(K.TOKEN, s.token);
-    else await EncryptedStorage.removeItem(K.TOKEN);
+    if (s.token) {await EncryptedStorage.setItem(K.TOKEN, s.token);}
+    else {await EncryptedStorage.removeItem(K.TOKEN);}
 
-    if (s.companyId) await EncryptedStorage.setItem(K.COMPANY, s.companyId);
-    else await EncryptedStorage.removeItem(K.COMPANY);
+    if (s.companyId) {await EncryptedStorage.setItem(K.COMPANY, s.companyId);}
+    else {await EncryptedStorage.removeItem(K.COMPANY);}
 
-    if (s.role) await EncryptedStorage.setItem(K.ROLE, String(s.role));
-    else await EncryptedStorage.removeItem(K.ROLE);
+    if (s.role) {await EncryptedStorage.setItem(K.ROLE, String(s.role));}
+    else {await EncryptedStorage.removeItem(K.ROLE);}
 
     await EncryptedStorage.setItem(K.PHONE, s.profile.phone ?? '');
     await EncryptedStorage.setItem('profile_name', s.profile.name ?? '');
@@ -204,14 +204,14 @@ export function AuthProvider({children}: PropsWithChildren) {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) headers.Authorization = `Bearer ${token}`;
+    if (token) {headers.Authorization = `Bearer ${token}`;}
     return headers;
   }, [state.token]);
 
   // 🔹 Update nama user
   const updateUserName = useCallback(
     async (name: string) => {
-      if (!state.profile.phone) throw new Error('Nomor telepon tidak tersedia');
+      if (!state.profile.phone) {throw new Error('Nomor telepon tidak tersedia');}
       try {
         console.log('📝 Updating user name to:', name);
         const res = await fetch(`${API_BASE}/me`, {
@@ -245,7 +245,7 @@ export function AuthProvider({children}: PropsWithChildren) {
 
   // 🔹 Hapus akun user (Supabase + SQLite)
   const deleteAccount = useCallback(async () => {
-    if (!state.profile.phone) throw new Error('Nomor telepon tidak tersedia');
+    if (!state.profile.phone) {throw new Error('Nomor telepon tidak tersedia');}
 
     try {
       console.log('🗑️ Starting account deletion for:', state.profile.phone);
