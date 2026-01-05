@@ -1,5 +1,3 @@
-# KasUMKM: Hybrid Mobile Financial Recording Application for MSMEs in Food and Beverage Sectors
-
 KasUMKM is a hybrid mobile application designed to help Micro, Small, and Medium Enterprises (MSMEs) efficiently record, manage, and analyze their financial transactions.  
 This application supports **offline financial recording** with optional **online synchronization** using a **Backend-as-a-Service (BaaS)** platform, enabling cost-effective and sustainable business operations.
 
