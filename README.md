@@ -16,8 +16,9 @@ This project is built using:
 ## Start development
 
 Prerequisites:
-Make sure, to install `npm` as the package manager.
-Make sure, to install supabase you can follow this guide https://supabase.com/docs/guides/functions/quickstart.
+- Make sure, to install `npm` as the package manager.
+
+- Make sure, to install supabase you can follow this guide https://supabase.com/docs/guides/functions/quickstart.
 
 Install all dependencies (run if there's a new dependency added in `package.json`)
 
