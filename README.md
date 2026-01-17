@@ -17,7 +17,7 @@ This project is built using:
 
 Prerequisites:
 Make sure, to install `npm` as the package manager.
-Make sure, to install supabase.
+Make sure, to install supabase you can follow this guide https://supabase.com/docs/guides/functions/quickstart.
 
 Install all dependencies (run if there's a new dependency added in `package.json`)
 
@@ -73,3 +73,5 @@ Developed by:
 Application User Interface: https://drive.google.com/file/d/1-LpajBArZftZ7ia5DTm5P5bKBGs3ZI15/view?usp=sharing
 
 Application Testing: https://drive.google.com/file/d/102waqnpjooTHJDsWGpX45Zu-cmlvjg2d/view?usp=sharing
+
+Application Demo: https://drive.google.com/file/d/1McVvD0M1YhYD_ixeDh4z3zZNNxIWaPsp/view?usp=sharing
